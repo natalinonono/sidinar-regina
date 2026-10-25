@@ -258,11 +258,15 @@ export default function RegisterPage() {
                       id="reg-wilayah"
                       type="text"
                       required
-                      placeholder="Contoh: Wilayah 3 - Lingkungan Santo Tarsisius"
+                      placeholder="Contoh: Jebres Barat, C2 Santa Rosa de Lima"
                       value={formData.asal_wilayah_teks}
                       onChange={(e) => setFormData({ ...formData, asal_wilayah_teks: e.target.value })}
                       className="w-full px-3.5 py-2.5 bg-surface-container-low rounded-xl text-xs text-on-surface focus:outline-none focus:bg-surface-container-lowest border border-surface-container"
                     />
+                    <p className="text-[11px] text-on-surface-variant flex items-center gap-1">
+                      <span className="material-symbols-outlined text-[13px] text-secondary">info</span>
+                      Format penulisan: <span className="font-semibold text-secondary">Nama Wilayah, Kode &amp; Nama Lingkungan</span> (contoh: Jebres Barat, C2 Santa Rosa de Lima)
+                    </p>
                   </div>
 
                   <div className="flex flex-col gap-1">

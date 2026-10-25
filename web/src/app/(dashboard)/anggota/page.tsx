@@ -6,8 +6,6 @@ import { MassSchedule, BookingWithDetails, Profile, Announcement } from '@/types
 import { ScheduleCard } from '@/components/ScheduleCard'
 import { BookingModal } from '@/components/BookingModal'
 import { CheckinModal } from '@/components/CheckinModal'
-import { LiturgyBadge } from '@/components/LiturgyBadge'
-import { PositionBadge } from '@/components/PositionBadge'
 import { getCurrentLiturgicalWeek, evaluateCheckinWindow } from '@/lib/utils/time'
 
 export default function AnggotaDashboardPage() {
@@ -286,9 +284,11 @@ export default function AnggotaDashboardPage() {
                     Pukul {nextUserDuty.schedule.jam_mulai.substring(0, 5)} WIB
                   </span>
                 </div>
-                <div className="flex items-center gap-3 pt-2">
-                  <span className="text-xs text-on-primary/70">Posisi Tugas Anda:</span>
-                  <PositionBadge position={nextUserDuty.posisi_tugas} className="bg-white/10 text-on-primary border-white/20" />
+                <div className="flex items-center gap-2 pt-2">
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/15 text-xs text-white border border-white/20 font-semibold">
+                    <span className="material-symbols-outlined text-[14px]">church</span>
+                    Petugas Altar
+                  </span>
                 </div>
               </div>
 

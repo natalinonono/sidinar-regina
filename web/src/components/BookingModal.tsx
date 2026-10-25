@@ -2,8 +2,6 @@
 
 import React, { useState } from 'react'
 import { MassSchedule } from '@/types/database'
-import { LiturgyBadge } from './LiturgyBadge'
-import { LITURGICAL_POSITIONS } from '@/lib/utils/positions'
 
 interface BookingModalProps {
   schedule: MassSchedule | null
@@ -18,7 +16,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({
   onClose,
   onSuccess,
 }) => {
-  const [selectedPosition, setSelectedPosition] = useState<string>('Petugas Altar / Umum')
+  const [selectedPosition] = useState<string>('Petugas Altar')
   const [commitmentChecked, setCommitmentChecked] = useState(false)
   const [loading, setLoading] = useState(false)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
@@ -106,48 +104,12 @@ export const BookingModal: React.FC<BookingModalProps> = ({
               <span className="text-xs text-on-surface-variant font-medium">Batas Booking</span>
               <span className="text-xs font-semibold text-secondary">Maks 1x {schedule.kategori === 'harian' ? 'Harian' : 'Mingguan'} / Pekan</span>
             </div>
-          </div>
-
-          {/* Posisi Tugas Selector */}
-          <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-semibold text-on-surface flex items-center justify-between">
-              <span>Pilih Peran / Posisi Tugas</span>
-              <span className="text-[11px] text-on-surface-variant font-normal">Dapat disesuaikan oleh pengurus</span>
-            </label>
-            <div className="grid grid-cols-1 gap-2 max-h-48 overflow-y-auto pr-1">
-              {LITURGICAL_POSITIONS.map((pos) => {
-                const isSelected = selectedPosition === pos.name
-                return (
-                  <label
-                    key={pos.id}
-                    className={`flex items-start gap-3 p-2.5 rounded-xl border text-xs cursor-pointer transition-all ${
-                      isSelected
-                        ? 'border-primary bg-primary/5 text-primary font-semibold shadow-xs'
-                        : 'border-surface-container hover:bg-surface-container-low text-on-surface'
-                    }`}
-                  >
-                    <input
-                      type="radio"
-                      name="posisi"
-                      value={pos.name}
-                      checked={isSelected}
-                      onChange={() => setSelectedPosition(pos.name)}
-                      className="mt-0.5 accent-primary"
-                    />
-                    <div className="flex flex-col">
-                      <div className="flex items-center gap-1.5">
-                        <span className="font-semibold">{pos.latinName}</span>
-                        <span className="text-[11px] text-on-surface-variant font-normal">({pos.name})</span>
-                      </div>
-                      <span className="text-[11px] text-on-surface-variant font-normal line-clamp-1">
-                        {pos.description}
-                      </span>
-                    </div>
-                  </label>
-                )
-              })}
+            <div className="flex items-center justify-between">
+              <span className="text-xs text-on-surface-variant font-medium">Penugasan</span>
+              <span className="text-xs font-semibold text-primary">Petugas Altar</span>
             </div>
           </div>
+
 
           {/* Commitment Checkbox */}
           <label className="flex items-start gap-2.5 p-3 rounded-xl bg-secondary-fixed/30 border border-secondary/20 cursor-pointer text-xs text-on-secondary-fixed">

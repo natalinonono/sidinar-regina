@@ -3,8 +3,6 @@
 import React, { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { BookingWithDetails } from '@/types/database'
-import { LiturgyBadge } from '@/components/LiturgyBadge'
-import { PositionBadge } from '@/components/PositionBadge'
 
 export default function RiwayatTugasPage() {
   const supabase = createClient()
@@ -78,7 +76,6 @@ export default function RiwayatTugasPage() {
               <tr>
                 <th className="py-3.5 px-4">Jadwal Misa</th>
                 <th className="py-3.5 px-4">Tanggal &amp; Waktu</th>
-                <th className="py-3.5 px-4">Posisi Tugas</th>
                 <th className="py-3.5 px-4">Status Kehadiran</th>
                 <th className="py-3.5 px-4">Waktu Presensi</th>
               </tr>
@@ -94,9 +91,6 @@ export default function RiwayatTugasPage() {
                     <span className="block text-[11px] text-on-surface-variant font-sans">
                       Pukul {b.schedule?.jam_mulai.substring(0, 5)} WIB
                     </span>
-                  </td>
-                  <td className="py-3.5 px-4">
-                    <PositionBadge position={b.posisi_tugas} />
                   </td>
                   <td className="py-3.5 px-4">
                     <span

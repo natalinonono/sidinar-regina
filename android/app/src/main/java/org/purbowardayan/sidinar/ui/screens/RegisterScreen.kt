@@ -147,7 +147,7 @@ fun RegisterScreen(
                         value = asalWilayah,
                         onValueChange = { asalWilayah = it },
                         label = { Text("Asal Wilayah & Lingkungan", fontSize = 12.sp) },
-                        placeholder = { Text("Contoh: Wilayah 3 / Lingk. Tarsisius", fontSize = 12.sp) },
+                        placeholder = { Text("Contoh: Jebres Barat, C2 Santa Rosa de Lima", fontSize = 12.sp) },
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(12.dp),
                         singleLine = true

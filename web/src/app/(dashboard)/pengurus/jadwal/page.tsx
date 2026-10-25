@@ -150,14 +150,14 @@ export default function PengurusJadwalPage() {
               calendar_month
             </span>
             <span className="text-xs uppercase font-bold text-secondary tracking-wider">
-              Manajemen Liturgi &amp; Posisi Altar
+              Manajemen Petugas &amp; Jadwal Misa
             </span>
           </div>
           <h1 className="font-headline font-bold text-2xl text-primary tracking-tight">
             Penataan Petugas Altar &amp; Jadwal
           </h1>
           <p className="text-xs text-on-surface-variant">
-            Atur dan alokasikan peran liturgi (Crucifer, Ceroferarius, Acolyte, Thurifer) untuk setiap sesi misa.
+            Atur dan pantau daftar misdinar yang bertugas untuk setiap sesi perayaan Ekaristi.
           </p>
         </div>
 
@@ -261,8 +261,7 @@ export default function PengurusJadwalPage() {
                         <tr>
                           <th className="py-3 px-3.5">Nama Petugas</th>
                           <th className="py-3 px-3.5">Jenjang</th>
-                          <th className="py-3 px-3.5">Posisi Saat Ini</th>
-                          <th className="py-3 px-3.5">Ubah Alokasi Posisi</th>
+                          <th className="py-3 px-3.5">Asal Wilayah &amp; Lingkungan</th>
                           <th className="py-3 px-3.5">Presensi</th>
                         </tr>
                       </thead>
@@ -272,25 +271,12 @@ export default function PengurusJadwalPage() {
                             <td className="py-3 px-3.5 font-bold text-primary">
                               {b.profile?.nama_lengkap}
                               <span className="block font-normal text-[11px] text-on-surface-variant">
-                                ({b.profile?.nama_panggilan}) • {b.profile?.asal_wilayah_teks}
+                                ({b.profile?.nama_panggilan})
                               </span>
                             </td>
                             <td className="py-3 px-3.5 font-medium">{b.profile?.jenjang}</td>
-                            <td className="py-3 px-3.5">
-                              <PositionBadge position={b.posisi_tugas} />
-                            </td>
-                            <td className="py-3 px-3.5">
-                              <select
-                                value={b.posisi_tugas}
-                                onChange={(e) => handleUpdatePosition(b.id, e.target.value)}
-                                className="px-2.5 py-1.5 rounded-lg bg-surface-container-low border border-surface-container text-xs font-semibold text-primary focus:outline-none"
-                              >
-                                {LITURGICAL_POSITIONS.map((pos) => (
-                                  <option key={pos.id} value={pos.name}>
-                                    {pos.latinName} ({pos.name})
-                                  </option>
-                                ))}
-                              </select>
+                            <td className="py-3 px-3.5 text-on-surface-variant">
+                              {b.profile?.asal_wilayah_teks}
                             </td>
                             <td className="py-3 px-3.5">
                               <span

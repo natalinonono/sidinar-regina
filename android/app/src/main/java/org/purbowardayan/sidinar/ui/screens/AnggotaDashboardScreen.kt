@@ -33,7 +33,6 @@ fun AnggotaDashboardScreen(
     val uiState by scheduleViewModel.uiState.collectAsState()
 
     var showBookingDialogFor by remember { mutableStateOf<MassSchedule?>(null) }
-    var selectedPosition by remember { mutableStateOf("Petugas Altar / Umum") }
 
     val userBookings = uiState.bookings.filter { it.userId == currentProfile?.id }
     val nextDuty = userBookings.firstOrNull()
@@ -284,40 +283,23 @@ fun AnggotaDashboardScreen(
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text(schedule.judulMisa, fontWeight = FontWeight.Bold, color = MarianPrimary)
-                    Text("Pukul ${schedule.jamMulai.take(5)} WIB • ${schedule.tanggalMisa}")
-                    Text("Pilih Posisi Tugas:", fontWeight = FontWeight.SemiBold, fontSize = 12.sp)
-
-                    val positions = listOf(
-                        "Crucifer (Pembawa Salib)",
-                        "Ceroferarius (Pembawa Lilin)",
-                        "Acolyte (Petugas Altar)",
-                        "Thurifer (Pembawa Dupa)",
-                        "Petugas Altar / Umum"
+                    Text("Pukul ${schedule.jamMulai.take(5)} WIB • ${schedule.tanggalMisa}", fontSize = 12.sp)
+                    Text(
+                        "Anda akan didaftarkan sebagai Petugas Altar untuk misa ini. Pastikan hadir 30 menit sebelum misa dimulai di ruang sakristi.",
+                        fontSize = 12.sp,
+                        color = OnSurfaceVariant
                     )
-
-                    positions.forEach { pos ->
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            RadioButton(
-                                selected = selectedPosition == pos,
-                                onClick = { selectedPosition = pos }
-                            )
-                            Text(pos, fontSize = 12.sp)
-                        }
-                    }
                 }
             },
             confirmButton = {
                 Button(
                     onClick = {
-                        scheduleViewModel.bookSchedule(schedule.id, selectedPosition)
+                        scheduleViewModel.bookSchedule(schedule.id, "Petugas Altar")
                         showBookingDialogFor = null
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = MarianPrimary)
                 ) {
-                    Text("Daftar Sekarang")
+                    Text("Konfirmasi Pendaftaran")
                 }
             },
             dismissButton = {
