@@ -21,34 +21,52 @@ export async function POST(request: Request) {
       )
     }
 
-    const supabase = await createClient()
+    const adminSupabase = createAdminClient()
 
-    // Create user in Supabase Auth
-    const { data: authData, error: authError } = await supabase.auth.signUp({
+    // 1. Buat user langsung auto-confirmed via Supabase Admin API
+    // Ini menghilangkan kewajiban klik link konfirmasi di email 100%!
+    let userId: string | null = null
+
+    const { data: adminUserData, error: adminUserError } = await adminSupabase.auth.admin.createUser({
       email,
       password,
-      options: {
-        data: {
-          nama_lengkap,
-          nama_panggilan,
-        },
+      email_confirm: true,
+      user_metadata: {
+        nama_lengkap,
+        nama_panggilan,
       },
     })
 
-    if (authError || !authData.user) {
-      return NextResponse.json(
-        { error: authError?.message || 'Gagal membuat akun autentikasi.' },
-        { status: 400 }
-      )
+    if (adminUserData?.user) {
+      userId = adminUserData.user.id
+    } else {
+      // Fallback ke regular signUp jika admin client mengalami kendala
+      const supabase = await createClient()
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            nama_lengkap,
+            nama_panggilan,
+          },
+        },
+      })
+
+      if (authError || !authData.user) {
+        return NextResponse.json(
+          { error: adminUserError?.message || authError?.message || 'Gagal membuat akun autentikasi.' },
+          { status: 400 }
+        )
+      }
+      userId = authData.user.id
     }
 
-    // Insert user into profiles table
-    // Use admin client to ensure insertion succeeds even if email confirmation is enabled in Supabase project
-    const adminSupabase = createAdminClient()
+    // 2. Simpan profil misdinar ke tabel public.profiles
     const { data: profile, error: profileError } = await (adminSupabase as any)
       .from('profiles')
       .insert({
-        id: authData.user.id,
+        id: userId,
         email,
         nama_lengkap,
         nama_panggilan,
