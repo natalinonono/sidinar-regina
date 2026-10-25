@@ -18,11 +18,9 @@ INSERT INTO public.mass_schedules (
 ('Misa Pagi Harian Sabtu', 'harian', CURRENT_DATE + (6 - EXTRACT(DOW FROM CURRENT_DATE)::INT)::INT, '05:30:00', 8, EXTRACT(WEEK FROM CURRENT_DATE)::INT, 2026, 'Tahun B / II', 'Putih', 'Romo Yohanes Rasul Edy Purwanto, Pr'),
 
 -- Misa Mingguan (Sabtu Sore & Minggu)
-('Misa Mingguan Antisipasi Sabtu Sore', 'mingguan', CURRENT_DATE + (6 - EXTRACT(DOW FROM CURRENT_DATE)::INT)::INT, '17:00:00', 12, EXTRACT(WEEK FROM CURRENT_DATE)::INT, 2026, 'Tahun B / II', 'Hijau', 'Romo Robertus Budi Prastowo, Pr'),
-('Misa Mingguan I Pagi', 'mingguan', CURRENT_DATE + (7 - EXTRACT(DOW FROM CURRENT_DATE)::INT)::INT, '06:00:00', 12, EXTRACT(WEEK FROM CURRENT_DATE)::INT, 2026, 'Tahun B / II', 'Hijau', 'Romo Yohanes Rasul Edy Purwanto, Pr'),
-('Misa Mingguan II Pagi (Utama)', 'mingguan', CURRENT_DATE + (7 - EXTRACT(DOW FROM CURRENT_DATE)::INT)::INT, '08:00:00', 12, EXTRACT(WEEK FROM CURRENT_DATE)::INT, 2026, 'Tahun B / II', 'Hijau', 'Romo Robertus Budi Prastowo, Pr'),
-('Misa Mingguan III Sore (Remaja & Kaum Muda)', 'mingguan', CURRENT_DATE + (7 - EXTRACT(DOW FROM CURRENT_DATE)::INT)::INT, '16:00:00', 12, EXTRACT(WEEK FROM CURRENT_DATE)::INT, 2026, 'Tahun B / II', 'Hijau', 'Romo Yohanes Rasul Edy Purwanto, Pr'),
-('Misa Mingguan IV Malam', 'mingguan', CURRENT_DATE + (7 - EXTRACT(DOW FROM CURRENT_DATE)::INT)::INT, '18:00:00', 12, EXTRACT(WEEK FROM CURRENT_DATE)::INT, 2026, 'Tahun B / II', 'Hijau', 'Romo Robertus Budi Prastowo, Pr');
+('Misa Mingguan Sabtu Sore', 'mingguan', CURRENT_DATE + (6 - EXTRACT(DOW FROM CURRENT_DATE)::INT)::INT, '17:00:00', 12, EXTRACT(WEEK FROM CURRENT_DATE)::INT, 2026, 'Tahun B / II', 'Hijau', '-'),
+('Misa Mingguan Pagi', 'mingguan', CURRENT_DATE + (7 - EXTRACT(DOW FROM CURRENT_DATE)::INT)::INT, '07:00:00', 12, EXTRACT(WEEK FROM CURRENT_DATE)::INT, 2026, 'Tahun B / II', 'Hijau', '-'),
+('Misa Mingguan Sore', 'mingguan', CURRENT_DATE + (7 - EXTRACT(DOW FROM CURRENT_DATE)::INT)::INT, '17:00:00', 12, EXTRACT(WEEK FROM CURRENT_DATE)::INT, 2026, 'Tahun B / II', 'Hijau', '-');
 
 -- 2. SEED PENGUMUMAN PAROKI
 INSERT INTO public.announcements (judul, isi, is_pinned) VALUES

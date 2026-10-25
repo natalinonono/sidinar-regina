@@ -58,10 +58,10 @@ export async function POST(request: Request) {
         })
       }
 
-      // 2. Misa Mingguan Antisipasi: Sabtu Sore (17:00 WIB, kuota 12)
+      // 2. Misa Mingguan: Sabtu Sore (17:00 WIB, kuota 12)
       if (dayOfWeek === 6) {
         schedulesToInsert.push({
-          judul_misa: 'Misa Mingguan Antisipasi Sabtu Sore',
+          judul_misa: 'Misa Mingguan Sabtu Sore',
           kategori: 'mingguan' as const,
           tanggal_misa: dateStr,
           jam_mulai: '17:00:00',
@@ -70,17 +70,15 @@ export async function POST(request: Request) {
           tahun: yearNumber,
           tahun_liturgi: 'Tahun B / II',
           warna_liturgi: 'Hijau' as any,
-          nama_selebran: selebranList[0],
+          nama_selebran: '-',
         })
       }
 
-      // 3. Misa Mingguan Hari Minggu: 06:00, 08:00, 16:00, 18:00 WIB (kuota 12)
+      // 3. Misa Mingguan Hari Minggu: Pagi (07:00 WIB) & Sore (17:00 WIB) (kuota 12)
       if (dayOfWeek === 0) {
         const sundaySessions = [
-          { jam: '06:00:00', title: 'Misa Mingguan I Pagi', selebran: selebranList[1] },
-          { jam: '08:00:00', title: 'Misa Mingguan II Pagi (Utama)', selebran: selebranList[0] },
-          { jam: '16:00:00', title: 'Misa Mingguan III Sore (Remaja & Kaum Muda)', selebran: selebranList[1] },
-          { jam: '18:00:00', title: 'Misa Mingguan IV Malam', selebran: selebranList[0] },
+          { jam: '07:00:00', title: 'Misa Mingguan Pagi' },
+          { jam: '17:00:00', title: 'Misa Mingguan Sore' },
         ]
 
         for (const s of sundaySessions) {
@@ -94,7 +92,7 @@ export async function POST(request: Request) {
             tahun: yearNumber,
             tahun_liturgi: 'Tahun B / II',
             warna_liturgi: 'Hijau' as any,
-            nama_selebran: s.selebran,
+            nama_selebran: '-',
           })
         }
       }
