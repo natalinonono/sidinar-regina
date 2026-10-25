@@ -264,7 +264,6 @@ export default function AnggotaDashboardPage() {
                   Tugas Pelayanan Altar Mendatang
                 </span>
               </div>
-              <LiturgyBadge warna={nextUserDuty.schedule.warna_liturgi} tahunLiturgi={nextUserDuty.schedule.tahun_liturgi} />
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-center">
@@ -285,13 +284,6 @@ export default function AnggotaDashboardPage() {
                       schedule
                     </span>
                     Pukul {nextUserDuty.schedule.jam_mulai.substring(0, 5)} WIB
-                  </span>
-                  <span>•</span>
-                  <span className="flex items-center gap-1.5">
-                    <span className="material-symbols-outlined text-base text-secondary-fixed">
-                      person
-                    </span>
-                    {nextUserDuty.schedule.nama_selebran}
                   </span>
                 </div>
                 <div className="flex items-center gap-3 pt-2">

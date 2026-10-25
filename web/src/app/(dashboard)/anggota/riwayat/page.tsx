@@ -78,7 +78,6 @@ export default function RiwayatTugasPage() {
               <tr>
                 <th className="py-3.5 px-4">Jadwal Misa</th>
                 <th className="py-3.5 px-4">Tanggal &amp; Waktu</th>
-                <th className="py-3.5 px-4">Warna Liturgi</th>
                 <th className="py-3.5 px-4">Posisi Tugas</th>
                 <th className="py-3.5 px-4">Status Kehadiran</th>
                 <th className="py-3.5 px-4">Waktu Presensi</th>
@@ -89,20 +88,12 @@ export default function RiwayatTugasPage() {
                 <tr key={b.id} className="hover:bg-surface-container-low/50 transition-colors">
                   <td className="py-3.5 px-4 font-bold text-primary">
                     {b.schedule?.judul_misa || 'Misa Kudus'}
-                    <span className="block font-normal text-[11px] text-on-surface-variant">
-                      Selebran: {b.schedule?.nama_selebran}
-                    </span>
                   </td>
                   <td className="py-3.5 px-4 font-mono">
                     {b.schedule?.tanggal_misa}
                     <span className="block text-[11px] text-on-surface-variant font-sans">
                       Pukul {b.schedule?.jam_mulai.substring(0, 5)} WIB
                     </span>
-                  </td>
-                  <td className="py-3.5 px-4">
-                    {b.schedule && (
-                      <LiturgyBadge warna={b.schedule.warna_liturgi} tahunLiturgi={b.schedule.tahun_liturgi} />
-                    )}
                   </td>
                   <td className="py-3.5 px-4">
                     <PositionBadge position={b.posisi_tugas} />

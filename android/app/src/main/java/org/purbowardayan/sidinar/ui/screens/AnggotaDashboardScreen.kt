@@ -242,12 +242,6 @@ fun AnggotaDashboardScreen(
                             color = OnSurfaceVariant
                         )
 
-                        Text(
-                            text = "Selebran: ${schedule.namaSelebran}",
-                            fontSize = 11.sp,
-                            color = OnSurfaceVariant
-                        )
-
                         if (isUserBooked) {
                             OutlinedButton(
                                 onClick = {},

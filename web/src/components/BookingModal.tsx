@@ -103,14 +103,6 @@ export const BookingModal: React.FC<BookingModalProps> = ({
           {/* Schedule Info Summary Card */}
           <div className="p-4 rounded-xl bg-surface-container-low flex flex-col gap-2.5 border border-surface-container">
             <div className="flex items-center justify-between">
-              <span className="text-xs text-on-surface-variant font-medium">Warna & Tahun Liturgi</span>
-              <LiturgyBadge warna={schedule.warna_liturgi} tahunLiturgi={schedule.tahun_liturgi} />
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-xs text-on-surface-variant font-medium">Imam Selebran</span>
-              <span className="text-xs font-semibold text-primary">{schedule.nama_selebran}</span>
-            </div>
-            <div className="flex items-center justify-between pt-1 border-t border-surface-container">
               <span className="text-xs text-on-surface-variant font-medium">Batas Booking</span>
               <span className="text-xs font-semibold text-secondary">Maks 1x {schedule.kategori === 'harian' ? 'Harian' : 'Mingguan'} / Pekan</span>
             </div>

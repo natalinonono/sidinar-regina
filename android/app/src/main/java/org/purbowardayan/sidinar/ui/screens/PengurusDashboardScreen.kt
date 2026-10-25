@@ -162,12 +162,6 @@ fun PengurusDashboardScreen(
                             color = OnSurfaceVariant
                         )
 
-                        Text(
-                            text = "Selebran: ${schedule.namaSelebran}",
-                            fontSize = 11.sp,
-                            color = OnSurfaceVariant
-                        )
-
                         if (booked.isNotEmpty()) {
                             Text(
                                 text = "Petugas: " + booked.joinToString { it.posisiTugas },

@@ -30,11 +30,14 @@ export const ScheduleCard: React.FC<ScheduleCardProps> = ({
   return (
     <div className="relative overflow-hidden rounded-2xl bg-surface-container-lowest border border-surface-container shadow-sm hover:shadow-md transition-all flex flex-col justify-between group">
       {/* Top Accent Strip based on Liturgy */}
+      {/* Top Details */}
       <div className="p-5 flex flex-col gap-3.5">
         <div className="flex items-start justify-between gap-3">
-          <LiturgyBadge warna={schedule.warna_liturgi} tahunLiturgi={schedule.tahun_liturgi} />
-          <span className="text-[11px] font-semibold text-secondary uppercase tracking-wider px-2 py-0.5 rounded-full bg-secondary-fixed/40">
+          <span className="text-[11px] font-semibold text-secondary uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-secondary-fixed/40">
             {schedule.kategori === 'harian' ? 'Misa Harian' : 'Misa Mingguan'}
+          </span>
+          <span className="text-[11px] font-mono text-on-surface-variant font-medium">
+            Pukul {schedule.jam_mulai.substring(0, 5)} WIB
           </span>
         </div>
 
@@ -48,24 +51,6 @@ export const ScheduleCard: React.FC<ScheduleCardProps> = ({
               calendar_today
             </span>
             <span>{schedule.tanggal_misa}</span>
-            <span>•</span>
-            <span className="material-symbols-outlined text-[16px] text-primary">
-              schedule
-            </span>
-            <span className="font-semibold text-on-surface">
-              {schedule.jam_mulai.substring(0, 5)} WIB
-            </span>
-          </div>
-        </div>
-
-        {/* Celebrant */}
-        <div className="flex items-center gap-2 text-xs text-on-surface-variant bg-surface-container-low p-2.5 rounded-xl border border-surface-container">
-          <span className="material-symbols-outlined text-[18px] text-primary" style={{ fontVariationSettings: "'FILL' 1" }}>
-            person_pin
-          </span>
-          <div className="flex flex-col">
-            <span className="text-[10px] text-on-surface-variant uppercase font-medium">Selebran</span>
-            <span className="font-semibold text-on-surface line-clamp-1">{schedule.nama_selebran}</span>
           </div>
         </div>
 

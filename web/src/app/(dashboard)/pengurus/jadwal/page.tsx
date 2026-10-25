@@ -193,7 +193,9 @@ export default function PengurusJadwalPage() {
                   }`}
                 >
                   <div className="flex items-center justify-between gap-2 mb-1.5">
-                    <LiturgyBadge warna={s.warna_liturgi} />
+                    <span className="text-[11px] font-semibold text-secondary uppercase tracking-wider px-2 py-0.5 rounded-full bg-secondary-fixed/40">
+                      {s.kategori === 'harian' ? 'Harian' : 'Mingguan'}
+                    </span>
                     <span className="text-[11px] font-semibold text-primary">
                       {sBookings.length} / {s.kuota_maksimal} Terisi
                     </span>
@@ -204,9 +206,6 @@ export default function PengurusJadwalPage() {
                     <span>•</span>
                     <span className="font-semibold text-on-surface">{s.jam_mulai.substring(0, 5)} WIB</span>
                   </div>
-                  <span className="text-[10px] text-on-surface-variant/80 block mt-1 line-clamp-1">
-                    {s.nama_selebran}
-                  </span>
                 </div>
               )
             })}
@@ -220,16 +219,17 @@ export default function PengurusJadwalPage() {
               {/* Selected Mass Header Card */}
               <div className="p-5 rounded-2xl bg-gradient-to-r from-primary to-primary-container text-on-primary flex flex-col gap-3">
                 <div className="flex items-start justify-between gap-3">
-                  <LiturgyBadge warna={selectedSchedule.warna_liturgi} tahunLiturgi={selectedSchedule.tahun_liturgi} />
                   <span className="px-2.5 py-0.5 rounded-full bg-white/10 text-secondary-fixed font-bold text-[11px] uppercase">
                     {selectedSchedule.kategori === 'harian' ? 'Misa Harian' : 'Misa Mingguan'}
+                  </span>
+                  <span className="text-xs font-mono text-on-primary/80">
+                    Pukul {selectedSchedule.jam_mulai.substring(0, 5)} WIB
                   </span>
                 </div>
                 <div>
                   <h2 className="font-headline font-bold text-xl">{selectedSchedule.judul_misa}</h2>
                   <p className="text-xs text-on-primary/80 mt-1">
-                    {selectedSchedule.tanggal_misa} • Pukul {selectedSchedule.jam_mulai.substring(0, 5)} WIB • Selebran:{' '}
-                    <strong>{selectedSchedule.nama_selebran}</strong>
+                    {selectedSchedule.tanggal_misa} • Pukul {selectedSchedule.jam_mulai.substring(0, 5)} WIB
                   </p>
                 </div>
               </div>
@@ -381,41 +381,13 @@ export default function PengurusJadwalPage() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                <div className="flex flex-col gap-1">
-                  <label className="font-semibold text-on-surface">Jam Mulai (WIB)</label>
-                  <input
-                    type="time"
-                    required
-                    value={newScheduleData.jam_mulai}
-                    onChange={(e) => setNewScheduleData({ ...newScheduleData, jam_mulai: e.target.value })}
-                    className="px-3 py-2.5 rounded-xl bg-surface-container-low border border-surface-container"
-                  />
-                </div>
-                <div className="flex flex-col gap-1">
-                  <label className="font-semibold text-on-surface">Warna Liturgi</label>
-                  <select
-                    value={newScheduleData.warna_liturgi}
-                    onChange={(e) => setNewScheduleData({ ...newScheduleData, warna_liturgi: e.target.value as any })}
-                    className="px-3 py-2.5 rounded-xl bg-surface-container-low border border-surface-container"
-                  >
-                    <option value="Hijau">Hijau</option>
-                    <option value="Putih">Putih</option>
-                    <option value="Merah">Merah</option>
-                    <option value="Ungu">Ungu</option>
-                    <option value="Merah Muda">Merah Muda</option>
-                  </select>
-                </div>
-              </div>
-
               <div className="flex flex-col gap-1">
-                <label className="font-semibold text-on-surface">Nama Imam Selebran</label>
+                <label className="font-semibold text-on-surface">Jam Mulai (WIB)</label>
                 <input
-                  type="text"
+                  type="time"
                   required
-                  value={newScheduleData.nama_selebran}
-                  onChange={(e) => setNewScheduleData({ ...newScheduleData, nama_selebran: e.target.value })}
-                  placeholder="Romo Robertus Budi Prastowo, Pr"
+                  value={newScheduleData.jam_mulai}
+                  onChange={(e) => setNewScheduleData({ ...newScheduleData, jam_mulai: e.target.value })}
                   className="px-3.5 py-2.5 rounded-xl bg-surface-container-low border border-surface-container"
                 />
               </div>

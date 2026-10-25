@@ -363,7 +363,6 @@ export default function PengurusDashboardPage() {
               <tr>
                 <th className="py-3.5 px-4">Jadwal Misa</th>
                 <th className="py-3.5 px-4">Tanggal &amp; Waktu</th>
-                <th className="py-3.5 px-4">Warna &amp; Selebran</th>
                 <th className="py-3.5 px-4">Keterisian Kuota</th>
                 <th className="py-3.5 px-4">Petugas Terdaftar</th>
                 <th className="py-3.5 px-4 text-right">Aksi</th>
@@ -387,12 +386,6 @@ export default function PengurusDashboardPage() {
                       {s.tanggal_misa}
                       <span className="block text-[11px] font-sans text-on-surface-variant">
                         {s.jam_mulai.substring(0, 5)} WIB
-                      </span>
-                    </td>
-                    <td className="py-3.5 px-4">
-                      <LiturgyBadge warna={s.warna_liturgi} tahunLiturgi={s.tahun_liturgi} />
-                      <span className="block text-[11px] text-on-surface-variant mt-1 font-medium">
-                        {s.nama_selebran}
                       </span>
                     </td>
                     <td className="py-3.5 px-4">
