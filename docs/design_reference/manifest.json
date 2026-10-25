@@ -1,0 +1,103 @@
+{
+  "project_title": "SiDinar Regina Portal UI",
+  "project_id": "3191471473118837486",
+  "screens": [
+    {
+      "id": "b5149c7c81094cc08b9791d57b4efbc0",
+      "title": "SiDinar Regina - Portal Autentikasi Desktop",
+      "device": "DESKTOP",
+      "files": {
+        "html": "01_portal_autentikasi_desktop.html",
+        "image": "01_portal_autentikasi_desktop.jpg"
+      },
+      "dimensions": {
+        "width": 1600,
+        "height": 1492,
+        "mime_type": "image/jpeg"
+      }
+    },
+    {
+      "id": "d753d814358742deaa0330b6b01ef859",
+      "title": "SiDinar Regina - Autentikasi Mobile",
+      "device": "MOBILE",
+      "files": {
+        "html": "02_autentikasi_mobile.html",
+        "image": "02_autentikasi_mobile.jpg"
+      },
+      "dimensions": {
+        "width": 487,
+        "height": 1522,
+        "mime_type": "image/jpeg"
+      }
+    },
+    {
+      "id": "9019501613924facb3443823829598e2",
+      "title": "Dashboard Anggota Misdinar - SiDinar Regina (Desktop)",
+      "device": "DESKTOP",
+      "files": {
+        "html": "03_dashboard_anggota_desktop.html",
+        "image": "03_dashboard_anggota_desktop.jpg"
+      },
+      "dimensions": {
+        "width": 1600,
+        "height": 2287,
+        "mime_type": "image/jpeg"
+      }
+    },
+    {
+      "id": "f49376514bf14aabbea602b00237c128",
+      "title": "Dashboard Anggota Misdinar - SiDinar Regina (Mobile)",
+      "device": "MOBILE",
+      "files": {
+        "html": "04_dashboard_anggota_mobile.html",
+        "image": "04_dashboard_anggota_mobile.jpg"
+      },
+      "dimensions": {
+        "width": 487,
+        "height": 2087,
+        "mime_type": "image/jpeg"
+      }
+    },
+    {
+      "id": "7933115597689870118",
+      "title": "images (2).png",
+      "device": "ASSET",
+      "files": {
+        "image": "05_logo_misdinar.png"
+      },
+      "dimensions": {
+        "width": 225,
+        "height": 225,
+        "mime_type": "image/png"
+      }
+    },
+    {
+      "id": "23fb86d7fcb44468b09a50876eefcd4a",
+      "title": "Mode Pengurus - Pusat Kendali SiDinar Regina (Desktop)",
+      "device": "DESKTOP",
+      "files": {
+        "html": "06_mode_pengurus_desktop.html",
+        "image": "06_mode_pengurus_desktop.jpg"
+      },
+      "dimensions": {
+        "width": 1600,
+        "height": 3567,
+        "mime_type": "image/jpeg"
+      }
+    },
+    {
+      "id": "1b1211ac05284ba78ea12f77cd00b634",
+      "title": "Mode Pengurus - SiDinar Regina (Mobile APK)",
+      "device": "MOBILE",
+      "files": {
+        "html": "07_mode_pengurus_mobile.html",
+        "image": "07_mode_pengurus_mobile.jpg"
+      },
+      "dimensions": {
+        "width": 487,
+        "height": 3227,
+        "mime_type": "image/jpeg"
+      }
+    }
+  ]
+}
