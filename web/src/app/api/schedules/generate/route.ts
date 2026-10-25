@@ -74,11 +74,13 @@ export async function POST(request: Request) {
         })
       }
 
-      // 3. Misa Mingguan Hari Minggu: Pagi (07:00 WIB) & Sore (17:00 WIB) (kuota 12)
+      // 3. Misa Mingguan Hari Minggu: Pagi (06:00, 08:00 WIB) & Sore (16:00, 18:00 WIB) (kuota 12)
       if (dayOfWeek === 0) {
         const sundaySessions = [
-          { jam: '07:00:00', title: 'Misa Mingguan Pagi' },
-          { jam: '17:00:00', title: 'Misa Mingguan Sore' },
+          { jam: '06:00:00', title: 'Misa Mingguan Pagi' },
+          { jam: '08:00:00', title: 'Misa Mingguan Pagi' },
+          { jam: '16:00:00', title: 'Misa Mingguan Sore' },
+          { jam: '18:00:00', title: 'Misa Mingguan Sore' },
         ]
 
         for (const s of sundaySessions) {

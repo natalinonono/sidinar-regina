@@ -24,7 +24,7 @@ Siklus pekan liturgi dihitung dari **Senin pukul 00.00 WIB hingga Minggu pukul 2
 
 | Parameter | Misa Harian | Misa Mingguan |
 |---|---|---|
-| **Hari & Jadwal** | Senin s/d Sabtu, pukul **05.30 WIB** | **Misa Mingguan Sabtu Sore** (**17.00 WIB**), **Misa Mingguan Pagi** (**07.00 WIB**), dan **Misa Mingguan Sore** (**17.00 WIB**) |
+| **Hari & Jadwal** | Senin s/d Sabtu, pukul **05.30 WIB** | **Misa Mingguan Sabtu Sore** (**17.00 WIB**), **Misa Mingguan Pagi** (**06.00 & 08.00 WIB**), dan **Misa Mingguan Sore** (**16.00 & 18.00 WIB**) |
 | **Kuota Maksimal** | **8 Orang** per sesi | **12 Orang** per sesi |
 | **Jendela Presensi Buka** | Pukul **05.00 WIB** (H-30 menit) | **60 menit (1 jam)** sebelum misa dimulai |
 | **Batas Tepat Waktu** | Maksimal pukul **05.10 WIB** (H-20 menit) | Maksimal **30 menit** sebelum misa dimulai |

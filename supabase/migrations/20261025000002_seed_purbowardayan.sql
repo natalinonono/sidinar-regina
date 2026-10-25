@@ -19,8 +19,10 @@ INSERT INTO public.mass_schedules (
 
 -- Misa Mingguan (Sabtu Sore & Minggu)
 ('Misa Mingguan Sabtu Sore', 'mingguan', CURRENT_DATE + (6 - EXTRACT(DOW FROM CURRENT_DATE)::INT)::INT, '17:00:00', 12, EXTRACT(WEEK FROM CURRENT_DATE)::INT, 2026, 'Tahun B / II', 'Hijau', '-'),
-('Misa Mingguan Pagi', 'mingguan', CURRENT_DATE + (7 - EXTRACT(DOW FROM CURRENT_DATE)::INT)::INT, '07:00:00', 12, EXTRACT(WEEK FROM CURRENT_DATE)::INT, 2026, 'Tahun B / II', 'Hijau', '-'),
-('Misa Mingguan Sore', 'mingguan', CURRENT_DATE + (7 - EXTRACT(DOW FROM CURRENT_DATE)::INT)::INT, '17:00:00', 12, EXTRACT(WEEK FROM CURRENT_DATE)::INT, 2026, 'Tahun B / II', 'Hijau', '-');
+('Misa Mingguan Pagi', 'mingguan', CURRENT_DATE + (7 - EXTRACT(DOW FROM CURRENT_DATE)::INT)::INT, '06:00:00', 12, EXTRACT(WEEK FROM CURRENT_DATE)::INT, 2026, 'Tahun B / II', 'Hijau', '-'),
+('Misa Mingguan Pagi', 'mingguan', CURRENT_DATE + (7 - EXTRACT(DOW FROM CURRENT_DATE)::INT)::INT, '08:00:00', 12, EXTRACT(WEEK FROM CURRENT_DATE)::INT, 2026, 'Tahun B / II', 'Hijau', '-'),
+('Misa Mingguan Sore', 'mingguan', CURRENT_DATE + (7 - EXTRACT(DOW FROM CURRENT_DATE)::INT)::INT, '16:00:00', 12, EXTRACT(WEEK FROM CURRENT_DATE)::INT, 2026, 'Tahun B / II', 'Hijau', '-'),
+('Misa Mingguan Sore', 'mingguan', CURRENT_DATE + (7 - EXTRACT(DOW FROM CURRENT_DATE)::INT)::INT, '18:00:00', 12, EXTRACT(WEEK FROM CURRENT_DATE)::INT, 2026, 'Tahun B / II', 'Hijau', '-');
 
 -- 2. SEED PENGUMUMAN PAROKI
 INSERT INTO public.announcements (judul, isi, is_pinned) VALUES
