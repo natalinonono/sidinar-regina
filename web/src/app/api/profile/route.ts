@@ -1,6 +1,17 @@
 import { NextResponse } from 'next/server'
 import { createClient, createAdminClient } from '@/lib/supabase/server'
 
+function normalizeJenjang(raw: string): 'SD' | 'SMP' | 'SMA/K' | 'Mahasiswa' | 'Umum' {
+  if (!raw) return 'SMP'
+  const upper = raw.toUpperCase().trim()
+  if (upper.includes('MAHASISWA') || upper.includes('KULIAH')) return 'Mahasiswa'
+  if (upper.includes('UMUM') || upper.includes('BEKERJA')) return 'Umum'
+  if (upper.includes('SMA') || upper.includes('SMK') || upper.includes('SMA/K')) return 'SMA/K'
+  if (upper.includes('SMP')) return 'SMP'
+  if (upper.includes('SD')) return 'SD'
+  return 'SMP'
+}
+
 // GET /api/profile - Ambil data profil user yang sedang login
 export async function GET() {
   try {
@@ -69,7 +80,7 @@ export async function PATCH(request: Request) {
         nama_panggilan: nama_panggilan.trim(),
         no_telepon: no_telepon.trim(),
         asal_wilayah_teks: asal_wilayah_teks ? asal_wilayah_teks.trim() : 'Paroki Purbowardayan',
-        jenjang,
+        jenjang: normalizeJenjang(jenjang),
         updated_at: new Date().toISOString(),
       })
       .eq('id', user.id)

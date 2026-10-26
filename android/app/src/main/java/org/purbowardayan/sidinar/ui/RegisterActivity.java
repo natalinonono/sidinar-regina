@@ -113,7 +113,7 @@ public class RegisterActivity extends AppCompatActivity {
                 namaPanggilan,
                 phone,
                 wilayah,
-                jenjang
+                mapJenjangToEnum(jenjang)
         );
 
         ApiClient.getBackendApi().register(request).enqueue(new Callback<ResponseBody>() {
@@ -127,8 +127,19 @@ public class RegisterActivity extends AppCompatActivity {
                     try {
                         if (response.errorBody() != null) {
                             String errStr = response.errorBody().string();
-                            if (errStr.contains("error")) {
-                                errorMsg = errStr;
+                            try {
+                                org.json.JSONObject obj = new org.json.JSONObject(errStr);
+                                if (obj.has("error")) {
+                                    errorMsg = obj.getString("error");
+                                } else if (obj.has("message")) {
+                                    errorMsg = obj.getString("message");
+                                } else {
+                                    errorMsg = errStr;
+                                }
+                            } catch (Exception jsonEx) {
+                                if (errStr != null && !errStr.isEmpty()) {
+                                    errorMsg = errStr;
+                                }
                             }
                         }
                     } catch (Exception ignored) {}
@@ -142,6 +153,17 @@ public class RegisterActivity extends AppCompatActivity {
                 Toast.makeText(RegisterActivity.this, "Gagal terhubung ke server: " + t.getMessage(), Toast.LENGTH_LONG).show();
             }
         });
+    }
+
+    private String mapJenjangToEnum(String display) {
+        if (display == null) return "SMP";
+        String upper = display.toUpperCase().trim();
+        if (upper.contains("MAHASISWA") || upper.contains("KULIAH")) return "Mahasiswa";
+        if (upper.contains("UMUM") || upper.contains("BEKERJA")) return "Umum";
+        if (upper.contains("SMA") || upper.contains("SMK") || upper.contains("SMA/K")) return "SMA/K";
+        if (upper.contains("SMP")) return "SMP";
+        if (upper.contains("SD")) return "SD";
+        return "SMP";
     }
 
     private void showSuccessDialog() {
