@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { Profile } from '@/types/database'
 import { NotificationCenter } from '@/components/NotificationCenter'
+import { ThemeToggle } from '@/components/ThemeToggle'
 
 interface NavbarProps {
   profile: Profile | null
@@ -196,6 +197,9 @@ export const Navbar: React.FC<NavbarProps> = ({ profile, realtimeConnected = tru
                 {currentTimeWIB}
               </span>
             )}
+
+            {/* Theme Toggle (System / Light / Dark) */}
+            <ThemeToggle />
 
             {/* Notification Bell & Auto Reminder Alert */}
             <NotificationCenter profile={profile} />

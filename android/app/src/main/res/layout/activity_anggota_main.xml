@@ -213,6 +213,25 @@
                             app:iconSize="16dp"
                             app:cornerRadius="12dp" />
 
+                        <!-- Theme Switcher Button (Mode Otomatis Sistem / Terang / Gelap) -->
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnThemeToggle"
+                            style="@style/Widget.Material3.Button.OutlinedButton"
+                            android:layout_width="wrap_content"
+                            android:layout_height="40dp"
+                            android:layout_marginStart="8dp"
+                            android:text="Tema: Otomatis"
+                            android:textSize="12sp"
+                            android:textStyle="bold"
+                            android:textColor="@color/on_surface"
+                            android:backgroundTint="@color/surface_container_low"
+                            app:strokeColor="@color/surface_container"
+                            app:strokeWidth="1dp"
+                            app:icon="@drawable/ic_theme_auto"
+                            app:iconTint="@color/primary"
+                            app:iconSize="16dp"
+                            app:cornerRadius="12dp" />
+
                         <!-- Pengurus Switch Button (visible if user is pengurus) -->
                         <com.google.android.material.button.MaterialButton
                             android:id="@+id/btnSwitchToPengurus"

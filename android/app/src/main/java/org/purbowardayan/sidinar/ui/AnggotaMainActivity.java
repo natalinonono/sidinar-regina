@@ -36,6 +36,7 @@ import org.purbowardayan.sidinar.model.MassSchedule;
 import org.purbowardayan.sidinar.model.Profile;
 import org.purbowardayan.sidinar.network.ApiClient;
 import org.purbowardayan.sidinar.util.NotificationHelper;
+import org.purbowardayan.sidinar.util.ThemeManager;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
@@ -136,6 +137,19 @@ public class AnggotaMainActivity extends AppCompatActivity implements ScheduleAd
                 binding.btnSwitchToPengurus.setVisibility(View.GONE);
             }
         }
+        updateThemeButtonUI();
+    }
+
+    private void updateThemeButtonUI() {
+        String mode = ThemeManager.getSavedTheme(this);
+        binding.btnThemeToggle.setIconResource(ThemeManager.getThemeIconRes(this));
+        if (ThemeManager.MODE_DARK.equals(mode)) {
+            binding.btnThemeToggle.setText("Gelap");
+        } else if (ThemeManager.MODE_LIGHT.equals(mode)) {
+            binding.btnThemeToggle.setText("Terang");
+        } else {
+            binding.btnThemeToggle.setText("Otomatis (Sistem)");
+        }
     }
 
     private void setupRecyclerViews() {
@@ -165,6 +179,14 @@ public class AnggotaMainActivity extends AppCompatActivity implements ScheduleAd
                     })
                     .setNegativeButton("Batal", null)
                     .show();
+        });
+
+        updateThemeButtonUI();
+
+        binding.btnThemeToggle.setOnClickListener(v -> {
+            ThemeManager.showThemeSelectionDialog(this, newMode -> {
+                updateThemeButtonUI();
+            });
         });
 
         binding.btnEditProfile.setOnClickListener(v -> {

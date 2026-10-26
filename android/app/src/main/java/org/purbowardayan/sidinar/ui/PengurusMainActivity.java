@@ -37,6 +37,7 @@ import org.purbowardayan.sidinar.model.MassSchedule;
 import org.purbowardayan.sidinar.model.Profile;
 import org.purbowardayan.sidinar.network.ApiClient;
 import org.purbowardayan.sidinar.util.LiturgicalUtil;
+import org.purbowardayan.sidinar.util.ThemeManager;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
@@ -118,6 +119,13 @@ public class PengurusMainActivity extends AppCompatActivity implements
 
         binding.btnViewAsAnggota.setOnClickListener(v -> {
             startActivity(new Intent(PengurusMainActivity.this, AnggotaMainActivity.class));
+        });
+
+        binding.btnPengurusTheme.setIconResource(ThemeManager.getThemeIconRes(this));
+        binding.btnPengurusTheme.setOnClickListener(v -> {
+            ThemeManager.showThemeSelectionDialog(this, newMode -> {
+                binding.btnPengurusTheme.setIconResource(ThemeManager.getThemeIconRes(this));
+            });
         });
 
         binding.btnPengurusLogout.setOnClickListener(v -> {
