@@ -115,6 +115,13 @@ public class AnggotaMainActivity extends AppCompatActivity implements ScheduleAd
                     : "Paroki Purbowardayan";
             binding.tvWilayahBadge.setText(wilayah);
 
+            if (profile.getJenjang() != null && !profile.getJenjang().isEmpty()) {
+                binding.tvJenjangBadge.setText("Jenjang " + profile.getJenjang());
+                binding.tvJenjangBadge.setVisibility(View.VISIBLE);
+            } else {
+                binding.tvJenjangBadge.setVisibility(View.GONE);
+            }
+
             binding.tvStatusBadge.setText("Anggota Aktif");
             binding.tvStatusBadge.setBackgroundResource(R.drawable.bg_badge_emerald);
             binding.tvStatusBadge.setTextColor(androidx.core.content.ContextCompat.getColor(this, R.color.emerald_800));
@@ -836,6 +843,10 @@ public class AnggotaMainActivity extends AppCompatActivity implements ScheduleAd
                 .setView(dialogView)
                 .setCancelable(false)
                 .create();
+
+        if (dialog.getWindow() != null) {
+            dialog.getWindow().setBackgroundDrawable(new android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT));
+        }
 
         TextInputEditText etNamaLengkap = dialogView.findViewById(R.id.etEditNamaLengkap);
         TextInputEditText etNamaPanggilan = dialogView.findViewById(R.id.etEditNamaPanggilan);

@@ -42,96 +42,129 @@
                         android:gravity="center_vertical"
                         android:orientation="horizontal">
 
-                        <!-- Badges Row -->
-                        <LinearLayout
-                            android:layout_width="0dp"
+                        <!-- Left: Status Badge -->
+                        <TextView
+                            android:id="@+id/tvStatusBadge"
+                            android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:gravity="center_vertical"
-                            android:orientation="horizontal">
+                            android:background="@drawable/bg_badge_emerald"
+                            android:paddingHorizontal="12dp"
+                            android:paddingVertical="5dp"
+                            android:text="Anggota Aktif"
+                            android:textColor="@color/emerald_800"
+                            android:textSize="11sp"
+                            android:textStyle="bold" />
 
-                            <!-- Status Badge -->
-                            <TextView
-                                android:id="@+id/tvStatusBadge"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:background="@drawable/bg_badge_emerald"
-                                android:paddingHorizontal="10dp"
-                                android:paddingVertical="4dp"
-                                android:text="Anggota Aktif"
-                                android:textColor="@color/emerald_800"
-                                android:textSize="11sp"
-                                android:textStyle="bold" />
-
-                            <!-- Wilayah Badge -->
-                            <TextView
-                                android:id="@+id/tvWilayahBadge"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:layout_marginStart="6dp"
-                                android:background="@drawable/bg_badge_marian"
-                                android:paddingHorizontal="10dp"
-                                android:paddingVertical="4dp"
-                                android:text="Purbowardayan"
-                                android:textColor="@color/on_primary_fixed"
-                                android:textSize="11sp"
-                                android:textStyle="bold" />
-                        </LinearLayout>
+                        <!-- Spacer -->
+                        <View
+                            android:layout_width="0dp"
+                            android:layout_height="1dp"
+                            android:layout_weight="1" />
 
                         <!-- Notification Bell Action -->
                         <com.google.android.material.button.MaterialButton
                             android:id="@+id/btnNotifications"
-                            style="@style/Widget.Material3.Button.TonalButton"
+                            style="@style/Widget.Material3.Button.IconButton"
                             android:layout_width="40dp"
                             android:layout_height="40dp"
-                            android:layout_marginEnd="8dp"
+                            android:layout_marginEnd="6dp"
                             android:padding="0dp"
+                            android:backgroundTint="@color/surface_container_low"
+                            app:strokeColor="@color/surface_container"
+                            app:strokeWidth="1dp"
                             app:icon="@drawable/ic_bell"
                             app:iconTint="@color/primary"
                             app:iconGravity="textStart"
-                            app:cornerRadius="10dp"
+                            app:cornerRadius="12dp"
                             android:contentDescription="Notifikasi &amp; Pengingat Tugas" />
 
                         <!-- Riwayat Pelayanan Action matching Web /anggota/riwayat -->
                         <com.google.android.material.button.MaterialButton
                             android:id="@+id/btnRiwayatTugas"
-                            style="@style/Widget.Material3.Button.TonalButton"
+                            style="@style/Widget.Material3.Button.IconButton"
                             android:layout_width="40dp"
                             android:layout_height="40dp"
-                            android:layout_marginEnd="8dp"
+                            android:layout_marginEnd="6dp"
                             android:padding="0dp"
+                            android:backgroundTint="@color/surface_container_low"
+                            app:strokeColor="@color/surface_container"
+                            app:strokeWidth="1dp"
                             app:icon="@drawable/ic_calendar"
                             app:iconTint="@color/primary"
                             app:iconGravity="textStart"
-                            app:cornerRadius="10dp"
+                            app:cornerRadius="12dp"
                             android:contentDescription="Riwayat Pelayanan Altar" />
 
                         <!-- QR Scanner Action -->
                         <com.google.android.material.button.MaterialButton
                             android:id="@+id/btnScanQr"
-                            style="@style/Widget.Material3.Button.TonalButton"
+                            style="@style/Widget.Material3.Button.IconButton"
                             android:layout_width="40dp"
                             android:layout_height="40dp"
+                            android:layout_marginEnd="6dp"
                             android:padding="0dp"
+                            android:backgroundTint="@color/surface_container_low"
+                            app:strokeColor="@color/surface_container"
+                            app:strokeWidth="1dp"
                             app:icon="@drawable/ic_qr_code"
                             app:iconTint="@color/primary"
                             app:iconGravity="textStart"
-                            app:cornerRadius="10dp"
+                            app:cornerRadius="12dp"
                             android:contentDescription="Presensi Sakristi" />
 
                         <!-- Logout Button -->
                         <com.google.android.material.button.MaterialButton
                             android:id="@+id/btnLogout"
-                            style="@style/Widget.Material3.Button.TonalButton"
+                            style="@style/Widget.Material3.Button.IconButton"
                             android:layout_width="40dp"
                             android:layout_height="40dp"
-                            android:layout_marginStart="8dp"
                             android:padding="0dp"
+                            android:backgroundTint="@color/surface_container_low"
+                            app:strokeColor="@color/surface_container"
+                            app:strokeWidth="1dp"
                             app:icon="@drawable/ic_logout"
                             app:iconTint="@color/error"
                             app:iconGravity="textStart"
-                            app:cornerRadius="10dp"
+                            app:cornerRadius="12dp"
                             android:contentDescription="Keluar Akun" />
+                    </LinearLayout>
+
+                    <!-- Dedicated Badges Row: Wilayah & Jenjang (Never squeezed!) -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="12dp"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
+
+                        <!-- Wilayah Badge -->
+                        <TextView
+                            android:id="@+id/tvWilayahBadge"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:background="@drawable/bg_badge_marian"
+                            android:paddingHorizontal="12dp"
+                            android:paddingVertical="5dp"
+                            android:text="Paroki Purbowardayan"
+                            android:textColor="@color/on_primary_fixed"
+                            android:textSize="11sp"
+                            android:textStyle="bold"
+                            android:maxLines="1"
+                            android:ellipsize="end" />
+
+                        <!-- Jenjang Badge -->
+                        <TextView
+                            android:id="@+id/tvJenjangBadge"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="8dp"
+                            android:background="@drawable/bg_badge_gray"
+                            android:paddingHorizontal="10dp"
+                            android:paddingVertical="5dp"
+                            android:text="Jenjang SMP"
+                            android:textColor="@color/on_surface_variant"
+                            android:textSize="11sp"
+                            android:textStyle="bold" />
                     </LinearLayout>
 
                     <!-- Headline Greeting matching Web -->
@@ -139,7 +172,7 @@
                         android:id="@+id/tvGreeting"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="14dp"
+                        android:layout_marginTop="12dp"
                         android:text="Berkah Dalem, Misdinar!"
                         android:textColor="@color/primary"
                         android:textSize="22sp"
@@ -149,7 +182,7 @@
                         android:id="@+id/tvJenjangWilayah"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="3dp"
+                        android:layout_marginTop="4dp"
                         android:text="Selamat melayani altar Tuhan dengan penuh sukacita, ketulusan doa, dan keheningan hati di Paroki SPMR Purbowardayan."
                         android:textColor="@color/on_surface_variant"
                         android:textSize="12sp"
@@ -159,38 +192,43 @@
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="12dp"
+                        android:layout_marginTop="14dp"
+                        android:gravity="center_vertical"
                         android:orientation="horizontal">
 
                         <com.google.android.material.button.MaterialButton
                             android:id="@+id/btnEditProfile"
-                            style="@style/Widget.Material3.Button.TonalButton"
+                            style="@style/Widget.Material3.Button.OutlinedButton"
                             android:layout_width="wrap_content"
-                            android:layout_height="38dp"
+                            android:layout_height="40dp"
                             android:text="Edit Data Diri"
-                            android:textSize="11sp"
+                            android:textSize="12sp"
                             android:textStyle="bold"
                             android:textColor="@color/primary"
+                            android:backgroundTint="@color/surface_container_low"
+                            app:strokeColor="@color/surface_container_high"
+                            app:strokeWidth="1dp"
                             app:icon="@drawable/ic_person"
                             app:iconTint="@color/primary"
                             app:iconSize="16dp"
-                            app:cornerRadius="10dp" />
+                            app:cornerRadius="12dp" />
 
                         <!-- Pengurus Switch Button (visible if user is pengurus) -->
                         <com.google.android.material.button.MaterialButton
                             android:id="@+id/btnSwitchToPengurus"
-                            style="@style/Widget.Material3.Button.TonalButton"
+                            style="@style/Widget.Material3.Button"
                             android:layout_width="wrap_content"
-                            android:layout_height="38dp"
+                            android:layout_height="40dp"
                             android:layout_marginStart="8dp"
                             android:text="Panel Pengurus"
-                            android:textSize="11sp"
+                            android:textSize="12sp"
                             android:textStyle="bold"
-                            android:textColor="@color/secondary"
+                            android:textColor="@color/on_primary"
+                            android:backgroundTint="@color/primary"
                             app:icon="@drawable/ic_admin"
-                            app:iconTint="@color/secondary"
+                            app:iconTint="@color/on_primary"
                             app:iconSize="16dp"
-                            app:cornerRadius="10dp"
+                            app:cornerRadius="12dp"
                             android:visibility="gone" />
                     </LinearLayout>
 
