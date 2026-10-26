@@ -62,6 +62,9 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({ profile 
     }
   }
 
+  const knownNotificationIds = useRef<Set<string>>(new Set())
+  const isInitialLoad = useRef(true)
+
   // Load existing notifications
   const loadNotifications = async () => {
     try {
@@ -71,6 +74,23 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({ profile 
         setNotifications(data.notifications)
         const unread = data.notifications.filter((n: any) => n.type === 'reminder').length
         setUnreadCount(unread)
+
+        // Check for new reminders arrived since last poll
+        if (!isInitialLoad.current) {
+          for (const item of data.notifications) {
+            if (item.type === 'reminder' && !knownNotificationIds.current.has(item.id)) {
+              triggerInAppNotification(item)
+              break
+            }
+          }
+        } else {
+          isInitialLoad.current = false
+        }
+
+        // Register all current IDs
+        data.notifications.forEach((item: any) => {
+          knownNotificationIds.current.add(item.id)
+        })
       }
     } catch {
       // silent
@@ -97,25 +117,34 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({ profile 
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
-  // Listen to Supabase Realtime for instant notification triggers
+  // Listen to Supabase Realtime for instant notification triggers + 5s polling fallback
   useEffect(() => {
     loadNotifications()
 
+    // 5-second active polling fallback to guarantee real-time delivery even if WebSockets are throttled
+    const pollInterval = setInterval(() => {
+      loadNotifications()
+    }, 5000)
+
     const supabase = createClient()
 
-    // 1. Listen to broadcast on 'reminders-broadcast'
+    // 1. Listen to broadcast on 'reminders-broadcast' (matched with server channel)
     const broadcastChannel = supabase
-      .channel('reminders-broadcast-client')
+      .channel('reminders-broadcast')
       .on('broadcast', { event: 'reminder_alert' }, (event) => {
         const payload = event.payload
         if (profile && payload && payload.user_id === profile.id) {
-          triggerInAppNotification({
-            id: `reminder-${payload.booking_id || Date.now()}`,
-            booking_id: payload.booking_id,
-            type: 'reminder',
-            title: payload.title || '🔔 Pengingat Tugas Misdinar!',
-            message: payload.message || 'Pengurus mengingatkan jadwal tugas misa Anda.',
-          })
+          const notifId = `reminder-${payload.booking_id || Date.now()}`
+          if (!knownNotificationIds.current.has(notifId)) {
+            knownNotificationIds.current.add(notifId)
+            triggerInAppNotification({
+              id: notifId,
+              booking_id: payload.booking_id,
+              type: 'reminder',
+              title: payload.title || '🔔 Pengingat Tugas Misdinar!',
+              message: payload.message || 'Pengurus mengingatkan jadwal tugas misa Anda.',
+            })
+          }
         }
       })
       .subscribe()
@@ -129,19 +158,24 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({ profile 
         (payload) => {
           const newBooking = payload.new as any
           if (profile && newBooking.user_id === profile.id && newBooking.wa_reminder_sent) {
-            triggerInAppNotification({
-              id: `reminder-${newBooking.id}`,
-              booking_id: newBooking.id,
-              type: 'reminder',
-              title: '🔔 Pengingat Tugas Misdinar!',
-              message: 'Pengurus sakristi baru saja mengirimkan pengingat tugas misa Anda. Harap hadir H-30 menit.',
-            })
+            const notifId = `reminder-${newBooking.id}`
+            if (!knownNotificationIds.current.has(notifId)) {
+              knownNotificationIds.current.add(notifId)
+              triggerInAppNotification({
+                id: notifId,
+                booking_id: newBooking.id,
+                type: 'reminder',
+                title: '🔔 Pengingat Tugas Misdinar!',
+                message: 'Pengurus sakristi baru saja mengirimkan pengingat tugas misa Anda. Harap hadir H-30 menit.',
+              })
+            }
           }
         }
       )
       .subscribe()
 
     return () => {
+      clearInterval(pollInterval)
       supabase.removeChannel(broadcastChannel)
       supabase.removeChannel(bookingsChannel)
     }

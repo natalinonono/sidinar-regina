@@ -51,20 +51,33 @@ export async function POST(request: Request, context: RouteContext) {
     // 4. Broadcast via Supabase Realtime agar web dan handphone otomatis menerima notifikasi
     try {
       const channel = adminSupabase.channel('reminders-broadcast')
-      await channel.send({
-        type: 'broadcast',
-        event: 'reminder_alert',
-        payload: {
-          booking_id: booking.id,
-          user_id: booking.user_id,
-          title: notifTitle,
-          message: notifBody,
-          tanggal: booking.schedule?.tanggal_misa,
-          jam_mulai: booking.schedule?.jam_mulai,
-          kategori: booking.schedule?.kategori,
-          posisi_tugas: booking.posisi_tugas,
-          timestamp: new Date().toISOString(),
-        },
+      await new Promise<void>((resolve) => {
+        channel.subscribe(async (status) => {
+          if (status === 'SUBSCRIBED') {
+            await channel.send({
+              type: 'broadcast',
+              event: 'reminder_alert',
+              payload: {
+                booking_id: booking.id,
+                user_id: booking.user_id,
+                title: notifTitle,
+                message: notifBody,
+                tanggal: booking.schedule?.tanggal_misa,
+                jam_mulai: booking.schedule?.jam_mulai,
+                kategori: booking.schedule?.kategori,
+                posisi_tugas: booking.posisi_tugas,
+                timestamp: new Date().toISOString(),
+              },
+            })
+            adminSupabase.removeChannel(channel)
+            resolve()
+          } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+            adminSupabase.removeChannel(channel)
+            resolve()
+          }
+        })
+        // Safety timeout
+        setTimeout(() => resolve(), 1200)
       })
     } catch (broadcastErr) {
       console.warn('Realtime broadcast warning:', broadcastErr)

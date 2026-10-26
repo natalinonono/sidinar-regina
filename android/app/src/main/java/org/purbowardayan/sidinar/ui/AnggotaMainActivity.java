@@ -2,6 +2,8 @@ package org.purbowardayan.sidinar.ui;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.text.TextUtils;
@@ -55,6 +57,17 @@ public class AnggotaMainActivity extends AppCompatActivity implements ScheduleAd
     private Booking myUpcomingBooking = null;
     private String selectedFilter = "all"; // "all" | "mingguan" | "harian"
 
+    // Auto-sync real-time loop (runs every 5s while in foreground)
+    private final Handler autoSyncHandler = new Handler(Looper.getMainLooper());
+    private static final long AUTO_SYNC_INTERVAL_MS = 5000;
+    private final Runnable autoSyncRunnable = new Runnable() {
+        @Override
+        public void run() {
+            syncDataSilently();
+            autoSyncHandler.postDelayed(this, AUTO_SYNC_INTERVAL_MS);
+        }
+    };
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -84,27 +97,17 @@ public class AnggotaMainActivity extends AppCompatActivity implements ScheduleAd
         // Cek update aplikasi secara otomatis saat membuka aplikasi
         AppUpdateManager.checkForUpdate(this, false);
     }
-
-    private final android.os.Handler reminderHandler = new android.os.Handler(android.os.Looper.getMainLooper());
-    private final Runnable reminderCheckerRunnable = new Runnable() {
-        @Override
-        public void run() {
-            loadBookings();
-            reminderHandler.postDelayed(this, 12000);
-        }
-    };
-
     @Override
     protected void onResume() {
         super.onResume();
         loadAllData();
-        reminderHandler.postDelayed(reminderCheckerRunnable, 12000);
+        startAutoSync();
     }
 
     @Override
     protected void onPause() {
         super.onPause();
-        reminderHandler.removeCallbacks(reminderCheckerRunnable);
+        stopAutoSync();
     }
 
     private void setupUI() {
@@ -279,6 +282,21 @@ public class AnggotaMainActivity extends AppCompatActivity implements ScheduleAd
         loadLatestProfile();
         loadBookings();
         loadSchedules();
+        loadAnnouncements();
+    }
+
+    private void startAutoSync() {
+        stopAutoSync();
+        autoSyncHandler.postDelayed(autoSyncRunnable, AUTO_SYNC_INTERVAL_MS);
+    }
+
+    private void stopAutoSync() {
+        autoSyncHandler.removeCallbacks(autoSyncRunnable);
+    }
+
+    private void syncDataSilently() {
+        if (!sessionManager.isLoggedIn()) return;
+        loadBookings();
         loadAnnouncements();
     }
 

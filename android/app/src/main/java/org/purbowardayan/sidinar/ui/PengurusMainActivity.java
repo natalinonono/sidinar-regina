@@ -2,6 +2,8 @@ package org.purbowardayan.sidinar.ui;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -64,6 +66,21 @@ public class PengurusMainActivity extends AppCompatActivity implements
     // 0 = Announcements, 1 = Members, 2 = Schedules, 3 = Presensi
     private int currentTab = 0;
     private String memberFilter = "pending"; // "pending" | "aktif" | "semua"
+
+    // Real-time auto-sync loop (every 5s while in foreground)
+    private final Handler autoSyncHandler = new Handler(Looper.getMainLooper());
+    private static final long AUTO_SYNC_INTERVAL_MS = 5000;
+    private final Runnable autoSyncRunnable = new Runnable() {
+        @Override
+        public void run() {
+            if (sessionManager.isLoggedIn() && sessionManager.isPengurus()) {
+                loadBookings();
+                loadMembers();
+                loadAnnouncements();
+            }
+            autoSyncHandler.postDelayed(this, AUTO_SYNC_INTERVAL_MS);
+        }
+    };
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -252,6 +269,28 @@ public class PengurusMainActivity extends AppCompatActivity implements
         loadMembers();
         loadBookings();
         loadSchedules();
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        loadAllData();
+        startAutoSync();
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        stopAutoSync();
+    }
+
+    private void startAutoSync() {
+        stopAutoSync();
+        autoSyncHandler.postDelayed(autoSyncRunnable, AUTO_SYNC_INTERVAL_MS);
+    }
+
+    private void stopAutoSync() {
+        autoSyncHandler.removeCallbacks(autoSyncRunnable);
     }
 
     private void loadAnnouncements() {
