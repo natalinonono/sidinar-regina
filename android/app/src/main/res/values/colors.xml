@@ -1,21 +1,64 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <!-- Brand Primary (Marian Blue) -->
     <color name="primary">#00236F</color>
     <color name="primary_container">#1E3A8A</color>
+    <color name="primary_fixed">#DCE1FF</color>
+    <color name="primary_fixed_dim">#B6C4FF</color>
     <color name="on_primary">#FFFFFF</color>
+    <color name="on_primary_container">#90A8FF</color>
+    <color name="on_primary_fixed">#00164E</color>
+
+    <!-- Brand Secondary (Gold Accent) -->
     <color name="secondary">#904D00</color>
-    <color name="secondary_container">#FFDCC2</color>
+    <color name="secondary_container">#FE932C</color>
+    <color name="secondary_fixed">#FFDCC3</color>
+    <color name="secondary_fixed_dim">#FFB77D</color>
     <color name="on_secondary">#FFFFFF</color>
-    <color name="background">#F8F9FF</color>
+    <color name="on_secondary_container">#663500</color>
+
+    <!-- Surfaces & Neutrals -->
     <color name="surface">#FFFFFF</color>
-    <color name="surface_variant">#F0F2F9</color>
-    <color name="outline">#74777F</color>
-    <color name="text_primary">#1A1C20</color>
-    <color name="text_secondary">#44474E</color>
-    <color name="success">#059669</color>
+    <color name="surface_container_lowest">#FFFFFF</color>
+    <color name="surface_container_low">#EFF4FF</color>
+    <color name="surface_container">#E5EEFF</color>
+    <color name="surface_container_high">#DCE9FF</color>
+    <color name="surface_container_highest">#D3E4FE</color>
+    <color name="surface_dim">#CBDBF5</color>
+    <color name="background">#F8F9FF</color>
+    <color name="on_background">#0B1C30</color>
+
+    <!-- Typography & Outlines -->
+    <color name="on_surface">#0B1C30</color>
+    <color name="on_surface_variant">#444651</color>
+    <color name="outline">#757682</color>
+    <color name="outline_variant">#C5C5D3</color>
+    <color name="text_primary">#0B1C30</color>
+    <color name="text_secondary">#444651</color>
+    <color name="surface_variant">#EFF4FF</color>
+
+    <!-- Semantic Indicators -->
+    <color name="success">#047857</color>
     <color name="success_container">#D1FAE5</color>
-    <color name="warning">#D97706</color>
+    <color name="warning">#B45309</color>
     <color name="warning_container">#FEF3C7</color>
-    <color name="error">#DC2626</color>
-    <color name="error_container">#FEE2E2</color>
+    <color name="error">#BA1A1A</color>
+    <color name="error_container">#FFDAD6</color>
+    <color name="on_error">#FFFFFF</color>
+    <color name="on_error_container">#93000A</color>
+
+    <!-- Tailwind Badges -->
+    <color name="emerald_50">#ECFDF5</color>
+    <color name="emerald_100">#D1FAE5</color>
+    <color name="emerald_500">#10B981</color>
+    <color name="emerald_700">#047857</color>
+    <color name="emerald_800">#065F46</color>
+
+    <color name="amber_50">#FFFBEB</color>
+    <color name="amber_100">#FEF3C7</color>
+    <color name="amber_400">#FBBF24</color>
+    <color name="amber_700">#B45309</color>
+    <color name="amber_800">#92400E</color>
+
+    <color name="whatsapp_green">#25D366</color>
 </resources>

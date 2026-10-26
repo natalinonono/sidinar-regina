@@ -59,6 +59,14 @@ public class LoginActivity extends AppCompatActivity {
                     "Halo Pengurus Misdinar SPMR Purbowardayan, saya ingin menanyakan perihal akun saya."
             );
         });
+
+        binding.btnForgotPassword.setOnClickListener(v -> {
+            ApiClient.openWhatsApp(
+                    this,
+                    ApiClient.WA_ADMIN,
+                    "Halo Admin SiDinar Regina, saya butuh bantuan untuk reset kata sandi akun misdinar saya."
+            );
+        });
     }
 
     private void performLogin() {

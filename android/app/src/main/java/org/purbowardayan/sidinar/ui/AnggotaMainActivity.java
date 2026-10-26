@@ -70,20 +70,25 @@ public class AnggotaMainActivity extends AppCompatActivity implements ScheduleAd
     private void setupUI() {
         Profile profile = sessionManager.getProfile();
         if (profile != null) {
-            binding.tvGreeting.setText("Halo, " + (profile.getNamaPanggilan() != null ? profile.getNamaPanggilan() : "Misdinar") + "!");
-            String sub = (profile.getJenjang() != null ? profile.getJenjang() + " • " : "") +
-                    (profile.getAsalWilayahTeks() != null ? profile.getAsalWilayahTeks() : "Paroki Purbowardayan");
-            binding.tvJenjangWilayah.setText(sub);
+            String nama = profile.getNamaPanggilan() != null && !profile.getNamaPanggilan().isEmpty()
+                    ? profile.getNamaPanggilan()
+                    : (profile.getNamaLengkap() != null ? profile.getNamaLengkap() : "Misdinar");
+            binding.tvGreeting.setText("Berkah Dalem, " + nama + "!");
+
+            String wilayah = profile.getAsalWilayahTeks() != null && !profile.getAsalWilayahTeks().isEmpty()
+                    ? profile.getAsalWilayahTeks()
+                    : "Paroki Purbowardayan";
+            binding.tvWilayahBadge.setText(wilayah);
 
             if (profile.isAktif()) {
-                binding.tvStatusBadge.setText("Akun Aktif");
-                binding.tvStatusBadge.setBackgroundResource(R.drawable.bg_pill_success);
-                binding.tvStatusBadge.setTextColor(androidx.core.content.ContextCompat.getColor(this, R.color.success));
+                binding.tvStatusBadge.setText("Anggota Aktif");
+                binding.tvStatusBadge.setBackgroundResource(R.drawable.bg_badge_emerald);
+                binding.tvStatusBadge.setTextColor(androidx.core.content.ContextCompat.getColor(this, R.color.emerald_800));
                 binding.tvPendingNotice.setVisibility(View.GONE);
             } else {
                 binding.tvStatusBadge.setText("Menunggu Persetujuan");
-                binding.tvStatusBadge.setBackgroundResource(R.drawable.bg_pill_warning);
-                binding.tvStatusBadge.setTextColor(androidx.core.content.ContextCompat.getColor(this, R.color.warning));
+                binding.tvStatusBadge.setBackgroundResource(R.drawable.bg_badge_amber);
+                binding.tvStatusBadge.setTextColor(androidx.core.content.ContextCompat.getColor(this, R.color.amber_800));
                 binding.tvPendingNotice.setVisibility(View.VISIBLE);
             }
 
@@ -224,11 +229,42 @@ public class AnggotaMainActivity extends AppCompatActivity implements ScheduleAd
                     // Find current user's active booking
                     String myId = sessionManager.getUserId();
                     myUpcomingBooking = null;
+                    boolean hasHarian = false;
+                    boolean hasMingguan = false;
+
                     for (Booking b : allBookings) {
                         if (myId != null && myId.equals(b.getUserId())) {
-                            myUpcomingBooking = b;
-                            break;
+                            if (myUpcomingBooking == null) {
+                                myUpcomingBooking = b;
+                            }
+                            if (b.getSchedule() != null) {
+                                String kat = b.getSchedule().getKategori();
+                                if ("harian".equalsIgnoreCase(kat)) hasHarian = true;
+                                if ("mingguan".equalsIgnoreCase(kat)) hasMingguan = true;
+                            }
                         }
+                    }
+
+                    // Update Misa Harian tracker badge
+                    if (hasHarian) {
+                        binding.tvQuotaHarianStatus.setText("1 / 1 (Terpakai)");
+                        binding.tvQuotaHarianStatus.setBackgroundResource(R.drawable.bg_badge_amber);
+                        binding.tvQuotaHarianStatus.setTextColor(androidx.core.content.ContextCompat.getColor(AnggotaMainActivity.this, R.color.amber_800));
+                    } else {
+                        binding.tvQuotaHarianStatus.setText("0 / 1 (Tersedia)");
+                        binding.tvQuotaHarianStatus.setBackgroundResource(R.drawable.bg_badge_emerald);
+                        binding.tvQuotaHarianStatus.setTextColor(androidx.core.content.ContextCompat.getColor(AnggotaMainActivity.this, R.color.emerald_800));
+                    }
+
+                    // Update Misa Mingguan tracker badge
+                    if (hasMingguan) {
+                        binding.tvQuotaMingguanStatus.setText("1 / 1 (Terpakai)");
+                        binding.tvQuotaMingguanStatus.setBackgroundResource(R.drawable.bg_badge_amber);
+                        binding.tvQuotaMingguanStatus.setTextColor(androidx.core.content.ContextCompat.getColor(AnggotaMainActivity.this, R.color.amber_800));
+                    } else {
+                        binding.tvQuotaMingguanStatus.setText("0 / 1 (Tersedia)");
+                        binding.tvQuotaMingguanStatus.setBackgroundResource(R.drawable.bg_badge_emerald);
+                        binding.tvQuotaMingguanStatus.setTextColor(androidx.core.content.ContextCompat.getColor(AnggotaMainActivity.this, R.color.emerald_800));
                     }
 
                     updateMyBookingCard();
@@ -246,7 +282,19 @@ public class AnggotaMainActivity extends AppCompatActivity implements ScheduleAd
             binding.cardMyBooking.setVisibility(View.VISIBLE);
             binding.tvMyBookingTitle.setText(myUpcomingBooking.getSchedule().getJudulMisa());
             binding.tvMyBookingTime.setText(myUpcomingBooking.getSchedule().getTanggalMisa() + " • " + myUpcomingBooking.getSchedule().getFormattedTime());
-            binding.tvMyBookingStatus.setText(myUpcomingBooking.getStatusKehadiran());
+            String status = myUpcomingBooking.getStatusKehadiran() != null ? myUpcomingBooking.getStatusKehadiran() : "terdaftar";
+            binding.tvMyBookingStatus.setText(status);
+
+            if ("hadir".equalsIgnoreCase(status)) {
+                binding.tvMyBookingStatus.setBackgroundResource(R.drawable.bg_badge_emerald);
+                binding.tvMyBookingStatus.setTextColor(androidx.core.content.ContextCompat.getColor(this, R.color.emerald_800));
+            } else if ("terlambat".equalsIgnoreCase(status)) {
+                binding.tvMyBookingStatus.setBackgroundResource(R.drawable.bg_badge_amber);
+                binding.tvMyBookingStatus.setTextColor(androidx.core.content.ContextCompat.getColor(this, R.color.amber_800));
+            } else {
+                binding.tvMyBookingStatus.setBackgroundResource(R.drawable.bg_badge_emerald);
+                binding.tvMyBookingStatus.setTextColor(androidx.core.content.ContextCompat.getColor(this, R.color.emerald_800));
+            }
         } else {
             binding.cardMyBooking.setVisibility(View.GONE);
         }
@@ -294,6 +342,48 @@ public class AnggotaMainActivity extends AppCompatActivity implements ScheduleAd
     }
 
     private void applyScheduleFilter() {
+        // Update segmented switcher button states
+        int primaryColor = androidx.core.content.ContextCompat.getColor(this, R.color.primary);
+        int variantColor = androidx.core.content.ContextCompat.getColor(this, R.color.on_surface_variant);
+
+        if ("harian".equalsIgnoreCase(selectedFilter)) {
+            binding.chipHarian.setBackgroundResource(R.drawable.bg_segmented_selected);
+            binding.chipHarian.setTextColor(primaryColor);
+            binding.chipHarian.setTypeface(null, android.graphics.Typeface.BOLD);
+
+            binding.chipAll.setBackground(null);
+            binding.chipAll.setTextColor(variantColor);
+            binding.chipAll.setTypeface(null, android.graphics.Typeface.NORMAL);
+
+            binding.chipMingguan.setBackground(null);
+            binding.chipMingguan.setTextColor(variantColor);
+            binding.chipMingguan.setTypeface(null, android.graphics.Typeface.NORMAL);
+        } else if ("mingguan".equalsIgnoreCase(selectedFilter)) {
+            binding.chipMingguan.setBackgroundResource(R.drawable.bg_segmented_selected);
+            binding.chipMingguan.setTextColor(primaryColor);
+            binding.chipMingguan.setTypeface(null, android.graphics.Typeface.BOLD);
+
+            binding.chipAll.setBackground(null);
+            binding.chipAll.setTextColor(variantColor);
+            binding.chipAll.setTypeface(null, android.graphics.Typeface.NORMAL);
+
+            binding.chipHarian.setBackground(null);
+            binding.chipHarian.setTextColor(variantColor);
+            binding.chipHarian.setTypeface(null, android.graphics.Typeface.NORMAL);
+        } else {
+            binding.chipAll.setBackgroundResource(R.drawable.bg_segmented_selected);
+            binding.chipAll.setTextColor(primaryColor);
+            binding.chipAll.setTypeface(null, android.graphics.Typeface.BOLD);
+
+            binding.chipHarian.setBackground(null);
+            binding.chipHarian.setTextColor(variantColor);
+            binding.chipHarian.setTypeface(null, android.graphics.Typeface.NORMAL);
+
+            binding.chipMingguan.setBackground(null);
+            binding.chipMingguan.setTextColor(variantColor);
+            binding.chipMingguan.setTypeface(null, android.graphics.Typeface.NORMAL);
+        }
+
         List<MassSchedule> filtered = new ArrayList<>();
         for (MassSchedule s : allSchedules) {
             String kat = s.getKategori() != null ? s.getKategori() : "mingguan";

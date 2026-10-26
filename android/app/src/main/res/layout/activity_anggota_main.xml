@@ -13,304 +13,589 @@
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="vertical">
+            android:orientation="vertical"
+            android:paddingBottom="40dp">
 
-            <!-- Top Header Card -->
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:background="@drawable/bg_header_gradient"
-                android:orientation="vertical"
-                android:paddingHorizontal="20dp"
-                android:paddingTop="28dp"
-                android:paddingBottom="24dp">
-
-                <!-- Top Row: Greeting & Action Icons -->
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:gravity="center_vertical"
-                    android:orientation="horizontal">
-
-                    <LinearLayout
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:orientation="vertical">
-
-                        <TextView
-                            android:id="@+id/tvGreeting"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="Halo, Misdinar!"
-                            android:textColor="@color/on_primary"
-                            android:textSize="20sp"
-                            android:textStyle="bold" />
-
-                        <TextView
-                            android:id="@+id/tvJenjangWilayah"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="2dp"
-                            android:text="Paroki Purbowardayan"
-                            android:textColor="#CBD5E1"
-                            android:textSize="12sp" />
-                    </LinearLayout>
-
-                    <!-- QR Scanner Action -->
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/btnScanQr"
-                        style="@style/Widget.Material3.Button.IconButton"
-                        android:layout_width="44dp"
-                        android:layout_height="44dp"
-                        app:icon="@drawable/ic_qr_code"
-                        app:iconTint="@color/on_primary" />
-
-                    <!-- Logout Button -->
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/btnLogout"
-                        style="@style/Widget.Material3.Button.IconButton"
-                        android:layout_width="44dp"
-                        android:layout_height="44dp"
-                        app:icon="@drawable/ic_logout"
-                        app:iconTint="#FECACA" />
-                </LinearLayout>
-
-                <!-- Status & Mode Switch -->
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="16dp"
-                    android:gravity="center_vertical"
-                    android:orientation="horizontal">
-
-                    <TextView
-                        android:id="@+id/tvStatusBadge"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:background="@drawable/bg_pill_success"
-                        android:paddingHorizontal="12dp"
-                        android:paddingVertical="4dp"
-                        android:text="Akun Aktif"
-                        android:textColor="@color/success"
-                        android:textSize="11sp"
-                        android:textStyle="bold" />
-
-                    <View
-                        android:layout_width="0dp"
-                        android:layout_height="0dp"
-                        android:layout_weight="1" />
-
-                    <!-- Pengurus Switch Button (visible if user is pengurus) -->
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/btnSwitchToPengurus"
-                        style="@style/Widget.Material3.Button.TonalButton"
-                        android:layout_width="wrap_content"
-                        android:layout_height="36dp"
-                        android:text="Panel Pengurus"
-                        android:textSize="11sp"
-                        android:textColor="@color/on_primary"
-                        android:backgroundTint="#2563EB"
-                        android:visibility="gone" />
-                </LinearLayout>
-
-                <!-- Warning Notice if Pending -->
-                <TextView
-                    android:id="@+id/tvPendingNotice"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="12dp"
-                    android:background="@drawable/bg_pill_warning"
-                    android:paddingHorizontal="12dp"
-                    android:paddingVertical="8dp"
-                    android:text="Akun Anda sedang menunggu persetujuan (Approve) Pengurus. Anda dapat melihat jadwal, namun belum dapat memilih jadwal tugas."
-                    android:textColor="@color/warning"
-                    android:textSize="11sp"
-                    android:visibility="gone" />
-
-            </LinearLayout>
-
-            <!-- Upcoming Duty Section (if any) -->
+            <!-- 1. Header & Identity Section matching Web -->
             <com.google.android.material.card.MaterialCardView
-                android:id="@+id/cardMyBooking"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginHorizontal="16dp"
-                android:layout_marginTop="-16dp"
+                android:layout_marginTop="16dp"
                 android:layout_marginBottom="12dp"
-                app:cardCornerRadius="16dp"
-                app:cardElevation="4dp"
-                app:cardBackgroundColor="@color/surface"
-                app:strokeColor="#BFDBFE"
-                app:strokeWidth="1.5dp"
-                android:visibility="gone">
+                app:cardCornerRadius="24dp"
+                app:cardElevation="1dp"
+                app:strokeColor="@color/surface_container"
+                app:strokeWidth="1dp"
+                app:cardBackgroundColor="@color/surface_container_lowest">
 
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="vertical"
-                    android:padding="16dp">
+                    android:padding="20dp">
 
+                    <!-- Top Action Icons Row -->
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:gravity="center_vertical"
                         android:orientation="horizontal">
 
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="Tugas Terdaftar Anda"
-                            android:textColor="@color/primary"
-                            android:textSize="14sp"
-                            android:textStyle="bold" />
-
-                        <View
+                        <!-- Badges Row -->
+                        <LinearLayout
                             android:layout_width="0dp"
-                            android:layout_height="0dp"
-                            android:layout_weight="1" />
-
-                        <TextView
-                            android:id="@+id/tvMyBookingStatus"
-                            android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:background="@drawable/bg_pill_primary"
-                            android:paddingHorizontal="10dp"
-                            android:paddingVertical="3dp"
-                            android:text="Terdaftar"
-                            android:textColor="@color/on_primary"
-                            android:textSize="10sp"
-                            android:textStyle="bold" />
+                            android:layout_weight="1"
+                            android:gravity="center_vertical"
+                            android:orientation="horizontal">
+
+                            <!-- Status Badge -->
+                            <TextView
+                                android:id="@+id/tvStatusBadge"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:background="@drawable/bg_badge_emerald"
+                                android:paddingHorizontal="10dp"
+                                android:paddingVertical="4dp"
+                                android:text="Anggota Aktif"
+                                android:textColor="@color/emerald_800"
+                                android:textSize="11sp"
+                                android:textStyle="bold" />
+
+                            <!-- Wilayah Badge -->
+                            <TextView
+                                android:id="@+id/tvWilayahBadge"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginStart="6dp"
+                                android:background="@drawable/bg_badge_marian"
+                                android:paddingHorizontal="10dp"
+                                android:paddingVertical="4dp"
+                                android:text="Purbowardayan"
+                                android:textColor="@color/on_primary_fixed"
+                                android:textSize="11sp"
+                                android:textStyle="bold" />
+                        </LinearLayout>
+
+                        <!-- QR Scanner Action -->
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnScanQr"
+                            style="@style/Widget.Material3.Button.TonalButton"
+                            android:layout_width="40dp"
+                            android:layout_height="40dp"
+                            android:padding="0dp"
+                            app:icon="@drawable/ic_qr_code"
+                            app:iconTint="@color/primary"
+                            app:iconGravity="textStart"
+                            app:cornerRadius="10dp"
+                            android:contentDescription="Presensi Sakristi" />
+
+                        <!-- Logout Button -->
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnLogout"
+                            style="@style/Widget.Material3.Button.TonalButton"
+                            android:layout_width="40dp"
+                            android:layout_height="40dp"
+                            android:layout_marginStart="8dp"
+                            android:padding="0dp"
+                            app:icon="@drawable/ic_logout"
+                            app:iconTint="@color/error"
+                            app:iconGravity="textStart"
+                            app:cornerRadius="10dp"
+                            android:contentDescription="Keluar Akun" />
                     </LinearLayout>
 
+                    <!-- Headline Greeting matching Web -->
                     <TextView
-                        android:id="@+id/tvMyBookingTitle"
-                        android:layout_width="match_parent"
+                        android:id="@+id/tvGreeting"
+                        android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="8dp"
-                        android:text="Misa Mingguan Sabtu Sore"
-                        android:textColor="@color/text_primary"
-                        android:textSize="16sp"
+                        android:layout_marginTop="14dp"
+                        android:text="Berkah Dalem, Misdinar!"
+                        android:textColor="@color/primary"
+                        android:textSize="22sp"
                         android:textStyle="bold" />
 
                     <TextView
-                        android:id="@+id/tvMyBookingTime"
-                        android:layout_width="match_parent"
+                        android:id="@+id/tvJenjangWilayah"
+                        android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="4dp"
-                        android:text="Sabtu, 31 Okt 2026 • 17.00 WIB"
-                        android:textColor="@color/text_secondary"
-                        android:textSize="12sp" />
+                        android:layout_marginTop="3dp"
+                        android:text="Selamat melayani altar Tuhan dengan penuh sukacita, ketulusan doa, dan keheningan hati di Paroki SPMR Purbowardayan."
+                        android:textColor="@color/on_surface_variant"
+                        android:textSize="12sp"
+                        android:lineSpacingExtra="2dp" />
 
-                    <TextView
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="6dp"
-                        android:text="Peran: Petugas Altar • Harap hadir 30 menit sebelum misa dimulai."
-                        android:textColor="@color/secondary"
-                        android:textSize="11sp" />
-
-                    <!-- Action buttons to Edit / Reschedule or Cancel booking -->
+                    <!-- Pending Notice Banner if unapproved -->
                     <LinearLayout
+                        android:id="@+id/tvPendingNotice"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="12dp"
-                        android:orientation="horizontal">
+                        android:background="@drawable/bg_badge_amber"
+                        android:gravity="center_vertical"
+                        android:padding="12dp"
+                        android:orientation="horizontal"
+                        android:visibility="gone">
 
-                        <com.google.android.material.button.MaterialButton
-                            android:id="@+id/btnMyBookingEdit"
-                            style="@style/Widget.Material3.Button.OutlinedButton"
-                            android:layout_width="0dp"
-                            android:layout_height="40dp"
-                            android:layout_weight="1"
-                            android:layout_marginEnd="6dp"
-                            android:text="Ubah Jadwal"
-                            android:textSize="11sp"
-                            android:textColor="@color/primary"
-                            app:cornerRadius="8dp" />
+                        <ImageView
+                            android:layout_width="18dp"
+                            android:layout_height="18dp"
+                            android:src="@drawable/ic_admin"
+                            app:tint="@color/amber_800" />
 
-                        <com.google.android.material.button.MaterialButton
-                            android:id="@+id/btnMyBookingCancel"
-                            style="@style/Widget.Material3.Button.OutlinedButton"
+                        <TextView
                             android:layout_width="0dp"
-                            android:layout_height="40dp"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="8dp"
                             android:layout_weight="1"
-                            android:layout_marginStart="6dp"
-                            android:text="Batalkan Tugas"
-                            android:textSize="11sp"
-                            android:textColor="@color/error"
-                            app:strokeColor="@color/error"
-                            app:cornerRadius="8dp" />
+                            android:text="Akun Anda Dalam Tahap Verifikasi Pengurus. Anda dapat melihat jadwal, namun belum dapat memilih jadwal tugas."
+                            android:textColor="@color/amber_800"
+                            android:textSize="11sp" />
                     </LinearLayout>
 
-                    <!-- Add to System/Google Calendar Reminder Button -->
+                    <!-- Pengurus Switch Button (visible if user is pengurus) -->
                     <com.google.android.material.button.MaterialButton
-                        android:id="@+id/btnMyBookingCalendar"
+                        android:id="@+id/btnSwitchToPengurus"
                         style="@style/Widget.Material3.Button.TonalButton"
-                        android:layout_width="match_parent"
-                        android:layout_height="40dp"
-                        android:layout_marginTop="8dp"
-                        android:text="Pasang Pengingat Kalender (Google Calendar)"
+                        android:layout_width="wrap_content"
+                        android:layout_height="38dp"
+                        android:layout_marginTop="12dp"
+                        android:text="Beralih ke Panel Pengurus"
                         android:textSize="11sp"
-                        app:icon="@drawable/ic_calendar"
-                        app:cornerRadius="8dp" />
+                        android:textStyle="bold"
+                        android:textColor="@color/primary"
+                        app:icon="@drawable/ic_admin"
+                        app:iconTint="@color/primary"
+                        app:iconSize="16dp"
+                        app:cornerRadius="10dp"
+                        android:visibility="gone" />
+
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
-            <!-- Jadwal Misa Header & Filter Chips -->
+            <!-- 2. Priority Hero: Tugas Pelayanan Altar Mendatang (matching Web exactly) -->
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/cardMyBooking"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginHorizontal="16dp"
+                android:layout_marginTop="4dp"
+                android:layout_marginBottom="14dp"
+                app:cardCornerRadius="24dp"
+                app:cardElevation="4dp"
+                app:strokeWidth="0dp"
+                app:cardBackgroundColor="@color/primary"
+                android:visibility="gone">
+
+                <FrameLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content">
+
+                    <!-- Top 4dp Gold Accent Strip -->
+                    <View
+                        android:layout_width="match_parent"
+                        android:layout_height="4dp"
+                        android:background="@drawable/bg_gold_accent_strip" />
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:background="@drawable/bg_marian_hero"
+                        android:orientation="vertical"
+                        android:padding="20dp">
+
+                        <!-- Star & Badge Header -->
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:gravity="center_vertical"
+                            android:orientation="horizontal">
+
+                            <ImageView
+                                android:layout_width="16dp"
+                                android:layout_height="16dp"
+                                android:src="@drawable/ic_star"
+                                app:tint="@color/secondary_fixed" />
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginStart="6dp"
+                                android:text="TUGAS PELAYANAN ALTAR MENDATANG"
+                                android:textColor="@color/secondary_fixed"
+                                android:textSize="11sp"
+                                android:textStyle="bold"
+                                android:letterSpacing="0.05" />
+
+                            <View
+                                android:layout_width="0dp"
+                                android:layout_height="0dp"
+                                android:layout_weight="1" />
+
+                            <!-- Status Presensi Pill -->
+                            <TextView
+                                android:id="@+id/tvMyBookingStatus"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:background="@drawable/bg_badge_emerald"
+                                android:paddingHorizontal="10dp"
+                                android:paddingVertical="3dp"
+                                android:text="terdaftar"
+                                android:textColor="@color/emerald_800"
+                                android:textSize="10sp"
+                                android:textStyle="bold" />
+                        </LinearLayout>
+
+                        <!-- Title -->
+                        <TextView
+                            android:id="@+id/tvMyBookingTitle"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="10dp"
+                            android:text="Misa Mingguan Sabtu Sore"
+                            android:textColor="@color/on_primary"
+                            android:textSize="20sp"
+                            android:textStyle="bold" />
+
+                        <!-- Date & Time Row -->
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="6dp"
+                            android:gravity="center_vertical"
+                            android:orientation="horizontal">
+
+                            <ImageView
+                                android:layout_width="16dp"
+                                android:layout_height="16dp"
+                                android:src="@drawable/ic_calendar"
+                                app:tint="@color/secondary_fixed" />
+
+                            <TextView
+                                android:id="@+id/tvMyBookingTime"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginStart="6dp"
+                                android:text="Sabtu, 31 Okt 2026 • 17.00 WIB"
+                                android:textColor="#E0E7FF"
+                                android:textSize="12sp" />
+                        </LinearLayout>
+
+                        <!-- Role chip & Calendar Quick Sync -->
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="10dp"
+                            android:gravity="center_vertical"
+                            android:orientation="horizontal">
+
+                            <!-- Petugas Altar Pill -->
+                            <LinearLayout
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:background="@drawable/bg_segmented_selected"
+                                android:backgroundTint="#26FFFFFF"
+                                android:paddingHorizontal="10dp"
+                                android:paddingVertical="4dp">
+
+                                <TextView
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="Petugas Altar"
+                                    android:textColor="@color/on_primary"
+                                    android:textSize="11sp"
+                                    android:textStyle="bold" />
+                            </LinearLayout>
+
+                            <!-- Pasang Alarm Google Calendar -->
+                            <com.google.android.material.button.MaterialButton
+                                android:id="@+id/btnMyBookingCalendar"
+                                style="@style/Widget.Material3.Button.TonalButton"
+                                android:layout_width="wrap_content"
+                                android:layout_height="34dp"
+                                android:layout_marginStart="8dp"
+                                android:text="Pasang Alarm Kalender"
+                                android:textSize="10sp"
+                                android:textStyle="bold"
+                                android:textColor="@color/on_secondary_container"
+                                android:backgroundTint="@color/secondary_container"
+                                app:icon="@drawable/ic_notifications"
+                                app:iconTint="@color/on_secondary_container"
+                                app:iconSize="14dp"
+                                app:cornerRadius="8dp" />
+                        </LinearLayout>
+
+                        <!-- Action Buttons: Ubah / Batal -->
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="14dp"
+                            android:orientation="horizontal">
+
+                            <com.google.android.material.button.MaterialButton
+                                android:id="@+id/btnMyBookingEdit"
+                                style="@style/Widget.Material3.Button.TonalButton"
+                                android:layout_width="0dp"
+                                android:layout_height="42dp"
+                                android:layout_weight="1"
+                                android:layout_marginEnd="6dp"
+                                android:text="Ubah Jadwal"
+                                android:textSize="12sp"
+                                android:textStyle="bold"
+                                android:textColor="@color/on_primary"
+                                android:backgroundTint="#33FFFFFF"
+                                app:icon="@drawable/ic_edit"
+                                app:iconTint="@color/on_primary"
+                                app:iconSize="16dp"
+                                app:cornerRadius="10dp" />
+
+                            <com.google.android.material.button.MaterialButton
+                                android:id="@+id/btnMyBookingCancel"
+                                style="@style/Widget.Material3.Button.OutlinedButton"
+                                android:layout_width="0dp"
+                                android:layout_height="42dp"
+                                android:layout_weight="1"
+                                android:layout_marginStart="6dp"
+                                android:text="Batalkan Tugas"
+                                android:textSize="12sp"
+                                android:textStyle="bold"
+                                android:textColor="#FECACA"
+                                app:strokeColor="#FECACA"
+                                app:cornerRadius="10dp" />
+                        </LinearLayout>
+
+                    </LinearLayout>
+                </FrameLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- 3. Weekly Quota & Allocation Tracker (2 Cards Grid matching Web) -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginHorizontal="16dp"
-                android:layout_marginTop="12dp"
+                android:layout_marginBottom="16dp"
+                android:orientation="vertical">
+
+                <!-- Card 1: Misa Harian Tracker -->
+                <com.google.android.material.card.MaterialCardView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    app:cardCornerRadius="18dp"
+                    app:cardElevation="1dp"
+                    app:strokeColor="@color/surface_container"
+                    app:strokeWidth="1dp"
+                    app:cardBackgroundColor="@color/surface_container_lowest">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal"
+                        android:padding="16dp">
+
+                        <com.google.android.material.card.MaterialCardView
+                            android:layout_width="42dp"
+                            android:layout_height="42dp"
+                            app:cardCornerRadius="12dp"
+                            app:cardElevation="0dp"
+                            app:cardBackgroundColor="@color/primary_fixed">
+
+                            <ImageView
+                                android:layout_width="match_parent"
+                                android:layout_height="match_parent"
+                                android:padding="9dp"
+                                android:src="@drawable/ic_sun"
+                                app:tint="@color/primary" />
+                        </com.google.android.material.card.MaterialCardView>
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="12dp"
+                            android:layout_weight="1"
+                            android:orientation="vertical">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Jatah Misa Harian (05.30 WIB)"
+                                android:textColor="@color/on_surface"
+                                android:textSize="12sp"
+                                android:textStyle="bold" />
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="2dp"
+                                android:text="Batas maksimal: 1x dalam sepekan"
+                                android:textColor="@color/on_surface_variant"
+                                android:textSize="11sp" />
+                        </LinearLayout>
+
+                        <TextView
+                            android:id="@+id/tvQuotaHarianStatus"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:background="@drawable/bg_badge_emerald"
+                            android:paddingHorizontal="10dp"
+                            android:paddingVertical="4dp"
+                            android:text="0 / 1 (Tersedia)"
+                            android:textColor="@color/emerald_800"
+                            android:textSize="11sp"
+                            android:textStyle="bold" />
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+
+                <!-- Card 2: Misa Mingguan Tracker -->
+                <com.google.android.material.card.MaterialCardView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="10dp"
+                    app:cardCornerRadius="18dp"
+                    app:cardElevation="1dp"
+                    app:strokeColor="@color/surface_container"
+                    app:strokeWidth="1dp"
+                    app:cardBackgroundColor="@color/surface_container_lowest">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal"
+                        android:padding="16dp">
+
+                        <com.google.android.material.card.MaterialCardView
+                            android:layout_width="42dp"
+                            android:layout_height="42dp"
+                            app:cardCornerRadius="12dp"
+                            app:cardElevation="0dp"
+                            app:cardBackgroundColor="@color/secondary_fixed">
+
+                            <ImageView
+                                android:layout_width="match_parent"
+                                android:layout_height="match_parent"
+                                android:padding="9dp"
+                                android:src="@drawable/ic_church"
+                                app:tint="@color/secondary" />
+                        </com.google.android.material.card.MaterialCardView>
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="12dp"
+                            android:layout_weight="1"
+                            android:orientation="vertical">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Jatah Misa Mingguan"
+                                android:textColor="@color/on_surface"
+                                android:textSize="12sp"
+                                android:textStyle="bold" />
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="2dp"
+                                android:text="Sabtu Sore &amp; Minggu (Batas 1x / pekan)"
+                                android:textColor="@color/on_surface_variant"
+                                android:textSize="11sp" />
+                        </LinearLayout>
+
+                        <TextView
+                            android:id="@+id/tvQuotaMingguanStatus"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:background="@drawable/bg_badge_emerald"
+                            android:paddingHorizontal="10dp"
+                            android:paddingVertical="4dp"
+                            android:text="0 / 1 (Tersedia)"
+                            android:textColor="@color/emerald_800"
+                            android:textSize="11sp"
+                            android:textStyle="bold" />
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+            </LinearLayout>
+
+            <!-- 4. Interactive Schedules Header & Segmented Switcher -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginHorizontal="16dp"
+                android:layout_marginTop="8dp"
                 android:orientation="vertical">
 
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Jadwal Pelayanan Altar"
-                    android:textColor="@color/text_primary"
-                    android:textSize="17sp"
-                    android:textStyle="bold" />
+                    android:text="SIKLUS PEKAN BERJALAN"
+                    android:textColor="@color/secondary"
+                    android:textSize="11sp"
+                    android:textStyle="bold"
+                    android:letterSpacing="0.05" />
 
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="2dp"
-                    android:text="Pilih perayaan misa yang sesuai untuk bertugas:"
-                    android:textColor="@color/text_secondary"
-                    android:textSize="12sp" />
+                    android:text="Pilihan Jadwal Misa &amp; Alokasi Tugas Altar"
+                    android:textColor="@color/primary"
+                    android:textSize="18sp"
+                    android:textStyle="bold" />
 
-                <!-- Filter Chips -->
-                <com.google.android.material.chip.ChipGroup
-                    android:id="@+id/chipGroupFilter"
+                <!-- Segmented Filter Switcher matching Web -->
+                <LinearLayout
                     android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
-                    app:singleSelection="true">
+                    android:layout_height="44dp"
+                    android:layout_marginTop="12dp"
+                    android:background="@drawable/bg_segmented_container"
+                    android:padding="3dp"
+                    android:orientation="horizontal">
 
-                    <com.google.android.material.chip.Chip
+                    <!-- Filter: Semua Misa -->
+                    <TextView
                         android:id="@+id/chipAll"
-                        style="@style/Widget.Material3.Chip.Filter"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:checked="true"
-                        android:text="Semua Jadwal" />
+                        android:layout_width="0dp"
+                        android:layout_height="match_parent"
+                        android:layout_weight="1"
+                        android:background="@drawable/bg_segmented_selected"
+                        android:gravity="center"
+                        android:text="Semua Misa"
+                        android:textColor="@color/primary"
+                        android:textSize="11sp"
+                        android:textStyle="bold"
+                        android:clickable="true"
+                        android:focusable="true" />
 
-                    <com.google.android.material.chip.Chip
-                        android:id="@+id/chipMingguan"
-                        style="@style/Widget.Material3.Chip.Filter"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Misa Mingguan" />
-
-                    <com.google.android.material.chip.Chip
+                    <!-- Filter: Misa Harian -->
+                    <TextView
                         android:id="@+id/chipHarian"
-                        style="@style/Widget.Material3.Chip.Filter"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Misa Harian" />
-                </com.google.android.material.chip.ChipGroup>
+                        android:layout_width="0dp"
+                        android:layout_height="match_parent"
+                        android:layout_weight="1.2"
+                        android:gravity="center"
+                        android:text="Misa Harian (05.30)"
+                        android:textColor="@color/on_surface_variant"
+                        android:textSize="11sp"
+                        android:clickable="true"
+                        android:focusable="true" />
+
+                    <!-- Filter: Misa Mingguan -->
+                    <TextView
+                        android:id="@+id/chipMingguan"
+                        android:layout_width="0dp"
+                        android:layout_height="match_parent"
+                        android:layout_weight="1"
+                        android:gravity="center"
+                        android:text="Misa Mingguan"
+                        android:textColor="@color/on_surface_variant"
+                        android:textSize="11sp"
+                        android:clickable="true"
+                        android:focusable="true" />
+                </LinearLayout>
             </LinearLayout>
 
             <!-- Loading Spinner -->
@@ -319,7 +604,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_gravity="center"
-                android:layout_marginVertical="20dp"
+                android:layout_marginVertical="24dp"
                 android:visibility="gone" />
 
             <!-- Empty State for Schedules -->
@@ -328,10 +613,10 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:gravity="center"
-                android:padding="20dp"
-                android:text="Belum ada jadwal misa aktif saat ini."
-                android:textColor="@color/text_secondary"
-                android:textSize="13sp"
+                android:padding="28dp"
+                android:text="Tidak ada jadwal misa yang tersedia untuk kategori ini."
+                android:textColor="@color/on_surface_variant"
+                android:textSize="12sp"
                 android:visibility="gone" />
 
             <!-- RecyclerView Schedules -->
@@ -339,31 +624,32 @@
                 android:id="@+id/rvSchedules"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
                 android:nestedScrollingEnabled="false" />
 
-            <!-- Announcements Section Header -->
+            <!-- 5. Announcements Section matching Web -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginHorizontal="16dp"
-                android:layout_marginTop="20dp"
+                android:layout_marginTop="24dp"
                 android:gravity="center_vertical"
                 android:orientation="horizontal">
-
-                <TextView
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:text="Warta &amp; Pengumuman"
-                    android:textColor="@color/text_primary"
-                    android:textSize="17sp"
-                    android:textStyle="bold" />
 
                 <ImageView
                     android:layout_width="20dp"
                     android:layout_height="20dp"
                     android:src="@drawable/ic_announcement"
-                    app:tint="@color/secondary" />
+                    app:tint="@color/primary" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="8dp"
+                    android:text="Warta &amp; Pengumuman Sakristi Paroki"
+                    android:textColor="@color/primary"
+                    android:textSize="17sp"
+                    android:textStyle="bold" />
             </LinearLayout>
 
             <!-- RecyclerView Announcements -->
@@ -380,44 +666,45 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:gravity="center"
-                android:padding="16dp"
-                android:text="Belum ada pengumuman terbaru."
-                android:textColor="@color/text_secondary"
-                android:textSize="13sp"
+                android:padding="20dp"
+                android:text="Belum ada pengumuman terbaru di sakristi."
+                android:textColor="@color/on_surface_variant"
+                android:textSize="12sp"
                 android:visibility="gone" />
 
-            <!-- WhatsApp Contacts Card -->
+            <!-- 6. WhatsApp Contacts Card matching Web -->
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginHorizontal="16dp"
                 android:layout_marginTop="20dp"
-                android:layout_marginBottom="32dp"
-                app:cardCornerRadius="16dp"
-                app:cardElevation="2dp"
-                app:cardBackgroundColor="@color/surface">
+                app:cardCornerRadius="20dp"
+                app:cardElevation="1dp"
+                app:strokeColor="@color/surface_container"
+                app:strokeWidth="1dp"
+                app:cardBackgroundColor="@color/surface_container_lowest">
 
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="vertical"
-                    android:padding="16dp">
+                    android:padding="20dp">
 
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="Kontak Bantuan &amp; Tim Pendamping"
-                        android:textColor="@color/text_primary"
-                        android:textSize="14sp"
+                        android:textColor="@color/primary"
+                        android:textSize="15sp"
                         android:textStyle="bold" />
 
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="2dp"
-                        android:layout_marginBottom="12dp"
-                        android:text="Hubungi WhatsApp bila ada kendala jadwal atau perizinan:"
-                        android:textColor="@color/text_secondary"
+                        android:layout_marginTop="3dp"
+                        android:layout_marginBottom="14dp"
+                        android:text="Hubungi WhatsApp bila ada kendala jadwal atau perizinan tugas:"
+                        android:textColor="@color/on_surface_variant"
                         android:textSize="12sp" />
 
                     <LinearLayout
@@ -425,30 +712,38 @@
                         android:layout_height="wrap_content"
                         android:orientation="horizontal">
 
-                        <com.google.android.material.button.MaterialButton
-                            android:id="@+id/btnHomeContactAdmin"
-                            style="@style/Widget.Material3.Button.OutlinedButton"
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:layout_marginEnd="6dp"
-                            android:text="Kontak Admin\n0812-2878-8912"
-                            android:textSize="11sp"
-                            app:icon="@drawable/ic_whatsapp"
-                            app:iconTint="#25D366"
-                            app:cornerRadius="10dp" />
-
+                        <!-- WA Pengurus -->
                         <com.google.android.material.button.MaterialButton
                             android:id="@+id/btnHomeContactPengurus"
                             style="@style/Widget.Material3.Button.OutlinedButton"
                             android:layout_width="0dp"
-                            android:layout_height="wrap_content"
+                            android:layout_height="44dp"
+                            android:layout_weight="1"
+                            android:layout_marginEnd="6dp"
+                            android:text="WA Pengurus"
+                            android:textColor="@color/secondary"
+                            android:textSize="11sp"
+                            app:strokeColor="@color/surface_container"
+                            app:icon="@drawable/ic_whatsapp"
+                            app:iconTint="@color/whatsapp_green"
+                            app:iconSize="16dp"
+                            app:cornerRadius="10dp" />
+
+                        <!-- WA Admin -->
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnHomeContactAdmin"
+                            style="@style/Widget.Material3.Button.OutlinedButton"
+                            android:layout_width="0dp"
+                            android:layout_height="44dp"
                             android:layout_weight="1"
                             android:layout_marginStart="6dp"
-                            android:text="Kontak Pengurus\n0856-4398-5341"
+                            android:text="WA Admin"
+                            android:textColor="@color/primary"
                             android:textSize="11sp"
+                            app:strokeColor="@color/surface_container"
                             app:icon="@drawable/ic_whatsapp"
-                            app:iconTint="#25D366"
+                            app:iconTint="@color/whatsapp_green"
+                            app:iconSize="16dp"
                             app:cornerRadius="10dp" />
                     </LinearLayout>
                 </LinearLayout>

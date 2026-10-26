@@ -13,177 +13,191 @@
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="vertical">
+            android:orientation="vertical"
+            android:paddingBottom="40dp">
 
-            <!-- Header -->
-            <LinearLayout
+            <!-- Top Header Card -->
+            <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:background="@drawable/bg_header_gradient"
-                android:orientation="vertical"
-                android:paddingHorizontal="20dp"
-                android:paddingTop="28dp"
-                android:paddingBottom="24dp">
+                android:layout_marginHorizontal="16dp"
+                android:layout_marginTop="16dp"
+                android:layout_marginBottom="12dp"
+                app:cardCornerRadius="24dp"
+                app:cardElevation="1dp"
+                app:strokeColor="@color/surface_container"
+                app:strokeWidth="1dp"
+                app:cardBackgroundColor="@color/surface_container_lowest">
 
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:gravity="center_vertical"
-                    android:orientation="horizontal">
+                    android:orientation="vertical"
+                    android:padding="20dp">
 
+                    <!-- Top Action Icons Row -->
                     <LinearLayout
-                        android:layout_width="0dp"
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:orientation="vertical">
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
 
-                        <TextView
-                            android:layout_width="wrap_content"
+                        <LinearLayout
+                            android:layout_width="0dp"
                             android:layout_height="wrap_content"
-                            android:text="Panel Pengurus"
-                            android:textColor="@color/on_primary"
-                            android:textSize="20sp"
-                            android:textStyle="bold" />
+                            android:layout_weight="1"
+                            android:orientation="vertical">
 
-                        <TextView
-                            android:id="@+id/tvPengurusGreeting"
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Panel Manajemen Pengurus"
+                                android:textColor="@color/primary"
+                                android:textSize="20sp"
+                                android:textStyle="bold" />
+
+                            <TextView
+                                android:id="@+id/tvPengurusGreeting"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="3dp"
+                                android:text="Misdinar SPMR Purbowardayan"
+                                android:textColor="@color/on_surface_variant"
+                                android:textSize="12sp" />
+                        </LinearLayout>
+
+                        <!-- Switch to Anggota View -->
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnViewAsAnggota"
+                            style="@style/Widget.Material3.Button.TonalButton"
                             android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="2dp"
-                            android:text="Misdinar SPMR Purbowardayan"
-                            android:textColor="#CBD5E1"
-                            android:textSize="12sp" />
+                            android:layout_height="38dp"
+                            android:text="Mode Anggota"
+                            android:textSize="11sp"
+                            android:textStyle="bold"
+                            android:textColor="@color/primary"
+                            app:cornerRadius="10dp" />
+
+                        <!-- Logout Button -->
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnPengurusLogout"
+                            style="@style/Widget.Material3.Button.TonalButton"
+                            android:layout_width="40dp"
+                            android:layout_height="40dp"
+                            android:layout_marginStart="8dp"
+                            android:padding="0dp"
+                            app:icon="@drawable/ic_logout"
+                            app:iconTint="@color/error"
+                            app:iconGravity="textStart"
+                            app:cornerRadius="10dp"
+                            android:contentDescription="Keluar Akun" />
                     </LinearLayout>
 
-                    <!-- Switch to Anggota View -->
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/btnViewAsAnggota"
-                        style="@style/Widget.Material3.Button.TonalButton"
-                        android:layout_width="wrap_content"
-                        android:layout_height="38dp"
-                        android:text="Mode Anggota"
-                        android:textSize="11sp"
-                        android:textColor="@color/on_primary"
-                        android:backgroundTint="#2563EB" />
+                    <!-- Stat Cards Row -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="16dp"
+                        android:orientation="horizontal">
 
-                    <!-- Logout Button -->
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/btnPengurusLogout"
-                        style="@style/Widget.Material3.Button.IconButton"
-                        android:layout_width="44dp"
-                        android:layout_height="44dp"
-                        android:layout_marginStart="4dp"
-                        app:icon="@drawable/ic_logout"
-                        app:iconTint="#FECACA" />
+                        <!-- Stat 1: Total Anggota -->
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:layout_marginEnd="4dp"
+                            android:background="@drawable/bg_card_low"
+                            android:orientation="vertical"
+                            android:padding="12dp">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="TOTAL ANGGOTA"
+                                android:textColor="@color/on_surface_variant"
+                                android:textSize="10sp"
+                                android:textStyle="bold" />
+
+                            <TextView
+                                android:id="@+id/tvStatTotalAnggota"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="2dp"
+                                android:text="-"
+                                android:textColor="@color/primary"
+                                android:textSize="18sp"
+                                android:textStyle="bold" />
+                        </LinearLayout>
+
+                        <!-- Stat 2: Menunggu Approve -->
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1.1"
+                            android:layout_marginHorizontal="2dp"
+                            android:background="@drawable/bg_badge_amber"
+                            android:orientation="vertical"
+                            android:padding="12dp">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="PERLU APPROVE"
+                                android:textColor="@color/amber_800"
+                                android:textSize="10sp"
+                                android:textStyle="bold" />
+
+                            <TextView
+                                android:id="@+id/tvStatPendingAnggota"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="2dp"
+                                android:text="-"
+                                android:textColor="@color/amber_800"
+                                android:textSize="18sp"
+                                android:textStyle="bold" />
+                        </LinearLayout>
+
+                        <!-- Stat 3: Jadwal Aktif -->
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:layout_marginStart="4dp"
+                            android:background="@drawable/bg_badge_gold"
+                            android:orientation="vertical"
+                            android:padding="12dp">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="JADWAL AKTIF"
+                                android:textColor="@color/secondary"
+                                android:textSize="10sp"
+                                android:textStyle="bold" />
+
+                            <TextView
+                                android:id="@+id/tvStatActiveSchedules"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="2dp"
+                                android:text="-"
+                                android:textColor="@color/secondary"
+                                android:textSize="18sp"
+                                android:textStyle="bold" />
+                        </LinearLayout>
+                    </LinearLayout>
+
                 </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
 
-                <!-- Stat Cards Grid -->
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="16dp"
-                    android:orientation="horizontal">
-
-                    <!-- Stat 1 -->
-                    <LinearLayout
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:layout_marginEnd="6dp"
-                        android:background="@drawable/bg_pill_primary"
-                        android:backgroundTint="#1E293B"
-                        android:orientation="vertical"
-                        android:padding="12dp">
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="TOTAL ANGGOTA"
-                            android:textColor="#94A3B8"
-                            android:textSize="10sp"
-                            android:textStyle="bold" />
-
-                        <TextView
-                            android:id="@+id/tvStatTotalAnggota"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="2dp"
-                            android:text="-"
-                            android:textColor="@color/on_primary"
-                            android:textSize="18sp"
-                            android:textStyle="bold" />
-                    </LinearLayout>
-
-                    <!-- Stat 2 -->
-                    <LinearLayout
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:layout_marginHorizontal="4dp"
-                        android:background="@drawable/bg_pill_primary"
-                        android:backgroundTint="#1E293B"
-                        android:orientation="vertical"
-                        android:padding="12dp">
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="MENUNGGU APPROVE"
-                            android:textColor="#FBBF24"
-                            android:textSize="10sp"
-                            android:textStyle="bold" />
-
-                        <TextView
-                            android:id="@+id/tvStatPendingAnggota"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="2dp"
-                            android:text="-"
-                            android:textColor="#FBBF24"
-                            android:textSize="18sp"
-                            android:textStyle="bold" />
-                    </LinearLayout>
-
-                    <!-- Stat 3 -->
-                    <LinearLayout
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:layout_marginStart="6dp"
-                        android:background="@drawable/bg_pill_primary"
-                        android:backgroundTint="#1E293B"
-                        android:orientation="vertical"
-                        android:padding="12dp">
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="JADWAL AKTIF"
-                            android:textColor="#94A3B8"
-                            android:textSize="10sp"
-                            android:textStyle="bold" />
-
-                        <TextView
-                            android:id="@+id/tvStatActiveSchedules"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="2dp"
-                            android:text="-"
-                            android:textColor="@color/on_primary"
-                            android:textSize="18sp"
-                            android:textStyle="bold" />
-                    </LinearLayout>
-                </LinearLayout>
-
-            </LinearLayout>
-
-            <!-- Navigation Tabs / Section Chips -->
+            <!-- Navigation Tabs / Section Switcher matching Web -->
             <HorizontalScrollView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:scrollbars="none"
                 android:paddingHorizontal="16dp"
-                android:paddingTop="12dp">
+                android:paddingTop="6dp">
 
                 <com.google.android.material.chip.ChipGroup
                     android:id="@+id/chipGroupPengurus"
@@ -221,7 +235,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginHorizontal="16dp"
-                android:layout_marginTop="8dp"
+                android:layout_marginTop="10dp"
                 android:gravity="center_vertical"
                 android:orientation="horizontal">
 
@@ -229,8 +243,8 @@
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:text="Daftar Pengumuman"
-                    android:textColor="@color/text_primary"
+                    android:text="Daftar Pengumuman Sakristi"
+                    android:textColor="@color/primary"
                     android:textSize="16sp"
                     android:textStyle="bold" />
 
@@ -238,10 +252,10 @@
                     android:id="@+id/btnAddAnnouncement"
                     android:layout_width="wrap_content"
                     android:layout_height="40dp"
-                    android:text="+ Buat Pengumuman"
+                    android:text="+ Buat Warta"
                     android:textSize="12sp"
                     android:textStyle="bold"
-                    app:cornerRadius="8dp"
+                    app:cornerRadius="10dp"
                     android:backgroundTint="@color/primary"
                     android:textColor="@color/on_primary" />
             </LinearLayout>
@@ -261,10 +275,10 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:gravity="center"
-                android:padding="20dp"
+                android:padding="24dp"
                 android:text="Data tidak ditemukan."
-                android:textColor="@color/text_secondary"
-                android:textSize="13sp"
+                android:textColor="@color/on_surface_variant"
+                android:textSize="12sp"
                 android:visibility="gone" />
 
             <!-- Dynamic RecyclerView -->
@@ -274,11 +288,6 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
                 android:nestedScrollingEnabled="false" />
-
-            <!-- Bottom spacing -->
-            <View
-                android:layout_width="match_parent"
-                android:layout_height="32dp" />
 
         </LinearLayout>
     </androidx.core.widget.NestedScrollView>

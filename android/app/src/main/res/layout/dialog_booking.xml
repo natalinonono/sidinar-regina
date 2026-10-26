@@ -5,31 +5,45 @@
     android:layout_height="wrap_content"
     android:orientation="vertical"
     android:padding="24dp"
-    android:background="@drawable/bg_rounded_card">
+    android:background="@drawable/bg_card_lowest">
 
-    <TextView
-        android:layout_width="wrap_content"
+    <!-- Header Icon & Title -->
+    <LinearLayout
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Konfirmasi Pendaftaran Tugas"
-        android:textColor="@color/text_primary"
-        android:textSize="18sp"
-        android:textStyle="bold" />
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+
+        <ImageView
+            android:layout_width="22dp"
+            android:layout_height="22dp"
+            android:src="@drawable/ic_church"
+            app:tint="@color/primary" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:text="Konfirmasi Pendaftaran Tugas"
+            android:textColor="@color/primary"
+            android:textSize="18sp"
+            android:textStyle="bold" />
+    </LinearLayout>
 
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="4dp"
-        android:text="Pastikan Anda dapat bertugas pada jadwal berikut:"
-        android:textColor="@color/text_secondary"
-        android:textSize="13sp" />
+        android:text="Pastikan Anda dapat hadir dan bertugas pada jadwal berikut:"
+        android:textColor="@color/on_surface_variant"
+        android:textSize="12sp" />
 
     <!-- Info Box -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="16dp"
-        android:background="@drawable/bg_pill_primary"
-        android:backgroundTint="#EFF6FF"
+        android:background="@drawable/bg_card_low"
         android:orientation="vertical"
         android:padding="16dp">
 
@@ -42,33 +56,51 @@
             android:textSize="16sp"
             android:textStyle="bold" />
 
-        <TextView
-            android:id="@+id/tvDialogWaktuMisa"
+        <LinearLayout
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="4dp"
-            android:text="Sabtu, 31 Okt 2026 • 17.00 WIB"
-            android:textColor="@color/text_secondary"
-            android:textSize="13sp" />
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <ImageView
+                android:layout_width="14dp"
+                android:layout_height="14dp"
+                android:src="@drawable/ic_calendar"
+                app:tint="@color/secondary" />
+
+            <TextView
+                android:id="@+id/tvDialogWaktuMisa"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="6dp"
+                android:text="Sabtu, 31 Okt 2026 • 17.00 WIB"
+                android:textColor="@color/on_surface_variant"
+                android:textSize="12sp" />
+        </LinearLayout>
 
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
+            android:background="@drawable/bg_badge_gold"
+            android:paddingHorizontal="10dp"
+            android:paddingVertical="3dp"
             android:text="Peran: Petugas Altar"
             android:textColor="@color/secondary"
-            android:textSize="13sp"
+            android:textSize="11sp"
             android:textStyle="bold" />
     </LinearLayout>
 
+    <!-- Commitment Checkbox -->
     <com.google.android.material.checkbox.MaterialCheckBox
         android:id="@+id/cbDialogCommitment"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="16dp"
-        android:text="Saya bersedia hadir 30 menit sebelum perayaan Ekaristi dimulai untuk persiapan vestimentum &amp; doa bersama."
+        android:text="Saya bersedia hadir 30 menit sebelum perayaan Ekaristi dimulai untuk persiapan vestimentum &amp; doa bersama di sakristi."
         android:textSize="12sp"
-        android:textColor="@color/text_secondary" />
+        android:textColor="@color/on_surface_variant" />
 
     <ProgressBar
         android:id="@+id/progressDialog"
@@ -78,10 +110,11 @@
         android:layout_marginTop="12dp"
         android:visibility="gone" />
 
+    <!-- Action Buttons -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="16dp"
+        android:layout_marginTop="18dp"
         android:orientation="horizontal">
 
         <com.google.android.material.button.MaterialButton
@@ -92,7 +125,8 @@
             android:layout_weight="1"
             android:layout_marginEnd="6dp"
             android:text="Batal"
-            app:cornerRadius="10dp" />
+            android:textColor="@color/on_surface_variant"
+            app:cornerRadius="12dp" />
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnConfirmDialog"
@@ -102,7 +136,10 @@
             android:layout_marginStart="6dp"
             android:text="Ambil Tugas"
             android:textStyle="bold"
-            app:cornerRadius="10dp"
+            app:icon="@drawable/ic_check_circle"
+            app:iconGravity="textStart"
+            app:iconSize="16dp"
+            app:cornerRadius="12dp"
             android:backgroundTint="@color/primary"
             android:textColor="@color/on_primary" />
     </LinearLayout>
