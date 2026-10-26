@@ -112,6 +112,10 @@ public class AppUpdateManager {
                 .setPositiveButton("Perbarui Sekarang", (dialog, which) -> {
                     dialog.dismiss();
                     startDownloadAndInstall(activity, updateInfo);
+                })
+                .setNeutralButton("Unduh di Browser", (dialog, which) -> {
+                    dialog.dismiss();
+                    activity.startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(updateInfo.getDownloadUrl())));
                 });
 
         if (!updateInfo.isForceUpdate()) {
@@ -189,7 +193,28 @@ public class AppUpdateManager {
                             activity.unregisterReceiver(this);
                         } catch (Exception ignored) {}
 
-                        installApk(activity, apkFile);
+                        // Verifikasi status unduhan
+                        boolean downloadOk = false;
+                        try {
+                            DownloadManager.Query q = new DownloadManager.Query();
+                            q.setFilterById(downloadId);
+                            android.database.Cursor c = downloadManager.query(q);
+                            if (c != null && c.moveToFirst()) {
+                                int statusIdx = c.getColumnIndex(DownloadManager.COLUMN_STATUS);
+                                if (statusIdx >= 0) {
+                                    int status = c.getInt(statusIdx);
+                                    downloadOk = (status == DownloadManager.STATUS_SUCCESSFUL);
+                                }
+                                c.close();
+                            }
+                        } catch (Exception ignored) {}
+
+                        if (downloadOk && apkFile.exists() && apkFile.length() > 0) {
+                            installApk(activity, apkFile);
+                        } else {
+                            Toast.makeText(activity, "Gagal mengunduh APK secara otomatis. Membuka peramban untuk unduh langsung...", Toast.LENGTH_SHORT).show();
+                            activity.startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(updateInfo.getDownloadUrl())));
+                        }
                     }
                 }
             };
@@ -210,7 +235,7 @@ public class AppUpdateManager {
      * Buka Package Installer Android dengan FileProvider resmi
      */
     public static void installApk(Activity activity, File apkFile) {
-        if (!apkFile.exists()) {
+        if (apkFile == null || !apkFile.exists() || apkFile.length() == 0) {
             Toast.makeText(activity, "File pembaruan tidak ditemukan.", Toast.LENGTH_SHORT).show();
             return;
         }
