@@ -163,6 +163,12 @@ public class AnggotaMainActivity extends AppCompatActivity implements ScheduleAd
             }
         });
 
+        binding.btnMyBookingCalendar.setOnClickListener(v -> {
+            if (myUpcomingBooking != null && myUpcomingBooking.getSchedule() != null) {
+                addToCalendar(myUpcomingBooking.getSchedule());
+            }
+        });
+
         // Filter chips
         binding.chipAll.setOnClickListener(v -> {
             selectedFilter = "all";
@@ -564,5 +570,31 @@ public class AnggotaMainActivity extends AppCompatActivity implements ScheduleAd
                 Toast.makeText(AnggotaMainActivity.this, "Gagal memproses presensi: " + t.getMessage(), Toast.LENGTH_SHORT).show();
             }
         });
+    }
+
+    private void addToCalendar(MassSchedule schedule) {
+        try {
+            android.content.Intent intent = new android.content.Intent(android.content.Intent.ACTION_INSERT);
+            intent.setData(android.provider.CalendarContract.Events.CONTENT_URI);
+            intent.putExtra(android.provider.CalendarContract.Events.TITLE, "Tugas Misdinar: " + schedule.getJudulMisa());
+            intent.putExtra(android.provider.CalendarContract.Events.EVENT_LOCATION, "Gereja Katolik SPMR Purbowardayan");
+            intent.putExtra(android.provider.CalendarContract.Events.DESCRIPTION, "Jadwal Pelayanan Altar Misdinar SPMR Purbowardayan. Harap hadir di sakristi 30 menit sebelum misa.");
+
+            String timePart = schedule.getJamMulai();
+            if (timePart != null && timePart.length() >= 5) {
+                timePart = timePart.substring(0, 5);
+            }
+            String dtStr = schedule.getTanggalMisa() + " " + timePart;
+            java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm", java.util.Locale.getDefault());
+            java.util.Date date = sdf.parse(dtStr);
+            if (date != null) {
+                intent.putExtra(android.provider.CalendarContract.EXTRA_EVENT_BEGIN_TIME, date.getTime());
+                intent.putExtra(android.provider.CalendarContract.EXTRA_EVENT_END_TIME, date.getTime() + (90 * 60 * 1000));
+            }
+
+            startActivity(intent);
+        } catch (Exception e) {
+            Toast.makeText(this, "Tidak dapat membuka aplikasi kalender: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+        }
     }
 }

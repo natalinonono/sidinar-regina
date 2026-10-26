@@ -8,6 +8,7 @@ import { BookingModal } from '@/components/BookingModal'
 import { CheckinModal } from '@/components/CheckinModal'
 import { EditBookingModal } from '@/components/EditBookingModal'
 import { getCurrentLiturgicalWeek, evaluateCheckinWindow } from '@/lib/utils/time'
+import { generateGoogleCalendarUrl, downloadIcsFile } from '@/lib/utils/calendar'
 
 export default function AnggotaDashboardPage() {
   const supabase = createClient()
@@ -297,11 +298,30 @@ export default function AnggotaDashboardPage() {
                     Pukul {nextUserDuty.schedule.jam_mulai.substring(0, 5)} WIB
                   </span>
                 </div>
-                <div className="flex items-center gap-2 pt-2">
+                <div className="flex flex-wrap items-center gap-2 pt-2">
                   <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/15 text-xs text-white border border-white/20 font-semibold">
                     <span className="material-symbols-outlined text-[14px]">church</span>
                     Petugas Altar
                   </span>
+                  <a
+                    href={generateGoogleCalendarUrl(nextUserDuty.schedule)}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-secondary text-on-secondary hover:bg-secondary-container transition-all text-xs font-semibold shadow-xs"
+                    title="Pasang Alarm Pengingat di Google Calendar"
+                  >
+                    <span className="material-symbols-outlined text-[14px]">notifications_active</span>
+                    <span>Pasang Alarm Google Calendar</span>
+                  </a>
+                  <button
+                    onClick={() => downloadIcsFile(nextUserDuty.schedule!)}
+                    className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/10 hover:bg-white/20 text-xs text-white transition-all border border-white/20"
+                    title="Unduh Kalender .ics (Apple / Android / Outlook)"
+                    type="button"
+                  >
+                    <span className="material-symbols-outlined text-[14px]">download</span>
+                    <span>Download .ics</span>
+                  </button>
                 </div>
               </div>
 

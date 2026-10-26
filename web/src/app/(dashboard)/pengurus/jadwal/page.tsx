@@ -8,6 +8,7 @@ import { LiturgyBadge } from '@/components/LiturgyBadge'
 import { PositionBadge } from '@/components/PositionBadge'
 import { LITURGICAL_POSITIONS } from '@/lib/utils/positions'
 import { getCurrentLiturgicalWeek } from '@/lib/utils/time'
+import { generateWhatsAppReminderMessage } from '@/lib/utils/calendar'
 
 export default function PengurusJadwalPage() {
   const supabase = createClient()
@@ -236,18 +237,20 @@ export default function PengurusJadwalPage() {
 
               {/* Enrolled Servers Table */}
               <div className="flex flex-col gap-3">
-                <div className="flex items-center justify-between">
+                <div className="flex flex-wrap items-center justify-between gap-3">
                   <h3 className="font-headline font-bold text-sm text-primary">
                     Daftar Petugas Terdaftar ({selectedBookings.length} / {selectedSchedule.kuota_maksimal})
                   </h3>
-                  <button
-                    onClick={() => window.print()}
-                    className="px-3 py-1.5 rounded-lg bg-surface-container text-on-surface hover:bg-surface-container-high text-xs font-semibold flex items-center gap-1.5 transition-colors"
-                    type="button"
-                  >
-                    <span className="material-symbols-outlined text-sm">print</span>
-                    <span>Cetak Lembar Tugas</span>
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => window.print()}
+                      className="px-3 py-1.5 rounded-lg bg-surface-container text-on-surface hover:bg-surface-container-high text-xs font-semibold flex items-center gap-1.5 transition-colors"
+                      type="button"
+                    >
+                      <span className="material-symbols-outlined text-sm">print</span>
+                      <span>Cetak Lembar Tugas</span>
+                    </button>
+                  </div>
                 </div>
 
                 {selectedBookings.length === 0 ? (
@@ -263,6 +266,7 @@ export default function PengurusJadwalPage() {
                           <th className="py-3 px-3.5">Jenjang</th>
                           <th className="py-3 px-3.5">Asal Wilayah &amp; Lingkungan</th>
                           <th className="py-3 px-3.5">Presensi</th>
+                          <th className="py-3 px-3.5">Pengingat (WA)</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-surface-container">
@@ -290,6 +294,30 @@ export default function PengurusJadwalPage() {
                               >
                                 {b.status_kehadiran}
                               </span>
+                            </td>
+                            <td className="py-3 px-3.5">
+                              {b.profile ? (
+                                <button
+                                  onClick={async () => {
+                                    const { waUrl } = generateWhatsAppReminderMessage(selectedSchedule, b.profile!)
+                                    window.open(waUrl, '_blank')
+                                    await fetch(`/api/bookings/${b.id}/reminder`, { method: 'POST' })
+                                    loadSchedulesAndBookings()
+                                  }}
+                                  className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold flex items-center gap-1 transition-all shadow-2xs ${
+                                    b.wa_reminder_sent
+                                      ? 'bg-emerald-50 text-emerald-800 border border-emerald-300 hover:bg-emerald-100'
+                                      : 'bg-emerald-600 text-white hover:bg-emerald-700'
+                                  }`}
+                                  type="button"
+                                  title="Kirim pesan pengingat resmi ke WhatsApp misdinar"
+                                >
+                                  <span className="material-symbols-outlined text-[13px]">chat</span>
+                                  <span>{b.wa_reminder_sent ? 'Diingatkan (Kirim Ulang)' : 'Kirim Pengingat WA'}</span>
+                                </button>
+                              ) : (
+                                <span className="text-on-surface-variant">-</span>
+                              )}
                             </td>
                           </tr>
                         ))}

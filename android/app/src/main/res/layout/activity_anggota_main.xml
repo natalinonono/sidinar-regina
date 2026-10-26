@@ -242,6 +242,18 @@
                             app:strokeColor="@color/error"
                             app:cornerRadius="8dp" />
                     </LinearLayout>
+
+                    <!-- Add to System/Google Calendar Reminder Button -->
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnMyBookingCalendar"
+                        style="@style/Widget.Material3.Button.TonalButton"
+                        android:layout_width="match_parent"
+                        android:layout_height="40dp"
+                        android:layout_marginTop="8dp"
+                        android:text="Pasang Pengingat Kalender (Google Calendar)"
+                        android:textSize="11sp"
+                        app:icon="@drawable/ic_calendar"
+                        app:cornerRadius="8dp" />
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
