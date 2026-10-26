@@ -151,6 +151,18 @@ public class AnggotaMainActivity extends AppCompatActivity implements ScheduleAd
             );
         });
 
+        binding.btnMyBookingEdit.setOnClickListener(v -> {
+            if (myUpcomingBooking != null) {
+                showEditBookingDialog(myUpcomingBooking);
+            }
+        });
+
+        binding.btnMyBookingCancel.setOnClickListener(v -> {
+            if (myUpcomingBooking != null) {
+                showCancelBookingDialog(myUpcomingBooking);
+            }
+        });
+
         // Filter chips
         binding.chipAll.setOnClickListener(v -> {
             selectedFilter = "all";
@@ -325,6 +337,134 @@ public class AnggotaMainActivity extends AppCompatActivity implements ScheduleAd
         }
 
         showBookingConfirmationDialog(schedule);
+    }
+
+    @Override
+    public void onEditMyBookingClick(MassSchedule schedule) {
+        if (myUpcomingBooking != null) {
+            showEditBookingDialog(myUpcomingBooking);
+        }
+    }
+
+    private void showCancelBookingDialog(Booking booking) {
+        String scheduleTitle = booking.getSchedule() != null ? booking.getSchedule().getJudulMisa() : "Misa ini";
+        new AlertDialog.Builder(this)
+                .setTitle("Batalkan Jadwal Tugas")
+                .setMessage("Apakah Anda yakin ingin membatalkan tugas di " + scheduleTitle + "?\n\nSlot kuota akan langsung dibuka kembali untuk anggota misdinar lain.")
+                .setPositiveButton("Ya, Batalkan Tugas", (dialog, which) -> {
+                    String authHeader = "Bearer " + sessionManager.getToken();
+                    ApiClient.getBackendApi().cancelBooking(authHeader, booking.getId()).enqueue(new Callback<ResponseBody>() {
+                        @Override
+                        public void onResponse(@NonNull Call<ResponseBody> call, @NonNull Response<ResponseBody> response) {
+                            if (response.isSuccessful()) {
+                                Toast.makeText(AnggotaMainActivity.this, "Jadwal tugas berhasil dibatalkan.", Toast.LENGTH_LONG).show();
+                                loadAllData();
+                            } else {
+                                String msg = "Gagal membatalkan tugas.";
+                                try {
+                                    if (response.errorBody() != null) {
+                                        String errStr = response.errorBody().string();
+                                        if (errStr.contains("error")) msg = errStr;
+                                    }
+                                } catch (Exception ignored) {}
+                                Toast.makeText(AnggotaMainActivity.this, msg, Toast.LENGTH_LONG).show();
+                            }
+                        }
+
+                        @Override
+                        public void onFailure(@NonNull Call<ResponseBody> call, @NonNull Throwable t) {
+                            Toast.makeText(AnggotaMainActivity.this, "Koneksi gagal: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+                        }
+                    });
+                })
+                .setNegativeButton("Kembali", null)
+                .show();
+    }
+
+    private void showEditBookingDialog(Booking booking) {
+        if (booking == null || booking.getSchedule() == null) return;
+        String currentScheduleId = booking.getScheduleId();
+        String currentKategori = booking.getSchedule().getKategori();
+
+        List<MassSchedule> candidateList = new ArrayList<>();
+        List<String> displayItems = new ArrayList<>();
+
+        for (MassSchedule s : allSchedules) {
+            if (s.getId().equals(currentScheduleId)) continue;
+            if (currentKategori != null && !currentKategori.equalsIgnoreCase(s.getKategori())) continue;
+
+            int remaining = s.getRemainingQuota();
+            candidateList.add(s);
+            String itemText = s.getJudulMisa() + " (" + s.getTanggalMisa() + " • " + s.getFormattedTime() + ")"
+                    + (remaining > 0 ? " - Sisa " + remaining + " Kuota" : " - [KUOTA PENUH]");
+            displayItems.add(itemText);
+        }
+
+        if (candidateList.isEmpty()) {
+            new AlertDialog.Builder(this)
+                    .setTitle("Pindah Jadwal Tugas")
+                    .setMessage("Tidak ada jadwal misa alternatif lain yang tersedia pada kategori ini.\n\nJika berhalangan hadir, Anda dapat memilih 'Batalkan Tugas'.")
+                    .setPositiveButton("Batalkan Tugas", (d, w) -> showCancelBookingDialog(booking))
+                    .setNegativeButton("Tutup", null)
+                    .show();
+            return;
+        }
+
+        final int[] chosenIndex = {-1};
+        CharSequence[] items = displayItems.toArray(new CharSequence[0]);
+
+        new AlertDialog.Builder(this)
+                .setTitle("Pilih Jadwal Misa Baru")
+                .setSingleChoiceItems(items, -1, (dialog, which) -> {
+                    chosenIndex[0] = which;
+                })
+                .setPositiveButton("Pindah Jadwal", (dialog, which) -> {
+                    if (chosenIndex[0] < 0 || chosenIndex[0] >= candidateList.size()) {
+                        Toast.makeText(AnggotaMainActivity.this, "Silakan pilih jadwal misa tujuan.", Toast.LENGTH_SHORT).show();
+                        return;
+                    }
+
+                    MassSchedule target = candidateList.get(chosenIndex[0]);
+                    if (target.isFull()) {
+                        Toast.makeText(AnggotaMainActivity.this, "Jadwal misa tujuan sudah penuh.", Toast.LENGTH_SHORT).show();
+                        return;
+                    }
+
+                    Map<String, Object> body = new HashMap<>();
+                    body.put("booking_id", booking.getId());
+                    body.put("new_schedule_id", target.getId());
+                    body.put("posisi_tugas", "Petugas Altar");
+
+                    String authHeader = "Bearer " + sessionManager.getToken();
+                    ApiClient.getBackendApi().updateBooking(authHeader, body).enqueue(new Callback<ResponseBody>() {
+                        @Override
+                        public void onResponse(@NonNull Call<ResponseBody> call, @NonNull Response<ResponseBody> response) {
+                            if (response.isSuccessful()) {
+                                Toast.makeText(AnggotaMainActivity.this, "Jadwal tugas berhasil dipindahkan ke " + target.getJudulMisa() + "!", Toast.LENGTH_LONG).show();
+                                loadAllData();
+                            } else {
+                                String msg = "Gagal memindahkan jadwal.";
+                                try {
+                                    if (response.errorBody() != null) {
+                                        String errStr = response.errorBody().string();
+                                        if (errStr.contains("error")) msg = errStr;
+                                    }
+                                } catch (Exception ignored) {}
+                                Toast.makeText(AnggotaMainActivity.this, msg, Toast.LENGTH_LONG).show();
+                            }
+                        }
+
+                        @Override
+                        public void onFailure(@NonNull Call<ResponseBody> call, @NonNull Throwable t) {
+                            Toast.makeText(AnggotaMainActivity.this, "Koneksi gagal: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+                        }
+                    });
+                })
+                .setNeutralButton("Batalkan Tugas", (dialog, which) -> {
+                    showCancelBookingDialog(booking);
+                })
+                .setNegativeButton("Tutup", null)
+                .show();
     }
 
     private void showBookingConfirmationDialog(MassSchedule schedule) {

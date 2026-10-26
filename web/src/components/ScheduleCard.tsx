@@ -10,6 +10,7 @@ interface ScheduleCardProps {
   userBooking?: Booking | null
   onBookClick: (schedule: MassSchedule) => void
   onCheckinClick: (booking: Booking) => void
+  onEditClick?: (booking: Booking) => void
   disabledBooking?: boolean
   disabledReason?: string
 }
@@ -20,6 +21,7 @@ export const ScheduleCard: React.FC<ScheduleCardProps> = ({
   userBooking,
   onBookClick,
   onCheckinClick,
+  onEditClick,
   disabledBooking = false,
   disabledReason,
 }) => {
@@ -29,7 +31,6 @@ export const ScheduleCard: React.FC<ScheduleCardProps> = ({
 
   return (
     <div className="relative overflow-hidden rounded-2xl bg-surface-container-lowest border border-surface-container shadow-sm hover:shadow-md transition-all flex flex-col justify-between group">
-      {/* Top Accent Strip based on Liturgy */}
       {/* Top Details */}
       <div className="p-5 flex flex-col gap-3.5">
         <div className="flex items-start justify-between gap-3">
@@ -81,21 +82,35 @@ export const ScheduleCard: React.FC<ScheduleCardProps> = ({
       {/* Card Action Deck */}
       <div className="p-4 bg-surface-container-low border-t border-surface-container flex items-center justify-between gap-3">
         {userBooking ? (
-          <div className="w-full flex items-center justify-between gap-2">
-            <div className="flex items-center gap-1.5 text-xs text-emerald-700 font-semibold">
-              <span className="material-symbols-outlined text-sm" style={{ fontVariationSettings: "'FILL' 1" }}>
-                check_circle
-              </span>
-              <span>Terdaftar ({userBooking.posisi_tugas})</span>
+          <div className="w-full flex flex-col gap-2">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-1.5 text-xs text-emerald-700 font-semibold">
+                <span className="material-symbols-outlined text-sm" style={{ fontVariationSettings: "'FILL' 1" }}>
+                  check_circle
+                </span>
+                <span>Terdaftar ({userBooking.posisi_tugas})</span>
+              </div>
             </div>
-            <button
-              onClick={() => onCheckinClick(userBooking)}
-              className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-primary text-on-primary hover:bg-primary-container shadow-xs transition-colors flex items-center gap-1"
-              type="button"
-            >
-              <span className="material-symbols-outlined text-sm">qr_code_scanner</span>
-              <span>Presensi</span>
-            </button>
+            <div className="flex items-center gap-2">
+              {onEditClick && (
+                <button
+                  onClick={() => onEditClick(userBooking)}
+                  className="flex-1 py-1.5 px-2.5 rounded-lg text-xs font-semibold bg-surface-container border border-outline/30 text-on-surface hover:bg-surface-container-high transition-colors flex items-center justify-center gap-1"
+                  type="button"
+                >
+                  <span className="material-symbols-outlined text-sm">edit_calendar</span>
+                  <span>Ubah / Batal</span>
+                </button>
+              )}
+              <button
+                onClick={() => onCheckinClick(userBooking)}
+                className="py-1.5 px-3 rounded-lg text-xs font-semibold bg-primary text-on-primary hover:bg-primary-container shadow-xs transition-colors flex items-center justify-center gap-1"
+                type="button"
+              >
+                <span className="material-symbols-outlined text-sm">qr_code_scanner</span>
+                <span>Presensi</span>
+              </button>
+            </div>
           </div>
         ) : isFull ? (
           <div className="w-full py-2 text-center text-xs font-semibold text-error bg-error-container/40 rounded-lg">

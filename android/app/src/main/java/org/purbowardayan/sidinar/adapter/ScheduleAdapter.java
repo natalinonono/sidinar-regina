@@ -17,6 +17,7 @@ public class ScheduleAdapter extends RecyclerView.Adapter<ScheduleAdapter.ViewHo
 
     public interface OnScheduleClickListener {
         void onBookClick(MassSchedule schedule);
+        void onEditMyBookingClick(MassSchedule schedule);
     }
 
     private final List<MassSchedule> schedules = new ArrayList<>();
@@ -109,9 +110,14 @@ public class ScheduleAdapter extends RecyclerView.Adapter<ScheduleAdapter.ViewHo
             boolean isThisBooked = bookedScheduleId != null && bookedScheduleId.equals(item.getId());
 
             if (isThisBooked) {
-                btnBook.setText("Tugas Anda (Terdaftar)");
-                btnBook.setEnabled(false);
+                btnBook.setText("Tugas Anda (Ubah / Batal)");
+                btnBook.setEnabled(true);
                 btnBook.setBackgroundTintList(androidx.core.content.ContextCompat.getColorStateList(itemView.getContext(), R.color.secondary));
+                btnBook.setOnClickListener(v -> {
+                    if (listener != null) {
+                        listener.onEditMyBookingClick(item);
+                    }
+                });
             } else if (!isMemberActive) {
                 btnBook.setText("Menunggu Persetujuan Pengurus");
                 btnBook.setEnabled(false);

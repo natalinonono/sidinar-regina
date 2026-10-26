@@ -209,6 +209,39 @@
                         android:text="Peran: Petugas Altar • Harap hadir 30 menit sebelum misa dimulai."
                         android:textColor="@color/secondary"
                         android:textSize="11sp" />
+
+                    <!-- Action buttons to Edit / Reschedule or Cancel booking -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="12dp"
+                        android:orientation="horizontal">
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnMyBookingEdit"
+                            style="@style/Widget.Material3.Button.OutlinedButton"
+                            android:layout_width="0dp"
+                            android:layout_height="40dp"
+                            android:layout_weight="1"
+                            android:layout_marginEnd="6dp"
+                            android:text="Ubah Jadwal"
+                            android:textSize="11sp"
+                            android:textColor="@color/primary"
+                            app:cornerRadius="8dp" />
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnMyBookingCancel"
+                            style="@style/Widget.Material3.Button.OutlinedButton"
+                            android:layout_width="0dp"
+                            android:layout_height="40dp"
+                            android:layout_weight="1"
+                            android:layout_marginStart="6dp"
+                            android:text="Batalkan Tugas"
+                            android:textSize="11sp"
+                            android:textColor="@color/error"
+                            app:strokeColor="@color/error"
+                            app:cornerRadius="8dp" />
+                    </LinearLayout>
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 

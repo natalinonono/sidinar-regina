@@ -94,3 +94,221 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: err.message || 'Gagal memproses pendaftaran tugas.' }, { status: 500 })
   }
 }
+
+// PATCH: Mengubah jadwal tugas (pindah ke jadwal misa lain atau update posisi)
+// Keamanan: Hanya pemilik booking yang bersangkutan (atau pengurus) yang dapat mengubah!
+export async function PATCH(request: Request) {
+  try {
+    const supabase = await createClient()
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
+
+    if (!user) {
+      return NextResponse.json({ error: 'Autentikasi diperlukan.' }, { status: 401 })
+    }
+
+    const body = await request.json()
+    const bookingId = body.booking_id || body.id
+    const newScheduleId = body.new_schedule_id || body.schedule_id
+    const posisiTugas = body.posisi_tugas || 'Petugas Altar'
+
+    if (!bookingId) {
+      return NextResponse.json({ error: 'ID penugasan (booking_id) wajib disertakan.' }, { status: 400 })
+    }
+
+    const adminSupabase = createAdminClient()
+
+    // 1. Ambil data booking yang ingin diubah
+    const { data: existingBooking, error: fetchErr } = await (adminSupabase as any)
+      .from('bookings')
+      .select('*, schedule:mass_schedules(*)')
+      .eq('id', bookingId)
+      .single()
+
+    if (fetchErr || !existingBooking) {
+      return NextResponse.json({ error: 'Jadwal tugas tidak ditemukan.' }, { status: 404 })
+    }
+
+    // 2. CEK KEPEMILIKAN: Misdinar hanya boleh mengedit jadwal miliknya sendiri!
+    const { data: profile } = await (adminSupabase as any)
+      .from('profiles')
+      .select('role')
+      .eq('id', user.id)
+      .single()
+
+    const isPengurus = profile?.role === 'pengurus'
+    if (existingBooking.user_id !== user.id && !isPengurus) {
+      return NextResponse.json(
+        { error: 'Akses ditolak: Anda hanya dapat mengedit jadwal tugas milik Anda sendiri.' },
+        { status: 403 }
+      )
+    }
+
+    if (existingBooking.status_kehadiran === 'hadir') {
+      return NextResponse.json(
+        { error: 'Jadwal tugas yang sudah dipresensi / selesai tidak dapat diubah.' },
+        { status: 400 }
+      )
+    }
+
+    // 3. Jika berpindah jadwal ke misa lain:
+    if (newScheduleId && newScheduleId !== existingBooking.schedule_id) {
+      // Ambil detail jadwal misa tujuan
+      const { data: targetSchedule, error: targetErr } = await (adminSupabase as any)
+        .from('mass_schedules')
+        .select('*')
+        .eq('id', newScheduleId)
+        .single()
+
+      if (targetErr || !targetSchedule) {
+        return NextResponse.json({ error: 'Jadwal misa tujuan tidak ditemukan.' }, { status: 404 })
+      }
+
+      // Hitung keterisian kuota jadwal tujuan
+      const { count: currentTargetBooked, error: countErr } = await (adminSupabase as any)
+        .from('bookings')
+        .select('*', { count: 'exact', head: true })
+        .eq('schedule_id', newScheduleId)
+
+      if ((currentTargetBooked || 0) >= targetSchedule.kuota_maksimal && !isPengurus) {
+        return NextResponse.json(
+          { error: `Jadwal misa tujuan (${targetSchedule.judul_misa}) sudah penuh.` },
+          { status: 409 }
+        )
+      }
+
+      // Lakukan pemindahan jadwal atomik
+      const { data: updatedBooking, error: updateErr } = await (adminSupabase as any)
+        .from('bookings')
+        .update({
+          schedule_id: targetSchedule.id,
+          kategori_misa: targetSchedule.kategori,
+          minggu_ke: targetSchedule.minggu_ke,
+          tahun: targetSchedule.tahun,
+          posisi_tugas: posisiTugas,
+          status_kehadiran: 'terdaftar',
+        })
+        .eq('id', bookingId)
+        .select('*, schedule:mass_schedules(*)')
+        .single()
+
+      if (updateErr) {
+        if (updateErr.code === '23505') {
+          return NextResponse.json(
+            { error: 'Anda sudah terdaftar pada kategori misa ini pada pekan tersebut.' },
+            { status: 409 }
+          )
+        }
+        return NextResponse.json({ error: updateErr.message }, { status: 400 })
+      }
+
+      return NextResponse.json({
+        success: true,
+        message: 'Jadwal tugas misa berhasil dipindahkan ke jadwal baru!',
+        booking: updatedBooking,
+      })
+    } else {
+      // Update posisi tugas saja
+      const { data: updatedBooking, error: updateErr } = await (adminSupabase as any)
+        .from('bookings')
+        .update({ posisi_tugas: posisiTugas })
+        .eq('id', bookingId)
+        .select('*, schedule:mass_schedules(*)')
+        .single()
+
+      if (updateErr) {
+        return NextResponse.json({ error: updateErr.message }, { status: 400 })
+      }
+
+      return NextResponse.json({
+        success: true,
+        message: 'Data tugas misa berhasil diperbarui!',
+        booking: updatedBooking,
+      })
+    }
+  } catch (err: any) {
+    return NextResponse.json({ error: err.message || 'Gagal mengubah jadwal tugas.' }, { status: 500 })
+  }
+}
+
+// DELETE: Membatalkan jadwal tugas misa
+// Keamanan: Hanya pemilik booking yang bersangkutan (atau pengurus) yang dapat membatalkan!
+export async function DELETE(request: Request) {
+  try {
+    const supabase = await createClient()
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
+
+    if (!user) {
+      return NextResponse.json({ error: 'Autentikasi diperlukan.' }, { status: 401 })
+    }
+
+    const { searchParams } = new URL(request.url)
+    let bookingId = searchParams.get('id') || searchParams.get('booking_id')
+
+    if (!bookingId) {
+      try {
+        const body = await request.json()
+        bookingId = body.booking_id || body.id
+      } catch {}
+    }
+
+    if (!bookingId) {
+      return NextResponse.json({ error: 'ID penugasan (id) wajib disertakan.' }, { status: 400 })
+    }
+
+    const adminSupabase = createAdminClient()
+
+    // 1. Ambil data booking yang ingin dibatalkan
+    const { data: existingBooking, error: fetchErr } = await (adminSupabase as any)
+      .from('bookings')
+      .select('*, schedule:mass_schedules(*)')
+      .eq('id', bookingId)
+      .single()
+
+    if (fetchErr || !existingBooking) {
+      return NextResponse.json({ error: 'Jadwal tugas tidak ditemukan.' }, { status: 404 })
+    }
+
+    // 2. CEK KEPEMILIKAN: Misdinar hanya boleh membatalkan jadwal miliknya sendiri!
+    const { data: profile } = await (adminSupabase as any)
+      .from('profiles')
+      .select('role')
+      .eq('id', user.id)
+      .single()
+
+    const isPengurus = profile?.role === 'pengurus'
+    if (existingBooking.user_id !== user.id && !isPengurus) {
+      return NextResponse.json(
+        { error: 'Akses ditolak: Anda hanya dapat membatalkan jadwal tugas milik Anda sendiri.' },
+        { status: 403 }
+      )
+    }
+
+    if (existingBooking.status_kehadiran === 'hadir') {
+      return NextResponse.json(
+        { error: 'Jadwal tugas yang sudah dipresensi / selesai tidak dapat dibatalkan.' },
+        { status: 400 }
+      )
+    }
+
+    // 3. Hapus booking untuk mengembalikan kuota misa
+    const { error: deleteErr } = await (adminSupabase as any)
+      .from('bookings')
+      .delete()
+      .eq('id', bookingId)
+
+    if (deleteErr) {
+      return NextResponse.json({ error: deleteErr.message }, { status: 400 })
+    }
+
+    return NextResponse.json({
+      success: true,
+      message: 'Jadwal tugas misa berhasil dibatalkan. Kuota telah dikembalikan untuk misdinar lain.',
+    })
+  } catch (err: any) {
+    return NextResponse.json({ error: err.message || 'Gagal membatalkan jadwal tugas.' }, { status: 500 })
+  }
+}

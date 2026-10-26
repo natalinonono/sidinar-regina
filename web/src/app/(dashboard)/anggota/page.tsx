@@ -6,6 +6,7 @@ import { MassSchedule, BookingWithDetails, Profile, Announcement } from '@/types
 import { ScheduleCard } from '@/components/ScheduleCard'
 import { BookingModal } from '@/components/BookingModal'
 import { CheckinModal } from '@/components/CheckinModal'
+import { EditBookingModal } from '@/components/EditBookingModal'
 import { getCurrentLiturgicalWeek, evaluateCheckinWindow } from '@/lib/utils/time'
 
 export default function AnggotaDashboardPage() {
@@ -23,6 +24,7 @@ export default function AnggotaDashboardPage() {
   // Modals
   const [selectedScheduleForBooking, setSelectedScheduleForBooking] = useState<MassSchedule | null>(null)
   const [selectedBookingForCheckin, setSelectedBookingForCheckin] = useState<BookingWithDetails | null>(null)
+  const [selectedBookingForEdit, setSelectedBookingForEdit] = useState<BookingWithDetails | null>(null)
 
   const { weekNumber, yearNumber, startDateStr, endDateStr, formattedRange } = useMemo(() => getCurrentLiturgicalWeek(), [])
 
@@ -321,14 +323,24 @@ export default function AnggotaDashboardPage() {
                   </span>
                 </div>
 
-                <button
-                  onClick={() => setSelectedBookingForCheckin(nextUserDuty)}
-                  className="w-full py-2.5 px-4 rounded-xl font-headline font-bold text-xs bg-secondary-container text-on-secondary-container hover:bg-secondary-fixed transition-all shadow-md flex items-center justify-center gap-2 group"
-                  type="button"
-                >
-                  <span className="material-symbols-outlined text-base">qr_code_scanner</span>
-                  <span>Buka Presensi Sakristi</span>
-                </button>
+                <div className="w-full flex flex-col sm:flex-row gap-2 mt-2">
+                  <button
+                    onClick={() => setSelectedBookingForEdit(nextUserDuty)}
+                    className="flex-1 py-2.5 px-3 rounded-xl font-headline font-bold text-xs bg-white/15 hover:bg-white/25 text-white transition-all border border-white/20 flex items-center justify-center gap-1.5"
+                    type="button"
+                  >
+                    <span className="material-symbols-outlined text-base">edit_calendar</span>
+                    <span>Ubah / Batal</span>
+                  </button>
+                  <button
+                    onClick={() => setSelectedBookingForCheckin(nextUserDuty)}
+                    className="flex-1 py-2.5 px-3 rounded-xl font-headline font-bold text-xs bg-secondary-container text-on-secondary-container hover:bg-secondary-fixed transition-all shadow-md flex items-center justify-center gap-1.5 group"
+                    type="button"
+                  >
+                    <span className="material-symbols-outlined text-base">qr_code_scanner</span>
+                    <span>Presensi Sakristi</span>
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -470,6 +482,7 @@ export default function AnggotaDashboardPage() {
                   }
                   onBookClick={(s) => setSelectedScheduleForBooking(s)}
                   onCheckinClick={(b) => setSelectedBookingForCheckin(b as any)}
+                  onEditClick={(b) => setSelectedBookingForEdit(b as any)}
                 />
               )
             })}
@@ -532,6 +545,15 @@ export default function AnggotaDashboardPage() {
         booking={selectedBookingForCheckin}
         isOpen={Boolean(selectedBookingForCheckin)}
         onClose={() => setSelectedBookingForCheckin(null)}
+        onSuccess={() => loadInitialData()}
+      />
+
+      <EditBookingModal
+        booking={selectedBookingForEdit}
+        allSchedules={schedules}
+        allBookings={allBookings}
+        isOpen={Boolean(selectedBookingForEdit)}
+        onClose={() => setSelectedBookingForEdit(null)}
         onSuccess={() => loadInitialData()}
       />
     </div>

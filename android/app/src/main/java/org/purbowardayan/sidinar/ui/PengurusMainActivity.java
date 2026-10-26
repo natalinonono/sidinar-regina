@@ -83,9 +83,14 @@ public class PengurusMainActivity extends AppCompatActivity implements
     private void setupAdapters() {
         announcementAdapter = new AnnouncementAdapter(true, this);
         memberAdapter = new MemberAdapter(this);
-        scheduleAdapter = new ScheduleAdapter(schedule -> {
-            // Pengurus monitoring view
-            Toast.makeText(this, "Misa: " + schedule.getJudulMisa() + " (Terisi: " + schedule.getBookedCount() + "/" + schedule.getKuotaMaksimal() + ")", Toast.LENGTH_SHORT).show();
+        scheduleAdapter = new ScheduleAdapter(new ScheduleAdapter.OnScheduleClickListener() {
+            @Override
+            public void onBookClick(MassSchedule schedule) {
+                Toast.makeText(PengurusMainActivity.this, "Misa: " + schedule.getJudulMisa() + " (Terisi: " + schedule.getBookedCount() + "/" + schedule.getKuotaMaksimal() + ")", Toast.LENGTH_SHORT).show();
+            }
+
+            @Override
+            public void onEditMyBookingClick(MassSchedule schedule) {}
         }, null, true);
 
         binding.rvPengurusList.setLayoutManager(new LinearLayoutManager(this));
