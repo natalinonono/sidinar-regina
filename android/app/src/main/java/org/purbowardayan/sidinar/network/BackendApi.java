@@ -34,7 +34,8 @@ public interface BackendApi {
     @DELETE("api/bookings")
     Call<ResponseBody> cancelBooking(
             @Header("Authorization") String auth,
-            @Query("id") String bookingId
+            @Query("id") String bookingId,
+            @Query("user_id") String userId
     );
 
     @POST("api/checkin")

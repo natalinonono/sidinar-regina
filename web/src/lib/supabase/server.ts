@@ -1,12 +1,23 @@
 import { createServerClient } from '@supabase/ssr'
 import { createClient as createSupabaseClient } from '@supabase/supabase-js'
-import { cookies } from 'next/headers'
+import { cookies, headers } from 'next/headers'
 import { Database } from '@/types/database'
 
 export async function createClient() {
   const cookieStore = cookies()
+  let bearerToken: string | null = null
 
-  return createServerClient<Database>(
+  try {
+    const headersList = headers()
+    const authHeader = headersList.get('authorization') || headersList.get('Authorization')
+    if (authHeader && authHeader.toLowerCase().startsWith('bearer ')) {
+      bearerToken = authHeader.substring(7).trim()
+    }
+  } catch {
+    // ignore
+  }
+
+  const client = createServerClient<Database>(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
@@ -25,8 +36,20 @@ export async function createClient() {
           }
         },
       },
+      global: {
+        headers: bearerToken ? { Authorization: `Bearer ${bearerToken}` } : {},
+      },
     }
   )
+
+  if (bearerToken) {
+    const originalGetUser = client.auth.getUser.bind(client.auth)
+    client.auth.getUser = async (jwt?: string) => {
+      return originalGetUser(jwt || bearerToken!)
+    }
+  }
+
+  return client
 }
 
 export function createAdminClient() {

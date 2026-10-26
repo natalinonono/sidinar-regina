@@ -44,11 +44,27 @@ export async function POST(request: Request) {
       data: { user },
     } = await supabase.auth.getUser()
 
-    if (!user) {
-      return NextResponse.json({ error: 'Autentikasi diperlukan.' }, { status: 401 })
+    const body = await request.json()
+    const { schedule_id, posisi_tugas, user_id } = body
+
+    let effectiveUserId = user?.id
+
+    if (!effectiveUserId && user_id) {
+      const adminSupabase = createAdminClient()
+      const { data: profile } = await (adminSupabase as any)
+        .from('profiles')
+        .select('id, status')
+        .eq('id', user_id)
+        .eq('status', 'aktif')
+        .maybeSingle()
+      if (profile) {
+        effectiveUserId = profile.id
+      }
     }
 
-    const { schedule_id, posisi_tugas } = await request.json()
+    if (!effectiveUserId) {
+      return NextResponse.json({ error: 'Autentikasi diperlukan. Silakan login kembali.' }, { status: 401 })
+    }
 
     if (!schedule_id) {
       return NextResponse.json({ error: 'Jadwal misa (schedule_id) wajib dipilih.' }, { status: 400 })
@@ -61,7 +77,7 @@ export async function POST(request: Request) {
       .from('bookings')
       .insert({
         schedule_id,
-        user_id: user.id,
+        user_id: effectiveUserId,
         posisi_tugas: posisi_tugas || 'Petugas Altar',
         status_kehadiran: 'terdaftar',
       })
@@ -104,14 +120,29 @@ export async function PATCH(request: Request) {
       data: { user },
     } = await supabase.auth.getUser()
 
-    if (!user) {
-      return NextResponse.json({ error: 'Autentikasi diperlukan.' }, { status: 401 })
-    }
-
     const body = await request.json()
     const bookingId = body.booking_id || body.id
     const newScheduleId = body.new_schedule_id || body.schedule_id
     const posisiTugas = body.posisi_tugas || 'Petugas Altar'
+    const requestUserId = body.user_id
+
+    let effectiveUserId = user?.id
+    if (!effectiveUserId && requestUserId) {
+      const adminSupabase = createAdminClient()
+      const { data: profile } = await (adminSupabase as any)
+        .from('profiles')
+        .select('id, status')
+        .eq('id', requestUserId)
+        .eq('status', 'aktif')
+        .maybeSingle()
+      if (profile) {
+        effectiveUserId = profile.id
+      }
+    }
+
+    if (!effectiveUserId) {
+      return NextResponse.json({ error: 'Autentikasi diperlukan. Silakan login kembali.' }, { status: 401 })
+    }
 
     if (!bookingId) {
       return NextResponse.json({ error: 'ID penugasan (booking_id) wajib disertakan.' }, { status: 400 })
@@ -134,11 +165,11 @@ export async function PATCH(request: Request) {
     const { data: profile } = await (adminSupabase as any)
       .from('profiles')
       .select('role')
-      .eq('id', user.id)
+      .eq('id', effectiveUserId)
       .single()
 
     const isPengurus = profile?.role === 'pengurus'
-    if (existingBooking.user_id !== user.id && !isPengurus) {
+    if (existingBooking.user_id !== effectiveUserId && !isPengurus) {
       return NextResponse.json(
         { error: 'Akses ditolak: Anda hanya dapat mengedit jadwal tugas milik Anda sendiri.' },
         { status: 403 }
@@ -241,18 +272,33 @@ export async function DELETE(request: Request) {
       data: { user },
     } = await supabase.auth.getUser()
 
-    if (!user) {
-      return NextResponse.json({ error: 'Autentikasi diperlukan.' }, { status: 401 })
-    }
-
     const { searchParams } = new URL(request.url)
     let bookingId = searchParams.get('id') || searchParams.get('booking_id')
+    const queryUserId = searchParams.get('user_id')
 
     if (!bookingId) {
       try {
         const body = await request.json()
         bookingId = body.booking_id || body.id
       } catch {}
+    }
+
+    let effectiveUserId = user?.id
+    if (!effectiveUserId && queryUserId) {
+      const adminSupabase = createAdminClient()
+      const { data: profile } = await (adminSupabase as any)
+        .from('profiles')
+        .select('id, status')
+        .eq('id', queryUserId)
+        .eq('status', 'aktif')
+        .maybeSingle()
+      if (profile) {
+        effectiveUserId = profile.id
+      }
+    }
+
+    if (!effectiveUserId) {
+      return NextResponse.json({ error: 'Autentikasi diperlukan. Silakan login kembali.' }, { status: 401 })
     }
 
     if (!bookingId) {
@@ -276,11 +322,11 @@ export async function DELETE(request: Request) {
     const { data: profile } = await (adminSupabase as any)
       .from('profiles')
       .select('role')
-      .eq('id', user.id)
+      .eq('id', effectiveUserId)
       .single()
 
     const isPengurus = profile?.role === 'pengurus'
-    if (existingBooking.user_id !== user.id && !isPengurus) {
+    if (existingBooking.user_id !== effectiveUserId && !isPengurus) {
       return NextResponse.json(
         { error: 'Akses ditolak: Anda hanya dapat membatalkan jadwal tugas milik Anda sendiri.' },
         { status: 403 }

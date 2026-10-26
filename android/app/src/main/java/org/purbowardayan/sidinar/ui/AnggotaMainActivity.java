@@ -542,8 +542,8 @@ public class AnggotaMainActivity extends AppCompatActivity implements ScheduleAd
                 .setTitle("Batalkan Jadwal Tugas")
                 .setMessage("Apakah Anda yakin ingin membatalkan tugas di " + scheduleTitle + "?\n\nSlot kuota akan langsung dibuka kembali untuk anggota misdinar lain.")
                 .setPositiveButton("Ya, Batalkan Tugas", (dialog, which) -> {
-                    String authHeader = "Bearer " + sessionManager.getToken();
-                    ApiClient.getBackendApi().cancelBooking(authHeader, booking.getId()).enqueue(new Callback<ResponseBody>() {
+                    String authHeader = sessionManager.getAuthHeader();
+                    ApiClient.getBackendApi().cancelBooking(authHeader, booking.getId(), sessionManager.getUserId()).enqueue(new Callback<ResponseBody>() {
                         @Override
                         public void onResponse(@NonNull Call<ResponseBody> call, @NonNull Response<ResponseBody> response) {
                             if (response.isSuccessful()) {
@@ -554,7 +554,13 @@ public class AnggotaMainActivity extends AppCompatActivity implements ScheduleAd
                                 try {
                                     if (response.errorBody() != null) {
                                         String errStr = response.errorBody().string();
-                                        if (errStr.contains("error")) msg = errStr;
+                                        try {
+                                            org.json.JSONObject obj = new org.json.JSONObject(errStr);
+                                            if (obj.has("error")) msg = obj.getString("error");
+                                            else if (obj.has("message")) msg = obj.getString("message");
+                                        } catch (Exception e) {
+                                            if (errStr != null && !errStr.isEmpty()) msg = errStr;
+                                        }
                                     }
                                 } catch (Exception ignored) {}
                                 Toast.makeText(AnggotaMainActivity.this, msg, Toast.LENGTH_LONG).show();
@@ -624,8 +630,9 @@ public class AnggotaMainActivity extends AppCompatActivity implements ScheduleAd
                     body.put("booking_id", booking.getId());
                     body.put("new_schedule_id", target.getId());
                     body.put("posisi_tugas", "Petugas Altar");
+                    body.put("user_id", sessionManager.getUserId());
 
-                    String authHeader = "Bearer " + sessionManager.getToken();
+                    String authHeader = sessionManager.getAuthHeader();
                     ApiClient.getBackendApi().updateBooking(authHeader, body).enqueue(new Callback<ResponseBody>() {
                         @Override
                         public void onResponse(@NonNull Call<ResponseBody> call, @NonNull Response<ResponseBody> response) {
@@ -637,7 +644,13 @@ public class AnggotaMainActivity extends AppCompatActivity implements ScheduleAd
                                 try {
                                     if (response.errorBody() != null) {
                                         String errStr = response.errorBody().string();
-                                        if (errStr.contains("error")) msg = errStr;
+                                        try {
+                                            org.json.JSONObject obj = new org.json.JSONObject(errStr);
+                                            if (obj.has("error")) msg = obj.getString("error");
+                                            else if (obj.has("message")) msg = obj.getString("message");
+                                        } catch (Exception e) {
+                                            if (errStr != null && !errStr.isEmpty()) msg = errStr;
+                                        }
                                     }
                                 } catch (Exception ignored) {}
                                 Toast.makeText(AnggotaMainActivity.this, msg, Toast.LENGTH_LONG).show();
@@ -689,8 +702,9 @@ public class AnggotaMainActivity extends AppCompatActivity implements ScheduleAd
             Map<String, Object> body = new HashMap<>();
             body.put("schedule_id", schedule.getId());
             body.put("posisi_tugas", "Petugas Altar");
+            body.put("user_id", sessionManager.getUserId());
 
-            String authHeader = "Bearer " + sessionManager.getToken();
+            String authHeader = sessionManager.getAuthHeader();
             ApiClient.getBackendApi().createBooking(authHeader, body).enqueue(new Callback<ResponseBody>() {
                 @Override
                 public void onResponse(@NonNull Call<ResponseBody> call, @NonNull Response<ResponseBody> response) {
@@ -704,7 +718,13 @@ public class AnggotaMainActivity extends AppCompatActivity implements ScheduleAd
                         try {
                             if (response.errorBody() != null) {
                                 String errStr = response.errorBody().string();
-                                if (errStr.contains("error")) errMsg = errStr;
+                                try {
+                                    org.json.JSONObject obj = new org.json.JSONObject(errStr);
+                                    if (obj.has("error")) errMsg = obj.getString("error");
+                                    else if (obj.has("message")) errMsg = obj.getString("message");
+                                } catch (Exception e) {
+                                    if (errStr != null && !errStr.isEmpty()) errMsg = errStr;
+                                }
                             }
                         } catch (Exception ignored) {}
                         Toast.makeText(AnggotaMainActivity.this, errMsg, Toast.LENGTH_LONG).show();
