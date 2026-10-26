@@ -5,6 +5,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { Profile } from '@/types/database'
+import { NotificationCenter } from '@/components/NotificationCenter'
 
 interface NavbarProps {
   profile: Profile | null
@@ -195,6 +196,9 @@ export const Navbar: React.FC<NavbarProps> = ({ profile, realtimeConnected = tru
                 {currentTimeWIB}
               </span>
             )}
+
+            {/* Notification Bell & Auto Reminder Alert */}
+            <NotificationCenter profile={profile} />
 
             {/* User Profile Pill */}
             {profile && (

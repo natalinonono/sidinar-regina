@@ -35,6 +35,7 @@ import org.purbowardayan.sidinar.model.Booking;
 import org.purbowardayan.sidinar.model.MassSchedule;
 import org.purbowardayan.sidinar.model.Profile;
 import org.purbowardayan.sidinar.network.ApiClient;
+import org.purbowardayan.sidinar.util.NotificationHelper;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
@@ -48,6 +49,7 @@ public class AnggotaMainActivity extends AppCompatActivity implements ScheduleAd
 
     private final List<MassSchedule> allSchedules = new ArrayList<>();
     private final List<Booking> allBookings = new ArrayList<>();
+    private final List<Announcement> allAnnouncements = new ArrayList<>();
     private Booking myUpcomingBooking = null;
     private String selectedFilter = "all"; // "all" | "mingguan" | "harian"
 
@@ -64,11 +66,40 @@ public class AnggotaMainActivity extends AppCompatActivity implements ScheduleAd
             return;
         }
 
+        // Request POST_NOTIFICATIONS permission on Android 13+ (API 33+)
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+            if (checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS) != android.content.pm.PackageManager.PERMISSION_GRANTED) {
+                requestPermissions(new String[]{android.Manifest.permission.POST_NOTIFICATIONS}, 101);
+            }
+        }
+
         setupUI();
         setupRecyclerViews();
         setupListeners();
 
         loadAllData();
+    }
+
+    private final android.os.Handler reminderHandler = new android.os.Handler(android.os.Looper.getMainLooper());
+    private final Runnable reminderCheckerRunnable = new Runnable() {
+        @Override
+        public void run() {
+            loadBookings();
+            reminderHandler.postDelayed(this, 12000);
+        }
+    };
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        loadAllData();
+        reminderHandler.postDelayed(reminderCheckerRunnable, 12000);
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        reminderHandler.removeCallbacks(reminderCheckerRunnable);
     }
 
     private void setupUI() {
@@ -131,6 +162,10 @@ public class AnggotaMainActivity extends AppCompatActivity implements ScheduleAd
 
         binding.btnEditProfile.setOnClickListener(v -> {
             showEditProfileDialog();
+        });
+
+        binding.btnNotifications.setOnClickListener(v -> {
+            showNotificationsDialog();
         });
 
         binding.btnRiwayatTugas.setOnClickListener(v -> {
@@ -243,6 +278,7 @@ public class AnggotaMainActivity extends AppCompatActivity implements ScheduleAd
                     boolean hasHarian = false;
                     boolean hasMingguan = false;
 
+                    int activeReminderCount = 0;
                     for (Booking b : allBookings) {
                         if (myId != null && myId.equals(b.getUserId())) {
                             if (myUpcomingBooking == null) {
@@ -253,7 +289,18 @@ public class AnggotaMainActivity extends AppCompatActivity implements ScheduleAd
                                 if ("harian".equalsIgnoreCase(kat)) hasHarian = true;
                                 if ("mingguan".equalsIgnoreCase(kat)) hasMingguan = true;
                             }
+                            if (b.isWaReminderSent() && b.getSchedule() != null) {
+                                activeReminderCount++;
+                                checkAndTriggerReminderNotification(b);
+                            }
                         }
+                    }
+
+                    // Update notification bell appearance if active reminders exist
+                    if (activeReminderCount > 0) {
+                        binding.btnNotifications.setIconTint(androidx.core.content.ContextCompat.getColorStateList(AnggotaMainActivity.this, R.color.secondary));
+                    } else {
+                        binding.btnNotifications.setIconTint(androidx.core.content.ContextCompat.getColorStateList(AnggotaMainActivity.this, R.color.primary));
                     }
 
                     // Update Misa Harian tracker badge
@@ -422,6 +469,8 @@ public class AnggotaMainActivity extends AppCompatActivity implements ScheduleAd
             public void onResponse(@NonNull Call<List<Announcement>> call, @NonNull Response<List<Announcement>> response) {
                 if (response.isSuccessful() && response.body() != null) {
                     List<Announcement> list = response.body();
+                    allAnnouncements.clear();
+                    allAnnouncements.addAll(list);
                     announcementAdapter.updateList(list);
                     binding.tvEmptyAnnouncements.setVisibility(list.isEmpty() ? View.VISIBLE : View.GONE);
                 } else {
@@ -864,5 +913,85 @@ public class AnggotaMainActivity extends AppCompatActivity implements ScheduleAd
         });
 
         dialog.show();
+    }
+
+    private void checkAndTriggerReminderNotification(Booking booking) {
+        if (booking == null || booking.getSchedule() == null) return;
+        android.content.SharedPreferences prefs = getSharedPreferences("sidinar_notifications", MODE_PRIVATE);
+        String notifKey = "notified_reminder_" + booking.getId();
+        if (!prefs.getBoolean(notifKey, false)) {
+            String massTitle = booking.getSchedule().getKategori() != null ? booking.getSchedule().getKategori().toUpperCase() : "MISA";
+            String massTime = (booking.getSchedule().getTanggalMisa() != null ? booking.getSchedule().getTanggalMisa() : "") +
+                    " • " + (booking.getSchedule().getJamMulai() != null ? booking.getSchedule().getJamMulai() : "") + " WIB";
+            Profile profile = sessionManager.getProfile();
+            String nama = profile != null && profile.getNamaPanggilan() != null && !profile.getNamaPanggilan().isEmpty()
+                    ? profile.getNamaPanggilan() : "Misdinar";
+
+            String title = "🔔 Pengingat Tugas Misdinar: " + massTitle;
+            String message = "Halo " + nama + ", pengurus sakristi mengingatkan jadwal tugas altar Anda pada " + massTime +
+                    " (" + booking.getPosisiTugas() + "). Harap hadir di sakristi paling lambat H-30 menit!";
+
+            // 1. Show Android system notification in notification tray with chime & vibration
+            NotificationHelper.showReminderNotification(this, title, message, booking.getId());
+
+            // 2. Mark as notified so we don't spam ringtones repeatedly
+            prefs.edit().putBoolean(notifKey, true).apply();
+
+            // 3. Show In-App Alert dialog if user is currently looking at the app
+            showReminderInAppDialog(booking, title, message);
+        }
+    }
+
+    private void showReminderInAppDialog(Booking booking, String title, String message) {
+        new AlertDialog.Builder(this)
+                .setTitle(title)
+                .setMessage(message)
+                .setIcon(R.drawable.logo_misdinar)
+                .setPositiveButton("Siap Bertugas", (dialog, which) -> {
+                    dialog.dismiss();
+                    Toast.makeText(this, "Terima kasih atas komitmen pelayanan Anda! Berkah Dalem.", Toast.LENGTH_SHORT).show();
+                })
+                .setNeutralButton("Jadwal Saya", (dialog, which) -> {
+                    dialog.dismiss();
+                    startActivity(new Intent(this, RiwayatTugasActivity.class));
+                })
+                .show();
+    }
+
+    private void showNotificationsDialog() {
+        String myId = sessionManager.getUserId();
+        List<String> notifList = new ArrayList<>();
+
+        for (Booking b : allBookings) {
+            if (myId != null && myId.equals(b.getUserId()) && b.isWaReminderSent() && b.getSchedule() != null) {
+                String kat = b.getSchedule().getKategori() != null ? b.getSchedule().getKategori().toUpperCase() : "MISA";
+                notifList.add("🔔 PENGINGAT TUGAS: " + kat +
+                        "\nJadwal: " + (b.getSchedule().getTanggalMisa() != null ? b.getSchedule().getTanggalMisa() : "") + " • " + (b.getSchedule().getJamMulai() != null ? b.getSchedule().getJamMulai() : "") + " WIB" +
+                        "\nPosisi: " + b.getPosisiTugas() +
+                        "\nStatus: Pengurus Sakristi telah mengirimkan pengingat");
+            }
+        }
+
+        if (allAnnouncements != null) {
+            for (Announcement a : allAnnouncements) {
+                notifList.add("📢 " + a.getJudul() + "\n" + a.getIsi());
+            }
+        }
+
+        if (notifList.isEmpty()) {
+            new AlertDialog.Builder(this)
+                    .setTitle("Notifikasi & Pengingat")
+                    .setMessage("Belum ada notifikasi atau pengingat tugas aktif saat ini.")
+                    .setPositiveButton("Tutup", null)
+                    .show();
+            return;
+        }
+
+        CharSequence[] items = notifList.toArray(new CharSequence[0]);
+        new AlertDialog.Builder(this)
+                .setTitle("Notifikasi & Pengingat Tugas (" + notifList.size() + ")")
+                .setItems(items, null)
+                .setPositiveButton("Tutup", null)
+                .show();
     }
 }

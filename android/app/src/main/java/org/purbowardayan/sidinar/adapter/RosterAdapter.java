@@ -105,9 +105,35 @@ public class RosterAdapter extends RecyclerView.Adapter<RosterAdapter.ViewHolder
                 if (listener != null) listener.onChangePosition(booking);
             });
 
+            if (booking.isWaReminderSent()) {
+                btnSendWaReminder.setText("Diingatkan");
+                btnSendWaReminder.setIconResource(R.drawable.ic_check);
+            } else {
+                btnSendWaReminder.setText("Kirim Pengingat");
+                btnSendWaReminder.setIconResource(R.drawable.ic_bell);
+            }
+
             btnSendWaReminder.setOnClickListener(v -> {
                 if (booking.getProfile() != null) {
                     LiturgicalUtil.sendWhatsAppReminder(itemView.getContext(), schedule, booking.getProfile());
+                    
+                    // Trigger backend notification to member's app/web
+                    org.purbowardayan.sidinar.auth.SessionManager session = new org.purbowardayan.sidinar.auth.SessionManager(itemView.getContext());
+                    String token = session.getAuthHeader();
+                    org.purbowardayan.sidinar.network.ApiClient.getBackendApi().recordReminderSent(token, booking.getId()).enqueue(new retrofit2.Callback<okhttp3.ResponseBody>() {
+                        @Override
+                        public void onResponse(retrofit2.Call<okhttp3.ResponseBody> call, retrofit2.Response<okhttp3.ResponseBody> response) {
+                            booking.setWaReminderSent(true);
+                            btnSendWaReminder.setText("Diingatkan");
+                            btnSendWaReminder.setIconResource(R.drawable.ic_check);
+                            android.widget.Toast.makeText(itemView.getContext(), "Pengingat otomatis berhasil dikirim ke perangkat misdinar!", android.widget.Toast.LENGTH_SHORT).show();
+                        }
+
+                        @Override
+                        public void onFailure(retrofit2.Call<okhttp3.ResponseBody> call, Throwable t) {
+                            // Still opened WhatsApp
+                        }
+                    });
                 }
             });
         }

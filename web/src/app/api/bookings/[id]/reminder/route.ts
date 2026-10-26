@@ -43,12 +43,44 @@ export async function POST(request: Request, context: RouteContext) {
       message = waInfo.message
     }
 
+    const memberName = booking.profile?.nama_panggilan || booking.profile?.nama_lengkap || 'Misdinar'
+    const scheduleTitle = booking.schedule?.kategori ? booking.schedule.kategori.toUpperCase() : 'Misa'
+    const notifTitle = `🔔 Pengingat Tugas: Misa ${scheduleTitle}`
+    const notifBody = `Halo ${memberName}, pengurus sakristi mengingatkan tugas altar pada ${booking.schedule?.tanggal_misa || ''} pukul ${booking.schedule?.jam_mulai || ''} WIB (${booking.posisi_tugas || 'Petugas Altar'}). Harap hadir di sakristi H-30 menit!`
+
+    // 4. Broadcast via Supabase Realtime agar web dan handphone otomatis menerima notifikasi
+    try {
+      const channel = adminSupabase.channel('reminders-broadcast')
+      await channel.send({
+        type: 'broadcast',
+        event: 'reminder_alert',
+        payload: {
+          booking_id: booking.id,
+          user_id: booking.user_id,
+          title: notifTitle,
+          message: notifBody,
+          tanggal: booking.schedule?.tanggal_misa,
+          jam_mulai: booking.schedule?.jam_mulai,
+          kategori: booking.schedule?.kategori,
+          posisi_tugas: booking.posisi_tugas,
+          timestamp: new Date().toISOString(),
+        },
+      })
+    } catch (broadcastErr) {
+      console.warn('Realtime broadcast warning:', broadcastErr)
+    }
+
     return NextResponse.json({
       success: true,
-      message: 'Status reminder berhasil diperbarui!',
+      message: 'Status reminder dan notifikasi berhasil dikirim!',
       wa_reminder_sent: true,
       wa_url: waUrl,
       reminder_text: message,
+      notification: {
+        title: notifTitle,
+        body: notifBody,
+        user_id: booking.user_id,
+      },
     })
   } catch (err: any) {
     return NextResponse.json({ error: err.message || 'Gagal memproses reminder.' }, { status: 500 })

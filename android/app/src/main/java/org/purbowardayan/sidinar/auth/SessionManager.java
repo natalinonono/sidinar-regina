@@ -64,6 +64,11 @@ public class SessionManager {
         return prefs.getString(KEY_TOKEN, null);
     }
 
+    public String getAuthHeader() {
+        String token = getToken();
+        return token != null ? "Bearer " + token : "";
+    }
+
     public String getUserId() {
         return prefs.getString(KEY_USER_ID, null);
     }

@@ -242,6 +242,24 @@ export default function PengurusJadwalPage() {
                     Daftar Petugas Terdaftar ({selectedBookings.length} / {selectedSchedule.kuota_maksimal})
                   </h3>
                   <div className="flex items-center gap-2">
+                    {selectedBookings.length > 0 && (
+                      <button
+                        onClick={async () => {
+                          if (!confirm(`Kirim notifikasi pengingat otomatis ke seluruh ${selectedBookings.length} petugas misa ini?`)) return
+                          for (const b of selectedBookings) {
+                            await fetch(`/api/bookings/${b.id}/reminder`, { method: 'POST' })
+                          }
+                          loadSchedulesAndBookings()
+                          alert('Notifikasi pengingat berhasil dikirim ke seluruh perangkat petugas!')
+                        }}
+                        className="px-3 py-1.5 rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 text-xs font-semibold flex items-center gap-1.5 transition-colors shadow-2xs"
+                        type="button"
+                        title="Kirim notifikasi otomatis ke semua petugas"
+                      >
+                        <span className="material-symbols-outlined text-sm">notifications_active</span>
+                        <span>Ingatkan Semua Petugas</span>
+                      </button>
+                    )}
                     <button
                       onClick={() => window.print()}
                       className="px-3 py-1.5 rounded-lg bg-surface-container text-on-surface hover:bg-surface-container-high text-xs font-semibold flex items-center gap-1.5 transition-colors"

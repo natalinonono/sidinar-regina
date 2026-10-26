@@ -34,6 +34,9 @@ public class Booking implements Serializable {
     @SerializedName("created_at")
     private String createdAt;
 
+    @SerializedName("wa_reminder_sent")
+    private boolean waReminderSent;
+
     @SerializedName("schedule")
     private MassSchedule schedule;
 
@@ -41,6 +44,9 @@ public class Booking implements Serializable {
     private Profile profile;
 
     public Booking() {}
+
+    public boolean isWaReminderSent() { return waReminderSent; }
+    public void setWaReminderSent(boolean waReminderSent) { this.waReminderSent = waReminderSent; }
 
     public String getId() { return id; }
     public void setId(String id) { this.id = id; }
