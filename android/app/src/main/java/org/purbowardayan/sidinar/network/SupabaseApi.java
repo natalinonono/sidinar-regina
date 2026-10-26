@@ -1,6 +1,7 @@
 package org.purbowardayan.sidinar.network;
 
 import java.util.List;
+import java.util.Map;
 import okhttp3.ResponseBody;
 import org.purbowardayan.sidinar.model.Announcement;
 import org.purbowardayan.sidinar.model.AuthResponse;
@@ -49,6 +50,25 @@ public interface SupabaseApi {
             @Query("order") String order
     );
 
+    @POST("rest/v1/mass_schedules")
+    Call<Void> createSchedule(
+            @Header("Authorization") String auth,
+            @Body MassSchedule schedule
+    );
+
+    @PATCH("rest/v1/mass_schedules")
+    Call<Void> updateSchedule(
+            @Header("Authorization") String auth,
+            @Query("id") String idFilter,
+            @Body MassSchedule schedule
+    );
+
+    @DELETE("rest/v1/mass_schedules")
+    Call<Void> deleteSchedule(
+            @Header("Authorization") String auth,
+            @Query("id") String idFilter
+    );
+
     @GET("rest/v1/bookings")
     Call<List<Booking>> getAllBookings(
             @Header("Authorization") String auth,
@@ -62,6 +82,20 @@ public interface SupabaseApi {
             @Query("user_id") String userIdFilter,
             @Query("select") String select,
             @Query("order") String order
+    );
+
+    @PATCH("rest/v1/bookings")
+    Call<Void> updateBookingPosition(
+            @Header("Authorization") String auth,
+            @Query("id") String idFilter,
+            @Body Map<String, Object> body
+    );
+
+    @PATCH("rest/v1/bookings")
+    Call<Void> updateAttendanceStatus(
+            @Header("Authorization") String auth,
+            @Query("id") String idFilter,
+            @Body Map<String, Object> body
     );
 
     @GET("rest/v1/announcements")
@@ -88,12 +122,5 @@ public interface SupabaseApi {
     Call<Void> deleteAnnouncement(
             @Header("Authorization") String auth,
             @Query("id") String idFilter
-    );
-
-    @PATCH("rest/v1/bookings")
-    Call<Void> updateBooking(
-            @Header("Authorization") String auth,
-            @Query("id") String idFilter,
-            @Body Booking booking
     );
 }

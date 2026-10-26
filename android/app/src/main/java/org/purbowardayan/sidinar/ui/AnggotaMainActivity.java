@@ -132,6 +132,16 @@ public class AnggotaMainActivity extends AppCompatActivity implements ScheduleAd
                     .show();
         });
 
+        binding.btnRiwayatTugas.setOnClickListener(v -> {
+            startActivity(new Intent(AnggotaMainActivity.this, RiwayatTugasActivity.class));
+        });
+
+        binding.btnMyBookingCheckin.setOnClickListener(v -> {
+            if (myUpcomingBooking != null) {
+                showCheckinDialog(myUpcomingBooking);
+            }
+        });
+
         binding.btnScanQr.setOnClickListener(v -> {
             IntentIntegrator integrator = new IntentIntegrator(this);
             integrator.setPrompt("Arahkan kamera ke QR Code Presensi Misa");
@@ -686,5 +696,89 @@ public class AnggotaMainActivity extends AppCompatActivity implements ScheduleAd
         } catch (Exception e) {
             Toast.makeText(this, "Tidak dapat membuka aplikasi kalender: " + e.getMessage(), Toast.LENGTH_SHORT).show();
         }
+    }
+
+    private void showCheckinDialog(Booking booking) {
+        View dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_checkin, null);
+        AlertDialog dialog = new AlertDialog.Builder(this)
+                .setView(dialogView)
+                .create();
+
+        android.widget.ImageView ivQr = dialogView.findViewById(R.id.ivCheckinQrCode);
+        TextView tvSubtitle = dialogView.findViewById(R.id.tvCheckinSubtitle);
+        TextView tvKodeTugas = dialogView.findViewById(R.id.tvCheckinKodeTugas);
+        TextView tvPeran = dialogView.findViewById(R.id.tvCheckinPeran);
+        TextView tvStatus = dialogView.findViewById(R.id.tvCheckinStatus);
+        ProgressBar progress = dialogView.findViewById(R.id.progressDirectCheckin);
+        MaterialButton btnDirect = dialogView.findViewById(R.id.btnDoDirectCheckin);
+        MaterialButton btnScan = dialogView.findViewById(R.id.btnScanFromDialog);
+        MaterialButton btnClose = dialogView.findViewById(R.id.btnCloseCheckinDialog);
+
+        MassSchedule s = booking.getSchedule();
+        String title = s != null ? s.getJudulMisa() : "Misa Kudus";
+        String time = s != null ? (s.getTanggalMisa() + " • " + s.getFormattedTime()) : "";
+        tvSubtitle.setText(title + " • " + time);
+
+        String idShort = booking.getId() != null && booking.getId().length() >= 8 ? booking.getId().substring(0, 8).toUpperCase() : "";
+        tvKodeTugas.setText("KODE TUGAS: " + idShort);
+
+        tvPeran.setText(booking.getPosisiTugas() != null ? booking.getPosisiTugas() : "Petugas Altar");
+        tvStatus.setText(booking.getStatusKehadiran() != null ? booking.getStatusKehadiran() : "terdaftar");
+
+        try {
+            com.journeyapps.barcodescanner.BarcodeEncoder encoder = new com.journeyapps.barcodescanner.BarcodeEncoder();
+            String qrPayload = "SIDINAR:" + booking.getId() + ":" + booking.getUserId() + ":" + (s != null ? s.getTanggalMisa() : "");
+            android.graphics.Bitmap bitmap = encoder.encodeBitmap(qrPayload, com.google.zxing.BarcodeFormat.QR_CODE, 400, 400);
+            ivQr.setImageBitmap(bitmap);
+        } catch (Exception e) {
+            ivQr.setImageResource(R.drawable.ic_qr_code);
+        }
+
+        boolean isAlreadyCheckedIn = "hadir".equalsIgnoreCase(booking.getStatusKehadiran()) || "terlambat".equalsIgnoreCase(booking.getStatusKehadiran());
+        if (isAlreadyCheckedIn) {
+            btnDirect.setEnabled(false);
+            btnDirect.setText("Presensi Sudah Tercatat (" + booking.getStatusKehadiran() + ")");
+        } else {
+            btnDirect.setOnClickListener(v -> {
+                progress.setVisibility(View.VISIBLE);
+                btnDirect.setEnabled(false);
+                String authHeader = "Bearer " + sessionManager.getToken();
+                ApiClient.getBackendApi().checkInBooking(authHeader, booking.getId()).enqueue(new Callback<ResponseBody>() {
+                    @Override
+                    public void onResponse(@NonNull Call<ResponseBody> call, @NonNull Response<ResponseBody> response) {
+                        progress.setVisibility(View.GONE);
+                        dialog.dismiss();
+                        if (response.isSuccessful()) {
+                            Toast.makeText(AnggotaMainActivity.this, "Presensi Sakristi berhasil tercatat!", Toast.LENGTH_LONG).show();
+                            loadAllData();
+                        } else {
+                            String err = "Presensi belum dibuka atau di luar jam toleransi keterlambatan sakristi.";
+                            try {
+                                if (response.errorBody() != null) {
+                                    String str = response.errorBody().string();
+                                    if (str.contains("error")) err = str;
+                                }
+                            } catch (Exception ignored) {}
+                            Toast.makeText(AnggotaMainActivity.this, err, Toast.LENGTH_LONG).show();
+                        }
+                    }
+
+                    @Override
+                    public void onFailure(@NonNull Call<ResponseBody> call, @NonNull Throwable t) {
+                        progress.setVisibility(View.GONE);
+                        Toast.makeText(AnggotaMainActivity.this, "Koneksi gagal: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+                    }
+                });
+            });
+        }
+
+        btnScan.setOnClickListener(v -> {
+            dialog.dismiss();
+            binding.btnScanQr.performClick();
+        });
+
+        btnClose.setOnClickListener(v -> dialog.dismiss());
+
+        dialog.show();
     }
 }

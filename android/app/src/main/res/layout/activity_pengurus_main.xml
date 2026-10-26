@@ -211,7 +211,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:checked="true"
-                        android:text="Warta &amp; Pengumuman" />
+                        android:text="Warta Sakristi" />
 
                     <com.google.android.material.chip.Chip
                         android:id="@+id/chipTabMembers"
@@ -225,11 +225,18 @@
                         style="@style/Widget.Material3.Chip.Filter"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Pantauan Kuota Misa" />
+                        android:text="Jadwal &amp; Roster Misa" />
+
+                    <com.google.android.material.chip.Chip
+                        android:id="@+id/chipTabPresensi"
+                        style="@style/Widget.Material3.Chip.Filter"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Live Presensi Sakristi" />
                 </com.google.android.material.chip.ChipGroup>
             </HorizontalScrollView>
 
-            <!-- Action Bar for Announcements (Create announcement button) -->
+            <!-- 1. Action Bar for Announcements -->
             <LinearLayout
                 android:id="@+id/layoutAnnouncementActions"
                 android:layout_width="match_parent"
@@ -245,19 +252,199 @@
                     android:layout_weight="1"
                     android:text="Daftar Pengumuman Sakristi"
                     android:textColor="@color/primary"
-                    android:textSize="16sp"
+                    android:textSize="15sp"
                     android:textStyle="bold" />
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btnAddAnnouncement"
                     android:layout_width="wrap_content"
-                    android:layout_height="40dp"
+                    android:layout_height="38dp"
                     android:text="+ Buat Warta"
-                    android:textSize="12sp"
+                    android:textSize="11sp"
                     android:textStyle="bold"
                     app:cornerRadius="10dp"
                     android:backgroundTint="@color/primary"
                     android:textColor="@color/on_primary" />
+            </LinearLayout>
+
+            <!-- 2. Action Bar for Schedules (Generate 30 Days & Add Schedule) -->
+            <LinearLayout
+                android:id="@+id/layoutScheduleActions"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginHorizontal="16dp"
+                android:layout_marginTop="10dp"
+                android:orientation="vertical"
+                android:visibility="gone">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <!-- Generate 30 Hari Button matching Web -->
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnGenerate30Days"
+                        style="@style/Widget.Material3.Button.TonalButton"
+                        android:layout_width="0dp"
+                        android:layout_height="40dp"
+                        android:layout_weight="1"
+                        android:layout_marginEnd="6dp"
+                        android:text="⚡ Generate 30 Hari"
+                        android:textColor="@color/secondary"
+                        android:textSize="11sp"
+                        android:textStyle="bold"
+                        app:cornerRadius="10dp" />
+
+                    <!-- Tambah Jadwal Manual Button matching Web -->
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnAddSchedule"
+                        android:layout_width="0dp"
+                        android:layout_height="40dp"
+                        android:layout_weight="1"
+                        android:layout_marginStart="6dp"
+                        android:text="+ Jadwal Manual"
+                        android:textSize="11sp"
+                        android:textStyle="bold"
+                        android:backgroundTint="@color/primary"
+                        android:textColor="@color/on_primary"
+                        app:cornerRadius="10dp" />
+                </LinearLayout>
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    android:text="Klik jadwal misa untuk melihat roster misdinar, mengatur peran liturgi, dan kirim pengingat WA H-1."
+                    android:textColor="@color/on_surface_variant"
+                    android:textSize="11sp" />
+            </LinearLayout>
+
+            <!-- 3. Subfilter for Members -->
+            <HorizontalScrollView
+                android:id="@+id/layoutMemberFilter"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:scrollbars="none"
+                android:paddingHorizontal="16dp"
+                android:paddingTop="8dp"
+                android:visibility="gone">
+
+                <com.google.android.material.chip.ChipGroup
+                    android:id="@+id/chipGroupMemberFilter"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    app:singleSelection="true">
+
+                    <com.google.android.material.chip.Chip
+                        android:id="@+id/chipMemberFilterPending"
+                        style="@style/Widget.Material3.Chip.Filter"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:checked="true"
+                        android:text="Perlu Approve" />
+
+                    <com.google.android.material.chip.Chip
+                        android:id="@+id/chipMemberFilterActive"
+                        style="@style/Widget.Material3.Chip.Filter"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Anggota Aktif" />
+
+                    <com.google.android.material.chip.Chip
+                        android:id="@+id/chipMemberFilterAll"
+                        style="@style/Widget.Material3.Chip.Filter"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Semua Anggota" />
+                </com.google.android.material.chip.ChipGroup>
+            </HorizontalScrollView>
+
+            <!-- 4. Presensi Live Counters matching Web -->
+            <LinearLayout
+                android:id="@+id/layoutPresensiCounters"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginHorizontal="16dp"
+                android:layout_marginTop="10dp"
+                android:orientation="vertical"
+                android:visibility="gone">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Ringkasan Presensi Pekan Ini"
+                    android:textColor="@color/primary"
+                    android:textSize="14sp"
+                    android:textStyle="bold" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    android:orientation="horizontal">
+
+                    <!-- Hadir -->
+                    <TextView
+                        android:id="@+id/tvCounterHadir"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:layout_marginEnd="3dp"
+                        android:background="@drawable/bg_badge_emerald"
+                        android:gravity="center"
+                        android:paddingVertical="6dp"
+                        android:text="Hadir: 0"
+                        android:textColor="@color/emerald_800"
+                        android:textSize="10sp"
+                        android:textStyle="bold" />
+
+                    <!-- Terlambat -->
+                    <TextView
+                        android:id="@+id/tvCounterTerlambat"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:layout_marginHorizontal="3dp"
+                        android:background="@drawable/bg_badge_amber"
+                        android:gravity="center"
+                        android:paddingVertical="6dp"
+                        android:text="Terlambat: 0"
+                        android:textColor="@color/amber_800"
+                        android:textSize="10sp"
+                        android:textStyle="bold" />
+
+                    <!-- Izin -->
+                    <TextView
+                        android:id="@+id/tvCounterIzin"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:layout_marginHorizontal="3dp"
+                        android:background="@drawable/bg_badge_marian"
+                        android:gravity="center"
+                        android:paddingVertical="6dp"
+                        android:text="Izin: 0"
+                        android:textColor="@color/on_primary_fixed"
+                        android:textSize="10sp"
+                        android:textStyle="bold" />
+
+                    <!-- Alpa -->
+                    <TextView
+                        android:id="@+id/tvCounterAlpa"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:layout_marginStart="3dp"
+                        android:background="@drawable/bg_card_low"
+                        android:gravity="center"
+                        android:paddingVertical="6dp"
+                        android:text="Alpa: 0"
+                        android:textColor="@color/error"
+                        android:textSize="10sp"
+                        android:textStyle="bold" />
+                </LinearLayout>
             </LinearLayout>
 
             <!-- Loading Spinner -->

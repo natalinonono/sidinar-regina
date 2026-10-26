@@ -38,4 +38,28 @@ public interface BackendApi {
             @Header("Authorization") String auth,
             @Body Map<String, Object> body
     );
+
+    @POST("api/schedules/generate")
+    Call<ResponseBody> generateSchedules(
+            @Header("Authorization") String auth,
+            @Body Map<String, Object> body
+    );
+
+    @POST("api/pengurus/approve")
+    Call<ResponseBody> approveMember(
+            @Header("Authorization") String auth,
+            @Body Map<String, Object> body
+    );
+
+    @POST("api/bookings/{id}/checkin")
+    Call<ResponseBody> checkInBooking(
+            @Header("Authorization") String auth,
+            @retrofit2.http.Path("id") String bookingId
+    );
+
+    @POST("api/bookings/{id}/reminder")
+    Call<ResponseBody> recordReminderSent(
+            @Header("Authorization") String auth,
+            @retrofit2.http.Path("id") String bookingId
+    );
 }

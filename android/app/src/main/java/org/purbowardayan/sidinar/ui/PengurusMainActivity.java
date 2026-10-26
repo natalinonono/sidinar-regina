@@ -5,6 +5,8 @@ import android.os.Bundle;
 import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.View;
+import android.widget.ArrayAdapter;
+import android.widget.AutoCompleteTextView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -12,6 +14,7 @@ import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.checkbox.MaterialCheckBox;
 import com.google.android.material.textfield.TextInputEditText;
@@ -19,9 +22,12 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import okhttp3.ResponseBody;
 import org.purbowardayan.sidinar.R;
 import org.purbowardayan.sidinar.adapter.AnnouncementAdapter;
+import org.purbowardayan.sidinar.adapter.AttendanceAdapter;
 import org.purbowardayan.sidinar.adapter.MemberAdapter;
+import org.purbowardayan.sidinar.adapter.RosterAdapter;
 import org.purbowardayan.sidinar.adapter.ScheduleAdapter;
 import org.purbowardayan.sidinar.auth.SessionManager;
 import org.purbowardayan.sidinar.databinding.ActivityPengurusMainBinding;
@@ -30,13 +36,15 @@ import org.purbowardayan.sidinar.model.Booking;
 import org.purbowardayan.sidinar.model.MassSchedule;
 import org.purbowardayan.sidinar.model.Profile;
 import org.purbowardayan.sidinar.network.ApiClient;
+import org.purbowardayan.sidinar.util.LiturgicalUtil;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
 
 public class PengurusMainActivity extends AppCompatActivity implements
         AnnouncementAdapter.OnAnnouncementActionListener,
-        MemberAdapter.OnMemberActionListener {
+        MemberAdapter.OnMemberActionListener,
+        AttendanceAdapter.OnAttendanceActionListener {
 
     private ActivityPengurusMainBinding binding;
     private SessionManager sessionManager;
@@ -44,13 +52,16 @@ public class PengurusMainActivity extends AppCompatActivity implements
     private AnnouncementAdapter announcementAdapter;
     private MemberAdapter memberAdapter;
     private ScheduleAdapter scheduleAdapter;
+    private AttendanceAdapter attendanceAdapter;
 
     private final List<Announcement> announcementList = new ArrayList<>();
     private final List<Profile> memberList = new ArrayList<>();
     private final List<MassSchedule> scheduleList = new ArrayList<>();
     private final List<Booking> bookingList = new ArrayList<>();
 
-    private int currentTab = 0; // 0 = Announcements, 1 = Members, 2 = Schedules
+    // 0 = Announcements, 1 = Members, 2 = Schedules, 3 = Presensi
+    private int currentTab = 0;
+    private String memberFilter = "pending"; // "pending" | "aktif" | "semua"
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -76,21 +87,26 @@ public class PengurusMainActivity extends AppCompatActivity implements
     private void setupUI() {
         Profile p = sessionManager.getProfile();
         if (p != null) {
-            binding.tvPengurusGreeting.setText("Pengurus: " + (p.getNamaLengkap() != null ? p.getNamaLengkap() : "Admin"));
+            String name = p.getNamaLengkap() != null ? p.getNamaLengkap() : "Pengurus";
+            binding.tvPengurusGreeting.setText("Pengurus: " + name);
         }
     }
 
     private void setupAdapters() {
         announcementAdapter = new AnnouncementAdapter(true, this);
         memberAdapter = new MemberAdapter(this);
+        attendanceAdapter = new AttendanceAdapter(this);
+
         scheduleAdapter = new ScheduleAdapter(new ScheduleAdapter.OnScheduleClickListener() {
             @Override
             public void onBookClick(MassSchedule schedule) {
-                Toast.makeText(PengurusMainActivity.this, "Misa: " + schedule.getJudulMisa() + " (Terisi: " + schedule.getBookedCount() + "/" + schedule.getKuotaMaksimal() + ")", Toast.LENGTH_SHORT).show();
+                showScheduleRosterDialog(schedule);
             }
 
             @Override
-            public void onEditMyBookingClick(MassSchedule schedule) {}
+            public void onEditMyBookingClick(MassSchedule schedule) {
+                showScheduleRosterDialog(schedule);
+            }
         }, null, true);
 
         binding.rvPengurusList.setLayoutManager(new LinearLayoutManager(this));
@@ -120,7 +136,10 @@ public class PengurusMainActivity extends AppCompatActivity implements
         });
 
         binding.btnAddAnnouncement.setOnClickListener(v -> showAnnouncementDialog(null));
+        binding.btnAddSchedule.setOnClickListener(v -> showCreateScheduleDialog());
+        binding.btnGenerate30Days.setOnClickListener(v -> handleGenerate30Days());
 
+        // Tab selection
         binding.chipTabAnnouncements.setOnClickListener(v -> {
             currentTab = 0;
             displayCurrentTab();
@@ -133,28 +152,80 @@ public class PengurusMainActivity extends AppCompatActivity implements
             currentTab = 2;
             displayCurrentTab();
         });
+        binding.chipTabPresensi.setOnClickListener(v -> {
+            currentTab = 3;
+            displayCurrentTab();
+        });
+
+        // Member subfilter
+        binding.chipMemberFilterPending.setOnClickListener(v -> {
+            memberFilter = "pending";
+            displayCurrentTab();
+        });
+        binding.chipMemberFilterActive.setOnClickListener(v -> {
+            memberFilter = "aktif";
+            displayCurrentTab();
+        });
+        binding.chipMemberFilterAll.setOnClickListener(v -> {
+            memberFilter = "semua";
+            displayCurrentTab();
+        });
     }
 
     private void displayCurrentTab() {
+        // Toggle action bar visibility
+        binding.layoutAnnouncementActions.setVisibility(currentTab == 0 ? View.VISIBLE : View.GONE);
+        binding.layoutMemberFilter.setVisibility(currentTab == 1 ? View.VISIBLE : View.GONE);
+        binding.layoutScheduleActions.setVisibility(currentTab == 2 ? View.VISIBLE : View.GONE);
+        binding.layoutPresensiCounters.setVisibility(currentTab == 3 ? View.VISIBLE : View.GONE);
+
         if (currentTab == 0) {
-            binding.layoutAnnouncementActions.setVisibility(View.VISIBLE);
             binding.rvPengurusList.setAdapter(announcementAdapter);
             announcementAdapter.updateList(announcementList);
             binding.tvPengurusEmpty.setVisibility(announcementList.isEmpty() ? View.VISIBLE : View.GONE);
-            binding.tvPengurusEmpty.setText("Belum ada pengumuman. Klik '+ Buat Pengumuman' untuk menambahkan.");
+            binding.tvPengurusEmpty.setText("Belum ada warta pengumuman sakristi.");
         } else if (currentTab == 1) {
-            binding.layoutAnnouncementActions.setVisibility(View.GONE);
+            List<Profile> filtered = new ArrayList<>();
+            for (Profile p : memberList) {
+                if ("pending".equalsIgnoreCase(memberFilter) && !p.isAktif()) {
+                    filtered.add(p);
+                } else if ("aktif".equalsIgnoreCase(memberFilter) && p.isAktif()) {
+                    filtered.add(p);
+                } else if ("semua".equalsIgnoreCase(memberFilter)) {
+                    filtered.add(p);
+                }
+            }
             binding.rvPengurusList.setAdapter(memberAdapter);
-            memberAdapter.updateList(memberList);
-            binding.tvPengurusEmpty.setVisibility(memberList.isEmpty() ? View.VISIBLE : View.GONE);
-            binding.tvPengurusEmpty.setText("Belum ada anggota misdinar terdaftar.");
-        } else {
-            binding.layoutAnnouncementActions.setVisibility(View.GONE);
+            memberAdapter.updateList(filtered);
+            binding.tvPengurusEmpty.setVisibility(filtered.isEmpty() ? View.VISIBLE : View.GONE);
+            binding.tvPengurusEmpty.setText("Tidak ada anggota pada kategori ini.");
+        } else if (currentTab == 2) {
             binding.rvPengurusList.setAdapter(scheduleAdapter);
             scheduleAdapter.updateList(scheduleList);
             binding.tvPengurusEmpty.setVisibility(scheduleList.isEmpty() ? View.VISIBLE : View.GONE);
             binding.tvPengurusEmpty.setText("Belum ada jadwal misa aktif.");
+        } else if (currentTab == 3) {
+            binding.rvPengurusList.setAdapter(attendanceAdapter);
+            attendanceAdapter.updateList(bookingList);
+            binding.tvPengurusEmpty.setVisibility(bookingList.isEmpty() ? View.VISIBLE : View.GONE);
+            binding.tvPengurusEmpty.setText("Belum ada data presensi sakristi pada pekan berjalan.");
+            updateAttendanceCounters();
         }
+    }
+
+    private void updateAttendanceCounters() {
+        int hadir = 0, terlambat = 0, izin = 0, alpa = 0;
+        for (Booking b : bookingList) {
+            String s = b.getStatusKehadiran();
+            if ("hadir".equalsIgnoreCase(s)) hadir++;
+            else if ("terlambat".equalsIgnoreCase(s)) terlambat++;
+            else if ("izin".equalsIgnoreCase(s)) izin++;
+            else if ("alpa".equalsIgnoreCase(s)) alpa++;
+        }
+        binding.tvCounterHadir.setText("Hadir: " + hadir);
+        binding.tvCounterTerlambat.setText("Terlambat: " + terlambat);
+        binding.tvCounterIzin.setText("Izin: " + izin);
+        binding.tvCounterAlpa.setText("Alpa: " + alpa);
     }
 
     private void loadAllData() {
@@ -210,13 +281,14 @@ public class PengurusMainActivity extends AppCompatActivity implements
 
     private void loadBookings() {
         String authHeader = "Bearer " + sessionManager.getToken();
-        ApiClient.getSupabaseApi().getAllBookings(authHeader, "*", "created_at.desc").enqueue(new Callback<List<Booking>>() {
+        ApiClient.getSupabaseApi().getAllBookings(authHeader, "*,schedule:mass_schedules(*),profile:profiles(*)", "created_at.desc").enqueue(new Callback<List<Booking>>() {
             @Override
             public void onResponse(@NonNull Call<List<Booking>> call, @NonNull Response<List<Booking>> response) {
                 if (response.isSuccessful() && response.body() != null) {
                     bookingList.clear();
                     bookingList.addAll(response.body());
                     recalculateSchedules();
+                    if (currentTab == 3) displayCurrentTab();
                 }
             }
 
@@ -263,7 +335,246 @@ public class PengurusMainActivity extends AppCompatActivity implements
         if (currentTab == 2) displayCurrentTab();
     }
 
-    // Announcement Actions
+    // --- FEATURE 1: Generate Jadwal Otomatis 30 Hari matching Web ---
+    private void handleGenerate30Days() {
+        new AlertDialog.Builder(this)
+                .setTitle("Generate Jadwal 30 Hari Otomatis")
+                .setMessage("Generate jadwal misa harian (05.30 WIB) dan misa mingguan otomatis untuk 30 hari ke depan?")
+                .setPositiveButton("Generate Sekarang", (dialog, which) -> {
+                    String authHeader = "Bearer " + sessionManager.getToken();
+                    Map<String, Object> body = new HashMap<>();
+                    body.put("daysCount", 30);
+
+                    Toast.makeText(this, "Memproses generate jadwal...", Toast.LENGTH_SHORT).show();
+
+                    ApiClient.getBackendApi().generateSchedules(authHeader, body).enqueue(new Callback<ResponseBody>() {
+                        @Override
+                        public void onResponse(@NonNull Call<ResponseBody> call, @NonNull Response<ResponseBody> response) {
+                            if (response.isSuccessful()) {
+                                Toast.makeText(PengurusMainActivity.this, "Jadwal misa 30 hari berhasil digenerate!", Toast.LENGTH_LONG).show();
+                                loadAllData();
+                            } else {
+                                Toast.makeText(PengurusMainActivity.this, "Gagal generate jadwal.", Toast.LENGTH_LONG).show();
+                            }
+                        }
+
+                        @Override
+                        public void onFailure(@NonNull Call<ResponseBody> call, @NonNull Throwable t) {
+                            Toast.makeText(PengurusMainActivity.this, "Koneksi gagal: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+                        }
+                    });
+                })
+                .setNegativeButton("Batal", null)
+                .show();
+    }
+
+    // --- FEATURE 2: Tambah Jadwal Misa Manual matching Web ---
+    private void showCreateScheduleDialog() {
+        View dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_create_schedule, null);
+        AlertDialog dialog = new AlertDialog.Builder(this)
+                .setView(dialogView)
+                .setCancelable(false)
+                .create();
+
+        TextInputEditText etJudul = dialogView.findViewById(R.id.etScheduleJudul);
+        AutoCompleteTextView actvKategori = dialogView.findViewById(R.id.actvScheduleKategori);
+        TextInputEditText etKuota = dialogView.findViewById(R.id.etScheduleKuota);
+        TextInputEditText etTanggal = dialogView.findViewById(R.id.etScheduleTanggal);
+        TextInputEditText etJam = dialogView.findViewById(R.id.etScheduleJam);
+        TextInputEditText etSelebran = dialogView.findViewById(R.id.etScheduleSelebran);
+        AutoCompleteTextView actvWarna = dialogView.findViewById(R.id.actvScheduleWarna);
+        ProgressBar progress = dialogView.findViewById(R.id.progressCreateSchedule);
+        MaterialButton btnCancel = dialogView.findViewById(R.id.btnCancelCreateSchedule);
+        MaterialButton btnSave = dialogView.findViewById(R.id.btnSaveCreateSchedule);
+
+        // Setup dropdown options
+        actvKategori.setAdapter(new ArrayAdapter<>(this, android.R.layout.simple_dropdown_item_1line, new String[]{"mingguan", "harian"}));
+        actvWarna.setAdapter(new ArrayAdapter<>(this, android.R.layout.simple_dropdown_item_1line, LiturgicalUtil.WARNA_LITURGI_OPTIONS));
+
+        // Default today's date
+        java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault());
+        etTanggal.setText(sdf.format(new java.util.Date()));
+
+        btnCancel.setOnClickListener(v -> dialog.dismiss());
+
+        btnSave.setOnClickListener(v -> {
+            String judul = etJudul.getText() != null ? etJudul.getText().toString().trim() : "";
+            String kategori = actvKategori.getText() != null ? actvKategori.getText().toString().trim() : "mingguan";
+            String kuotaStr = etKuota.getText() != null ? etKuota.getText().toString().trim() : "12";
+            String tanggal = etTanggal.getText() != null ? etTanggal.getText().toString().trim() : "";
+            String jam = etJam.getText() != null ? etJam.getText().toString().trim() : "08:00";
+            String selebran = etSelebran.getText() != null ? etSelebran.getText().toString().trim() : "Romo Paroki";
+            String warna = actvWarna.getText() != null ? actvWarna.getText().toString().trim() : "Hijau";
+
+            if (TextUtils.isEmpty(judul) || TextUtils.isEmpty(tanggal) || TextUtils.isEmpty(jam)) {
+                Toast.makeText(this, "Judul, tanggal, dan jam misa wajib diisi.", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
+            int kuota = 12;
+            try {
+                kuota = Integer.parseInt(kuotaStr);
+            } catch (Exception ignored) {}
+
+            progress.setVisibility(View.VISIBLE);
+            btnSave.setEnabled(false);
+            btnCancel.setEnabled(false);
+
+            MassSchedule newSchedule = new MassSchedule();
+            newSchedule.setJudulMisa(judul);
+            newSchedule.setKategori(kategori);
+            newSchedule.setTanggalMisa(tanggal);
+            newSchedule.setJamMulai(jam.length() == 5 ? jam + ":00" : jam);
+            newSchedule.setKuotaMaksimal(kuota);
+            newSchedule.setNamaSelebran(selebran);
+            newSchedule.setWarnaLiturgi(warna);
+            newSchedule.setTahunLiturgi("Tahun B / II");
+
+            String authHeader = "Bearer " + sessionManager.getToken();
+            ApiClient.getSupabaseApi().createSchedule(authHeader, newSchedule).enqueue(new Callback<Void>() {
+                @Override
+                public void onResponse(@NonNull Call<Void> call, @NonNull Response<Void> response) {
+                    progress.setVisibility(View.GONE);
+                    dialog.dismiss();
+                    if (response.isSuccessful()) {
+                        Toast.makeText(PengurusMainActivity.this, "Jadwal misa berhasil dibuat!", Toast.LENGTH_SHORT).show();
+                        loadSchedules();
+                    } else {
+                        Toast.makeText(PengurusMainActivity.this, "Gagal membuat jadwal misa.", Toast.LENGTH_SHORT).show();
+                    }
+                }
+
+                @Override
+                public void onFailure(@NonNull Call<Void> call, @NonNull Throwable t) {
+                    progress.setVisibility(View.GONE);
+                    dialog.dismiss();
+                    Toast.makeText(PengurusMainActivity.this, "Koneksi gagal: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+                }
+            });
+        });
+
+        dialog.show();
+    }
+
+    // --- FEATURE 3: Roster Petugas & Alokasi Peran Liturgi matching Web ---
+    private void showScheduleRosterDialog(MassSchedule schedule) {
+        View dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_schedule_roster, null);
+        AlertDialog dialog = new AlertDialog.Builder(this)
+                .setView(dialogView)
+                .create();
+
+        TextView tvJudul = dialogView.findViewById(R.id.tvRosterJudulMisa);
+        TextView tvWarna = dialogView.findViewById(R.id.tvRosterWarnaBadge);
+        TextView tvWaktu = dialogView.findViewById(R.id.tvRosterWaktu);
+        TextView tvSelebran = dialogView.findViewById(R.id.tvRosterSelebran);
+        TextView tvCount = dialogView.findViewById(R.id.tvRosterCount);
+        TextView tvEmpty = dialogView.findViewById(R.id.tvRosterEmpty);
+        RecyclerView rvMembers = dialogView.findViewById(R.id.rvRosterMembers);
+        MaterialButton btnClose = dialogView.findViewById(R.id.btnCloseRoster);
+
+        tvJudul.setText(schedule.getJudulMisa());
+        tvWaktu.setText(schedule.getTanggalMisa() + " • " + schedule.getFormattedTime());
+        tvSelebran.setText("Selebran: " + (schedule.getNamaSelebran() != null ? schedule.getNamaSelebran() : "Romo Paroki"));
+        tvWarna.setText(schedule.getWarnaLiturgi() != null ? schedule.getWarnaLiturgi() : "Hijau");
+
+        List<Booking> membersForThisSchedule = new ArrayList<>();
+        for (Booking b : bookingList) {
+            if (schedule.getId().equals(b.getScheduleId())) {
+                membersForThisSchedule.add(b);
+            }
+        }
+
+        tvCount.setText("Petugas Altar Terdaftar (" + membersForThisSchedule.size() + "/" + schedule.getKuotaMaksimal() + ")");
+        tvEmpty.setVisibility(membersForThisSchedule.isEmpty() ? View.VISIBLE : View.GONE);
+
+        RosterAdapter rosterAdapter = new RosterAdapter(schedule, booking -> {
+            // Show position chooser
+            showPositionChooserDialog(booking, schedule, dialog);
+        });
+
+        rvMembers.setLayoutManager(new LinearLayoutManager(this));
+        rvMembers.setAdapter(rosterAdapter);
+        rosterAdapter.updateList(membersForThisSchedule);
+
+        btnClose.setOnClickListener(v -> dialog.dismiss());
+
+        dialog.show();
+    }
+
+    private void showPositionChooserDialog(Booking booking, MassSchedule schedule, AlertDialog parentDialog) {
+        CharSequence[] positions = LiturgicalUtil.LITURGICAL_POSITIONS;
+
+        new AlertDialog.Builder(this)
+                .setTitle("Tentukan Peran Liturgi")
+                .setItems(positions, (dialog, which) -> {
+                    String selectedPosition = positions[which].toString();
+                    String authHeader = "Bearer " + sessionManager.getToken();
+
+                    Map<String, Object> body = new HashMap<>();
+                    body.put("posisi_tugas", selectedPosition);
+
+                    ApiClient.getSupabaseApi().updateBookingPosition(authHeader, "eq." + booking.getId(), body).enqueue(new Callback<Void>() {
+                        @Override
+                        public void onResponse(@NonNull Call<Void> call, @NonNull Response<Void> response) {
+                            if (response.isSuccessful()) {
+                                Toast.makeText(PengurusMainActivity.this, "Peran diubah menjadi: " + selectedPosition, Toast.LENGTH_SHORT).show();
+                                parentDialog.dismiss();
+                                loadBookings();
+                            } else {
+                                Toast.makeText(PengurusMainActivity.this, "Gagal mengubah peran.", Toast.LENGTH_SHORT).show();
+                            }
+                        }
+
+                        @Override
+                        public void onFailure(@NonNull Call<Void> call, @NonNull Throwable t) {
+                            Toast.makeText(PengurusMainActivity.this, "Koneksi gagal: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+                        }
+                    });
+                })
+                .setNegativeButton("Batal", null)
+                .show();
+    }
+
+    // --- FEATURE 4: Live Presensi Status Changer matching Web ---
+    @Override
+    public void onChangeStatus(Booking booking) {
+        CharSequence[] statuses = LiturgicalUtil.ATTENDANCE_STATUS_OPTIONS;
+
+        new AlertDialog.Builder(this)
+                .setTitle("Ubah Status Presensi")
+                .setItems(statuses, (dialog, which) -> {
+                    String newStatus = statuses[which].toString();
+                    String authHeader = "Bearer " + sessionManager.getToken();
+
+                    Map<String, Object> body = new HashMap<>();
+                    body.put("status_kehadiran", newStatus);
+                    if ("hadir".equalsIgnoreCase(newStatus) || "terlambat".equalsIgnoreCase(newStatus)) {
+                        java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", java.util.Locale.getDefault());
+                        body.put("waktu_checkin", sdf.format(new java.util.Date()));
+                    }
+
+                    ApiClient.getSupabaseApi().updateAttendanceStatus(authHeader, "eq." + booking.getId(), body).enqueue(new Callback<Void>() {
+                        @Override
+                        public void onResponse(@NonNull Call<Void> call, @NonNull Response<Void> response) {
+                            if (response.isSuccessful()) {
+                                Toast.makeText(PengurusMainActivity.this, "Status presensi diubah ke " + newStatus, Toast.LENGTH_SHORT).show();
+                                loadBookings();
+                            } else {
+                                Toast.makeText(PengurusMainActivity.this, "Gagal mengubah presensi.", Toast.LENGTH_SHORT).show();
+                            }
+                        }
+
+                        @Override
+                        public void onFailure(@NonNull Call<Void> call, @NonNull Throwable t) {
+                            Toast.makeText(PengurusMainActivity.this, "Koneksi gagal: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+                        }
+                    });
+                })
+                .setNegativeButton("Batal", null)
+                .show();
+    }
+
+    // --- FEATURE 5: Warta Sakristi CRUD ---
     private void showAnnouncementDialog(Announcement existing) {
         View dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_announcement, null);
         AlertDialog dialog = new AlertDialog.Builder(this)
@@ -280,12 +591,12 @@ public class PengurusMainActivity extends AppCompatActivity implements
         MaterialButton btnSave = dialogView.findViewById(R.id.btnSaveAnnouncement);
 
         if (existing != null) {
-            tvTitle.setText("Edit Pengumuman");
+            tvTitle.setText("Edit Warta Sakristi");
             etJudul.setText(existing.getJudul());
             etIsi.setText(existing.getIsi());
             cbPinned.setChecked(existing.isPinned());
         } else {
-            tvTitle.setText("Buat Pengumuman Baru");
+            tvTitle.setText("Buat Warta Sakristi Baru");
         }
 
         btnCancel.setOnClickListener(v -> dialog.dismiss());
@@ -296,7 +607,7 @@ public class PengurusMainActivity extends AppCompatActivity implements
             boolean isPinned = cbPinned.isChecked();
 
             if (TextUtils.isEmpty(judul) || TextUtils.isEmpty(isi)) {
-                Toast.makeText(this, "Judul dan isi pengumuman wajib diisi.", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, "Judul dan isi warta wajib diisi.", Toast.LENGTH_SHORT).show();
                 return;
             }
 
@@ -323,10 +634,10 @@ public class PengurusMainActivity extends AppCompatActivity implements
                     progress.setVisibility(View.GONE);
                     dialog.dismiss();
                     if (response.isSuccessful()) {
-                        Toast.makeText(PengurusMainActivity.this, "Pengumuman berhasil disimpan!", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(PengurusMainActivity.this, "Warta berhasil disimpan!", Toast.LENGTH_SHORT).show();
                         loadAnnouncements();
                     } else {
-                        Toast.makeText(PengurusMainActivity.this, "Gagal menyimpan pengumuman.", Toast.LENGTH_LONG).show();
+                        Toast.makeText(PengurusMainActivity.this, "Gagal menyimpan warta.", Toast.LENGTH_LONG).show();
                     }
                 }
 
@@ -350,18 +661,18 @@ public class PengurusMainActivity extends AppCompatActivity implements
     @Override
     public void onDelete(Announcement announcement) {
         new AlertDialog.Builder(this)
-                .setTitle("Hapus Pengumuman")
-                .setMessage("Apakah Anda yakin ingin menghapus pengumuman '" + announcement.getJudul() + "'?")
+                .setTitle("Hapus Warta")
+                .setMessage("Apakah Anda yakin ingin menghapus warta '" + announcement.getJudul() + "'?")
                 .setPositiveButton("Hapus", (dialog, which) -> {
                     String authHeader = "Bearer " + sessionManager.getToken();
                     ApiClient.getSupabaseApi().deleteAnnouncement(authHeader, "eq." + announcement.getId()).enqueue(new Callback<Void>() {
                         @Override
                         public void onResponse(@NonNull Call<Void> call, @NonNull Response<Void> response) {
                             if (response.isSuccessful()) {
-                                Toast.makeText(PengurusMainActivity.this, "Pengumuman dihapus.", Toast.LENGTH_SHORT).show();
+                                Toast.makeText(PengurusMainActivity.this, "Warta berhasil dihapus.", Toast.LENGTH_SHORT).show();
                                 loadAnnouncements();
                             } else {
-                                Toast.makeText(PengurusMainActivity.this, "Gagal menghapus pengumuman.", Toast.LENGTH_SHORT).show();
+                                Toast.makeText(PengurusMainActivity.this, "Gagal menghapus warta.", Toast.LENGTH_SHORT).show();
                             }
                         }
 
@@ -375,7 +686,7 @@ public class PengurusMainActivity extends AppCompatActivity implements
                 .show();
     }
 
-    // Member Actions
+    // --- FEATURE 6: Persetujuan Anggota (Approve / Reject) ---
     @Override
     public void onApprove(Profile profile) {
         new AlertDialog.Builder(this)

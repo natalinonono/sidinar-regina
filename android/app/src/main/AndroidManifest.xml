@@ -47,6 +47,12 @@
             android:exported="false"
             android:windowSoftInputMode="adjustResize" />
 
+        <!-- Riwayat Tugas & Presensi Activity -->
+        <activity
+            android:name=".ui.RiwayatTugasActivity"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
+
         <!-- ZXing Capture Activity for Barcode/QR Scanning -->
         <activity
             android:name="com.journeyapps.barcodescanner.CaptureActivity"
