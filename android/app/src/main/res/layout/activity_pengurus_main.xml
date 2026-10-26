@@ -496,6 +496,22 @@
                 android:layout_marginTop="8dp"
                 android:nestedScrollingEnabled="false" />
 
+            <!-- App Version & OTA Update Check Trigger -->
+            <TextView
+                android:id="@+id/tvPengurusAppVersion"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_horizontal"
+                android:layout_marginTop="20dp"
+                android:layout_marginBottom="24dp"
+                android:padding="8dp"
+                android:text="SiDinar Regina v1.0.0 • Cek Pembaruan"
+                android:textColor="@color/on_surface_variant"
+                android:textSize="11sp"
+                android:clickable="true"
+                android:focusable="true"
+                android:background="?attr/selectableItemBackground" />
+
         </LinearLayout>
     </androidx.core.widget.NestedScrollView>
 </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>

@@ -36,6 +36,7 @@ import org.purbowardayan.sidinar.model.Booking;
 import org.purbowardayan.sidinar.model.MassSchedule;
 import org.purbowardayan.sidinar.model.Profile;
 import org.purbowardayan.sidinar.network.ApiClient;
+import org.purbowardayan.sidinar.util.AppUpdateManager;
 import org.purbowardayan.sidinar.util.LiturgicalUtil;
 import org.purbowardayan.sidinar.util.ThemeManager;
 import retrofit2.Call;
@@ -83,6 +84,9 @@ public class PengurusMainActivity extends AppCompatActivity implements
         setupListeners();
 
         loadAllData();
+
+        // Cek update aplikasi secara otomatis saat membuka aplikasi
+        AppUpdateManager.checkForUpdate(this, false);
     }
 
     private void setupUI() {
@@ -177,6 +181,12 @@ public class PengurusMainActivity extends AppCompatActivity implements
         binding.chipMemberFilterAll.setOnClickListener(v -> {
             memberFilter = "semua";
             displayCurrentTab();
+        });
+
+        // App Version Footer & Check Update
+        binding.tvPengurusAppVersion.setText("SiDinar Regina v" + AppUpdateManager.getCurrentVersionName(this) + " • Cek Pembaruan");
+        binding.tvPengurusAppVersion.setOnClickListener(v -> {
+            AppUpdateManager.checkForUpdate(this, true);
         });
     }
 

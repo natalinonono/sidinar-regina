@@ -35,6 +35,7 @@ import org.purbowardayan.sidinar.model.Booking;
 import org.purbowardayan.sidinar.model.MassSchedule;
 import org.purbowardayan.sidinar.model.Profile;
 import org.purbowardayan.sidinar.network.ApiClient;
+import org.purbowardayan.sidinar.util.AppUpdateManager;
 import org.purbowardayan.sidinar.util.NotificationHelper;
 import org.purbowardayan.sidinar.util.ThemeManager;
 import retrofit2.Call;
@@ -79,6 +80,9 @@ public class AnggotaMainActivity extends AppCompatActivity implements ScheduleAd
         setupListeners();
 
         loadAllData();
+
+        // Cek update aplikasi secara otomatis saat membuka aplikasi
+        AppUpdateManager.checkForUpdate(this, false);
     }
 
     private final android.os.Handler reminderHandler = new android.os.Handler(android.os.Looper.getMainLooper());
@@ -261,6 +265,12 @@ public class AnggotaMainActivity extends AppCompatActivity implements ScheduleAd
         binding.chipHarian.setOnClickListener(v -> {
             selectedFilter = "harian";
             applyScheduleFilter();
+        });
+
+        // App Version Footer & Check Update
+        binding.tvAppVersion.setText("SiDinar Regina v" + AppUpdateManager.getCurrentVersionName(this) + " • Cek Pembaruan");
+        binding.tvAppVersion.setOnClickListener(v -> {
+            AppUpdateManager.checkForUpdate(this, true);
         });
     }
 
