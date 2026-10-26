@@ -57,7 +57,7 @@ public class Profile implements Serializable {
     public String getRole() { return role != null ? role : "anggota"; }
     public void setRole(String role) { this.role = role; }
 
-    public String getStatus() { return status != null ? status : "pending"; }
+    public String getStatus() { return status != null ? status : "aktif"; }
     public void setStatus(String status) { this.status = status; }
 
     public boolean isPengurus() {
@@ -65,6 +65,6 @@ public class Profile implements Serializable {
     }
 
     public boolean isAktif() {
-        return "aktif".equalsIgnoreCase(status);
+        return !"nonaktif".equalsIgnoreCase(status);
     }
 }

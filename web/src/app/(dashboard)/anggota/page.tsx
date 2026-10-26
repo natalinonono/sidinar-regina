@@ -7,6 +7,7 @@ import { ScheduleCard } from '@/components/ScheduleCard'
 import { BookingModal } from '@/components/BookingModal'
 import { CheckinModal } from '@/components/CheckinModal'
 import { EditBookingModal } from '@/components/EditBookingModal'
+import { EditProfileModal } from '@/components/EditProfileModal'
 import { getCurrentLiturgicalWeek, evaluateCheckinWindow } from '@/lib/utils/time'
 import { generateGoogleCalendarUrl, downloadIcsFile } from '@/lib/utils/calendar'
 
@@ -26,6 +27,7 @@ export default function AnggotaDashboardPage() {
   const [selectedScheduleForBooking, setSelectedScheduleForBooking] = useState<MassSchedule | null>(null)
   const [selectedBookingForCheckin, setSelectedBookingForCheckin] = useState<BookingWithDetails | null>(null)
   const [selectedBookingForEdit, setSelectedBookingForEdit] = useState<BookingWithDetails | null>(null)
+  const [showEditProfileModal, setShowEditProfileModal] = useState(false)
 
   const { weekNumber, yearNumber, startDateStr, endDateStr, formattedRange } = useMemo(() => getCurrentLiturgicalWeek(), [])
 
@@ -213,10 +215,18 @@ export default function AnggotaDashboardPage() {
             </p>
           </div>
 
-          <div className="flex flex-wrap items-center gap-3">
+          <div className="flex flex-wrap items-center gap-2.5">
+            <button
+              onClick={() => setShowEditProfileModal(true)}
+              className="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-primary text-on-primary hover:bg-primary-container transition-all text-xs font-semibold shadow-xs"
+              type="button"
+            >
+              <span className="material-symbols-outlined text-[17px]">manage_accounts</span>
+              <span>Edit Data Diri</span>
+            </button>
             <a
               href="#pengumuman-section"
-              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-surface-container-high text-on-surface text-xs font-semibold hover:bg-surface-container-highest transition-colors shadow-xs"
+              className="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl bg-surface-container-high text-on-surface text-xs font-semibold hover:bg-surface-container-highest transition-colors shadow-xs"
             >
               <span className="material-symbols-outlined text-[18px] text-primary">campaign</span>
               Pengumuman Sakristi
@@ -575,6 +585,16 @@ export default function AnggotaDashboardPage() {
         isOpen={Boolean(selectedBookingForEdit)}
         onClose={() => setSelectedBookingForEdit(null)}
         onSuccess={() => loadInitialData()}
+      />
+
+      <EditProfileModal
+        profile={profile}
+        isOpen={showEditProfileModal}
+        onClose={() => setShowEditProfileModal(false)}
+        onSuccess={(updatedProfile) => {
+          setProfile(updatedProfile)
+          loadInitialData()
+        }}
       />
     </div>
   )

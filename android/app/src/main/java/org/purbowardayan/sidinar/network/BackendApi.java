@@ -62,4 +62,10 @@ public interface BackendApi {
             @Header("Authorization") String auth,
             @retrofit2.http.Path("id") String bookingId
     );
+
+    @PATCH("api/profile")
+    Call<ResponseBody> updateProfile(
+            @Header("Authorization") String auth,
+            @Body Map<String, Object> body
+    );
 }

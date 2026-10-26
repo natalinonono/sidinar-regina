@@ -74,7 +74,7 @@ export async function POST(request: Request) {
         asal_wilayah_teks: asal_wilayah_teks || 'Paroki Purbowardayan',
         jenjang,
         role: 'anggota',
-        status: 'pending', // Menunggu persetujuan Pengurus
+        status: 'aktif', // Langsung aktif tanpa memerlukan approval agar dapat segera memilih jadwal tugas
       })
       .select()
       .single()
@@ -88,7 +88,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({
       success: true,
-      message: 'Pendaftaran akun Misdinar berhasil! Akun Anda sedang menunggu persetujuan (Approve) dari Tim Pendamping/Pengurus sebelum dapat memilih jadwal tugas.',
+      message: 'Pendaftaran akun Misdinar berhasil! Akun Anda langsung aktif dan dapat segera memilih jadwal tugas misa.',
       profile,
     })
   } catch (error: any) {

@@ -141,7 +141,46 @@
                         android:textSize="12sp"
                         android:lineSpacingExtra="2dp" />
 
-                    <!-- Pending Notice Banner if unapproved -->
+                    <!-- Action Buttons: Edit Data Diri & Panel Pengurus -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="12dp"
+                        android:orientation="horizontal">
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnEditProfile"
+                            style="@style/Widget.Material3.Button.TonalButton"
+                            android:layout_width="wrap_content"
+                            android:layout_height="38dp"
+                            android:text="Edit Data Diri"
+                            android:textSize="11sp"
+                            android:textStyle="bold"
+                            android:textColor="@color/primary"
+                            app:icon="@drawable/ic_person"
+                            app:iconTint="@color/primary"
+                            app:iconSize="16dp"
+                            app:cornerRadius="10dp" />
+
+                        <!-- Pengurus Switch Button (visible if user is pengurus) -->
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnSwitchToPengurus"
+                            style="@style/Widget.Material3.Button.TonalButton"
+                            android:layout_width="wrap_content"
+                            android:layout_height="38dp"
+                            android:layout_marginStart="8dp"
+                            android:text="Panel Pengurus"
+                            android:textSize="11sp"
+                            android:textStyle="bold"
+                            android:textColor="@color/secondary"
+                            app:icon="@drawable/ic_admin"
+                            app:iconTint="@color/secondary"
+                            app:iconSize="16dp"
+                            app:cornerRadius="10dp"
+                            android:visibility="gone" />
+                    </LinearLayout>
+
+                    <!-- Pending Notice Banner if unapproved (hidden by default) -->
                     <LinearLayout
                         android:id="@+id/tvPendingNotice"
                         android:layout_width="match_parent"
@@ -164,28 +203,10 @@
                             android:layout_height="wrap_content"
                             android:layout_marginStart="8dp"
                             android:layout_weight="1"
-                            android:text="Akun Anda Dalam Tahap Verifikasi Pengurus. Anda dapat melihat jadwal, namun belum dapat memilih jadwal tugas."
+                            android:text="Akun Anda Dalam Tahap Verifikasi Pengurus."
                             android:textColor="@color/amber_800"
                             android:textSize="11sp" />
                     </LinearLayout>
-
-                    <!-- Pengurus Switch Button (visible if user is pengurus) -->
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/btnSwitchToPengurus"
-                        style="@style/Widget.Material3.Button.TonalButton"
-                        android:layout_width="wrap_content"
-                        android:layout_height="38dp"
-                        android:layout_marginTop="12dp"
-                        android:text="Beralih ke Panel Pengurus"
-                        android:textSize="11sp"
-                        android:textStyle="bold"
-                        android:textColor="@color/primary"
-                        app:icon="@drawable/ic_admin"
-                        app:iconTint="@color/primary"
-                        app:iconSize="16dp"
-                        app:cornerRadius="10dp"
-                        android:visibility="gone" />
-
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 

@@ -4,6 +4,9 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
+import android.text.TextUtils;
+import android.widget.ArrayAdapter;
+import android.widget.AutoCompleteTextView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -14,6 +17,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.checkbox.MaterialCheckBox;
+import com.google.android.material.textfield.TextInputEditText;
 import com.google.zxing.integration.android.IntentIntegrator;
 import com.google.zxing.integration.android.IntentResult;
 import java.util.ArrayList;
@@ -80,17 +84,10 @@ public class AnggotaMainActivity extends AppCompatActivity implements ScheduleAd
                     : "Paroki Purbowardayan";
             binding.tvWilayahBadge.setText(wilayah);
 
-            if (profile.isAktif()) {
-                binding.tvStatusBadge.setText("Anggota Aktif");
-                binding.tvStatusBadge.setBackgroundResource(R.drawable.bg_badge_emerald);
-                binding.tvStatusBadge.setTextColor(androidx.core.content.ContextCompat.getColor(this, R.color.emerald_800));
-                binding.tvPendingNotice.setVisibility(View.GONE);
-            } else {
-                binding.tvStatusBadge.setText("Menunggu Persetujuan");
-                binding.tvStatusBadge.setBackgroundResource(R.drawable.bg_badge_amber);
-                binding.tvStatusBadge.setTextColor(androidx.core.content.ContextCompat.getColor(this, R.color.amber_800));
-                binding.tvPendingNotice.setVisibility(View.VISIBLE);
-            }
+            binding.tvStatusBadge.setText("Anggota Aktif");
+            binding.tvStatusBadge.setBackgroundResource(R.drawable.bg_badge_emerald);
+            binding.tvStatusBadge.setTextColor(androidx.core.content.ContextCompat.getColor(this, R.color.emerald_800));
+            binding.tvPendingNotice.setVisibility(View.GONE);
 
             if (profile.isPengurus()) {
                 binding.btnSwitchToPengurus.setVisibility(View.VISIBLE);
@@ -130,6 +127,10 @@ public class AnggotaMainActivity extends AppCompatActivity implements ScheduleAd
                     })
                     .setNegativeButton("Batal", null)
                     .show();
+        });
+
+        binding.btnEditProfile.setOnClickListener(v -> {
+            showEditProfileDialog();
         });
 
         binding.btnRiwayatTugas.setOnClickListener(v -> {
@@ -437,11 +438,6 @@ public class AnggotaMainActivity extends AppCompatActivity implements ScheduleAd
 
     @Override
     public void onBookClick(MassSchedule schedule) {
-        if (!sessionManager.isAktif()) {
-            Toast.makeText(this, "Akun Anda belum disetujui Pengurus untuk mengambil tugas.", Toast.LENGTH_LONG).show();
-            return;
-        }
-
         showBookingConfirmationDialog(schedule);
     }
 
@@ -778,6 +774,94 @@ public class AnggotaMainActivity extends AppCompatActivity implements ScheduleAd
         });
 
         btnClose.setOnClickListener(v -> dialog.dismiss());
+
+        dialog.show();
+    }
+
+    private void showEditProfileDialog() {
+        Profile currentProfile = sessionManager.getProfile();
+        if (currentProfile == null) return;
+
+        View dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_edit_profile, null);
+        AlertDialog dialog = new AlertDialog.Builder(this)
+                .setView(dialogView)
+                .setCancelable(false)
+                .create();
+
+        TextInputEditText etNamaLengkap = dialogView.findViewById(R.id.etEditNamaLengkap);
+        TextInputEditText etNamaPanggilan = dialogView.findViewById(R.id.etEditNamaPanggilan);
+        TextInputEditText etPhone = dialogView.findViewById(R.id.etEditPhone);
+        TextInputEditText etWilayah = dialogView.findViewById(R.id.etEditWilayah);
+        AutoCompleteTextView actvJenjang = dialogView.findViewById(R.id.actvEditJenjang);
+        ProgressBar progress = dialogView.findViewById(R.id.progressEditProfile);
+        MaterialButton btnCancel = dialogView.findViewById(R.id.btnCancelEditProfile);
+        MaterialButton btnSave = dialogView.findViewById(R.id.btnSaveEditProfile);
+
+        etNamaLengkap.setText(currentProfile.getNamaLengkap());
+        etNamaPanggilan.setText(currentProfile.getNamaPanggilan());
+        etPhone.setText(currentProfile.getNoTelepon());
+        etWilayah.setText(currentProfile.getAsalWilayahTeks());
+        actvJenjang.setText(currentProfile.getJenjang() != null ? currentProfile.getJenjang() : "SMP", false);
+
+        String[] jenjangOptions = new String[]{"SD", "SMP", "SMA/K", "Mahasiswa", "Umum"};
+        ArrayAdapter<String> jenjangAdapter = new ArrayAdapter<>(this, android.R.layout.simple_dropdown_item_1line, jenjangOptions);
+        actvJenjang.setAdapter(jenjangAdapter);
+
+        btnCancel.setOnClickListener(v -> dialog.dismiss());
+
+        btnSave.setOnClickListener(v -> {
+            String newNamaLengkap = etNamaLengkap.getText() != null ? etNamaLengkap.getText().toString().trim() : "";
+            String newNamaPanggilan = etNamaPanggilan.getText() != null ? etNamaPanggilan.getText().toString().trim() : "";
+            String newPhone = etPhone.getText() != null ? etPhone.getText().toString().trim() : "";
+            String newWilayah = etWilayah.getText() != null ? etWilayah.getText().toString().trim() : "";
+            String newJenjang = actvJenjang.getText() != null ? actvJenjang.getText().toString().trim() : "";
+
+            if (TextUtils.isEmpty(newNamaLengkap) || TextUtils.isEmpty(newNamaPanggilan) || TextUtils.isEmpty(newPhone) || TextUtils.isEmpty(newJenjang)) {
+                Toast.makeText(this, "Nama lengkap, nama panggilan, nomor WhatsApp, dan jenjang wajib diisi.", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
+            progress.setVisibility(View.VISIBLE);
+            btnSave.setEnabled(false);
+            btnCancel.setEnabled(false);
+
+            Map<String, Object> body = new HashMap<>();
+            body.put("nama_lengkap", newNamaLengkap);
+            body.put("nama_panggilan", newNamaPanggilan);
+            body.put("no_telepon", newPhone);
+            body.put("asal_wilayah_teks", newWilayah.isEmpty() ? "Paroki Purbowardayan" : newWilayah);
+            body.put("jenjang", newJenjang);
+
+            String authHeader = "Bearer " + sessionManager.getToken();
+            ApiClient.getBackendApi().updateProfile(authHeader, body).enqueue(new Callback<ResponseBody>() {
+                @Override
+                public void onResponse(@NonNull Call<ResponseBody> call, @NonNull Response<ResponseBody> response) {
+                    progress.setVisibility(View.GONE);
+                    dialog.dismiss();
+
+                    if (response.isSuccessful()) {
+                        currentProfile.setNamaLengkap(newNamaLengkap);
+                        currentProfile.setNamaPanggilan(newNamaPanggilan);
+                        currentProfile.setNoTelepon(newPhone);
+                        currentProfile.setAsalWilayahTeks(newWilayah.isEmpty() ? "Paroki Purbowardayan" : newWilayah);
+                        currentProfile.setJenjang(newJenjang);
+                        sessionManager.saveProfile(currentProfile);
+
+                        setupUI();
+                        Toast.makeText(AnggotaMainActivity.this, "Data diri Anda berhasil diperbarui!", Toast.LENGTH_LONG).show();
+                    } else {
+                        Toast.makeText(AnggotaMainActivity.this, "Gagal menyimpan perubahan data profil.", Toast.LENGTH_SHORT).show();
+                    }
+                }
+
+                @Override
+                public void onFailure(@NonNull Call<ResponseBody> call, @NonNull Throwable t) {
+                    progress.setVisibility(View.GONE);
+                    dialog.dismiss();
+                    Toast.makeText(AnggotaMainActivity.this, "Koneksi gagal: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+                }
+            });
+        });
 
         dialog.show();
     }

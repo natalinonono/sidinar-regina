@@ -147,7 +147,7 @@ public class RegisterActivity extends AppCompatActivity {
     private void showSuccessDialog() {
         new AlertDialog.Builder(this)
                 .setTitle("Pendaftaran Berhasil!")
-                .setMessage("Akun Misdinar Anda telah berhasil dibuat tanpa perlu konfirmasi email!\n\nSaat ini akun berstatus Menunggu Persetujuan dari Tim Pendamping / Pengurus sebelum Anda dapat memilih jadwal tugas.")
+                .setMessage("Akun Misdinar Anda telah berhasil dibuat!\n\nAkun Anda langsung aktif dan dapat segera memilih jadwal tugas misa untuk melayani altar Tuhan.")
                 .setPositiveButton("Masuk ke Akun", (dialog, which) -> finish())
                 .setCancelable(false)
                 .show();
