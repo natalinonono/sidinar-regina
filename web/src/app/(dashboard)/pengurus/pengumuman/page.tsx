@@ -13,6 +13,13 @@ export default function PengurusPengumumanPage() {
   const [newContent, setNewContent] = useState('')
   const [isPinned, setIsPinned] = useState(false)
 
+  // Edit State
+  const [editingAnnouncement, setEditingAnnouncement] = useState<Announcement | null>(null)
+  const [editTitle, setEditTitle] = useState('')
+  const [editContent, setEditContent] = useState('')
+  const [editIsPinned, setEditIsPinned] = useState(false)
+  const [submitting, setSubmitting] = useState(false)
+
   const loadAnnouncements = async () => {
     try {
       const { data } = await supabase
@@ -45,6 +52,7 @@ export default function PengurusPengumumanPage() {
 
   const handleCreateAnnouncement = async (e: React.FormEvent) => {
     e.preventDefault()
+    setSubmitting(true)
     try {
       const {
         data: { user },
@@ -68,11 +76,46 @@ export default function PengurusPengumumanPage() {
       }
     } catch (err: any) {
       alert(err.message)
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  const handleOpenEdit = (ann: Announcement) => {
+    setEditingAnnouncement(ann)
+    setEditTitle(ann.judul)
+    setEditContent(ann.isi)
+    setEditIsPinned(ann.is_pinned)
+  }
+
+  const handleUpdateAnnouncement = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!editingAnnouncement) return
+    setSubmitting(true)
+    try {
+      const { error } = await (supabase.from('announcements') as any)
+        .update({
+          judul: editTitle,
+          isi: editContent,
+          is_pinned: editIsPinned,
+        })
+        .eq('id', editingAnnouncement.id)
+
+      if (error) {
+        alert(error.message)
+      } else {
+        setEditingAnnouncement(null)
+        loadAnnouncements()
+      }
+    } catch (err: any) {
+      alert(err.message)
+    } finally {
+      setSubmitting(false)
     }
   }
 
   const handleDeleteAnnouncement = async (id: string) => {
-    if (!confirm('Hapus pengumuman ini?')) return
+    if (!confirm('Apakah Anda yakin ingin menghapus pengumuman ini?')) return
     try {
       const { error } = await supabase.from('announcements').delete().eq('id', id)
       if (error) {
@@ -155,19 +198,30 @@ export default function PengurusPengumumanPage() {
 
             <div className="flex items-center justify-between pt-3 border-t border-surface-container text-[11px] text-on-surface-variant">
               <span>{new Date(ann.created_at).toLocaleDateString('id-ID', { dateStyle: 'medium' })}</span>
-              <button
-                onClick={() => handleDeleteAnnouncement(ann.id)}
-                className="text-error hover:underline flex items-center gap-1"
-                type="button"
-              >
-                <span className="material-symbols-outlined text-sm">delete</span>
-                <span>Hapus</span>
-              </button>
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={() => handleOpenEdit(ann)}
+                  className="text-primary hover:underline flex items-center gap-1 font-semibold"
+                  type="button"
+                >
+                  <span className="material-symbols-outlined text-sm">edit</span>
+                  <span>Edit</span>
+                </button>
+                <button
+                  onClick={() => handleDeleteAnnouncement(ann.id)}
+                  className="text-error hover:underline flex items-center gap-1 font-semibold"
+                  type="button"
+                >
+                  <span className="material-symbols-outlined text-sm">delete</span>
+                  <span>Hapus</span>
+                </button>
+              </div>
             </div>
           </div>
         ))}
       </div>
 
+      {/* Add Modal */}
       {showAddModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-on-surface/40 backdrop-blur-sm animate-fade-in">
           <div className="w-full max-w-lg rounded-2xl bg-surface-container-lowest p-6 shadow-2xl border border-surface-container flex flex-col gap-4">
@@ -231,9 +285,85 @@ export default function PengurusPengumumanPage() {
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 rounded-xl bg-primary text-on-primary font-bold hover:bg-primary-container shadow-sm"
+                  disabled={submitting}
+                  className="px-5 py-2 rounded-xl bg-primary text-on-primary font-bold hover:bg-primary-container shadow-sm disabled:opacity-50"
                 >
-                  Publikasikan Sekarang
+                  {submitting ? 'Memproses...' : 'Publikasikan Sekarang'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Modal */}
+      {editingAnnouncement && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-on-surface/40 backdrop-blur-sm animate-fade-in">
+          <div className="w-full max-w-lg rounded-2xl bg-surface-container-lowest p-6 shadow-2xl border border-surface-container flex flex-col gap-4">
+            <div className="flex items-center justify-between pb-2 border-b border-surface-container">
+              <h3 className="font-headline font-bold text-base text-primary">
+                Edit Pengumuman Sakristi
+              </h3>
+              <button
+                onClick={() => setEditingAnnouncement(null)}
+                className="p-1 text-on-surface-variant hover:text-on-surface"
+                type="button"
+              >
+                <span className="material-symbols-outlined text-lg">close</span>
+              </button>
+            </div>
+
+            <form onSubmit={handleUpdateAnnouncement} className="flex flex-col gap-3.5 text-xs">
+              <div className="flex flex-col gap-1">
+                <label className="font-semibold text-on-surface">Judul Pengumuman</label>
+                <input
+                  type="text"
+                  required
+                  value={editTitle}
+                  onChange={(e) => setEditTitle(e.target.value)}
+                  placeholder="Contoh: Gladi Bersih Misa Krisma Paroki SPMR"
+                  className="px-3.5 py-2.5 rounded-xl bg-surface-container-low border border-surface-container focus:outline-none"
+                />
+              </div>
+
+              <div className="flex flex-col gap-1">
+                <label className="font-semibold text-on-surface">Isi Pengumuman</label>
+                <textarea
+                  required
+                  rows={4}
+                  value={editContent}
+                  onChange={(e) => setEditContent(e.target.value)}
+                  placeholder="Tuliskan detail pengumuman untuk seluruh putra-putri altar..."
+                  className="px-3.5 py-2.5 rounded-xl bg-surface-container-low border border-surface-container focus:outline-none"
+                />
+              </div>
+
+              <label className="flex items-center gap-2 cursor-pointer pt-1">
+                <input
+                  type="checkbox"
+                  checked={editIsPinned}
+                  onChange={(e) => setEditIsPinned(e.target.checked)}
+                  className="accent-secondary w-4 h-4 rounded cursor-pointer"
+                />
+                <span className="font-semibold text-on-surface">
+                  Sematkan di Atas (Pinned / Prioritas Utama)
+                </span>
+              </label>
+
+              <div className="flex items-center justify-end gap-2 pt-2 border-t border-surface-container">
+                <button
+                  type="button"
+                  onClick={() => setEditingAnnouncement(null)}
+                  className="px-4 py-2 rounded-xl text-on-surface-variant hover:bg-surface-container"
+                >
+                  Batal
+                </button>
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  className="px-5 py-2 rounded-xl bg-primary text-on-primary font-bold hover:bg-primary-container shadow-sm disabled:opacity-50"
+                >
+                  {submitting ? 'Menyimpan...' : 'Simpan Perubahan'}
                 </button>
               </div>
             </form>

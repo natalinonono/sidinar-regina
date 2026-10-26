@@ -158,7 +158,7 @@ export default function LoginPage() {
                     Kata Sandi
                   </label>
                   <a
-                    href="https://wa.me/628123456789"
+                    href="https://wa.me/6281228788912?text=Halo%20Admin%20SiDinar,%20saya%20butuh%20bantuan%20reset%20kata%20sandi"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-[11px] font-medium text-primary hover:text-secondary transition-colors"
@@ -209,18 +209,33 @@ export default function LoginPage() {
               </button>
             </form>
 
-            <div className="text-center pt-2">
-              <p className="text-[11px] text-on-surface-variant">
-                Butuh bantuan login?{' '}
+            <div className="flex flex-col items-center gap-1.5 pt-2 text-center">
+              <p className="text-[11px] text-on-surface-variant font-medium">
+                Butuh bantuan akun atau jadwal?
+              </p>
+              <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1.5 text-xs">
                 <a
-                  className="font-semibold text-secondary hover:underline"
-                  href="https://wa.me/628123456789"
+                  className="font-semibold text-secondary hover:underline flex items-center gap-1"
+                  href="https://wa.me/6285643985341"
                   target="_blank"
                   rel="noopener noreferrer"
+                  title="Hubungi Kontak Pengurus"
                 >
-                  Hubungi Pengurus Sakristi
+                  <span className="material-symbols-outlined text-[14px]">support_agent</span>
+                  <span>Kontak Pengurus: 0856-4398-5341</span>
                 </a>
-              </p>
+                <span className="text-outline hidden sm:inline">•</span>
+                <a
+                  className="font-semibold text-primary hover:underline flex items-center gap-1"
+                  href="https://wa.me/6281228788912"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  title="Hubungi Kontak Admin"
+                >
+                  <span className="material-symbols-outlined text-[14px]">admin_panel_settings</span>
+                  <span>Kontak Admin: 0812-2878-8912</span>
+                </a>
+              </div>
             </div>
 
             {/* Footer */}

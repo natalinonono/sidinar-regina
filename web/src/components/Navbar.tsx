@@ -130,6 +130,17 @@ export const Navbar: React.FC<NavbarProps> = ({ profile, realtimeConnected = tru
                   <span className="material-symbols-outlined text-[16px]">qr_code_scanner</span>
                   Monitor Presensi
                 </Link>
+                <Link
+                  href="/pengurus/pengumuman"
+                  className={`px-3 py-2 rounded-lg text-xs font-semibold transition-colors flex items-center gap-1.5 ${
+                    pathname.startsWith('/pengurus/pengumuman')
+                      ? 'bg-primary text-on-primary shadow-xs'
+                      : 'text-on-surface-variant hover:bg-surface-container hover:text-primary'
+                  }`}
+                >
+                  <span className="material-symbols-outlined text-[16px]">campaign</span>
+                  Pengumuman
+                </Link>
               </>
             ) : (
               <>
@@ -276,6 +287,14 @@ export const Navbar: React.FC<NavbarProps> = ({ profile, realtimeConnected = tru
                 >
                   <span className="material-symbols-outlined text-sm">qr_code_scanner</span>
                   Monitor Presensi
+                </Link>
+                <Link
+                  href="/pengurus/pengumuman"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="px-3 py-2 rounded-lg text-xs font-semibold hover:bg-surface-container flex items-center gap-2"
+                >
+                  <span className="material-symbols-outlined text-sm">campaign</span>
+                  Pengumuman Sakristi
                 </Link>
                 <Link
                   href="/anggota"

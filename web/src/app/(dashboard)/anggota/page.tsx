@@ -219,13 +219,24 @@ export default function AnggotaDashboardPage() {
               Pengumuman Sakristi
             </a>
             <a
-              href="https://wa.me/628123456789"
+              href="https://wa.me/6285643985341"
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-surface-container text-on-surface-variant text-xs font-semibold hover:bg-surface-container-high transition-colors"
+              className="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl bg-surface-container text-on-surface text-xs font-semibold hover:bg-surface-container-high transition-colors"
+              title="Hubungi Pengurus: 0856-4398-5341"
             >
-              <span className="material-symbols-outlined text-[18px]">support_agent</span>
-              Kontak Pengurus
+              <span className="material-symbols-outlined text-[18px] text-secondary">support_agent</span>
+              <span>Kontak Pengurus</span>
+            </a>
+            <a
+              href="https://wa.me/6281228788912"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl bg-surface-container text-on-surface text-xs font-semibold hover:bg-surface-container-high transition-colors"
+              title="Hubungi Admin: 0812-2878-8912"
+            >
+              <span className="material-symbols-outlined text-[18px] text-primary">admin_panel_settings</span>
+              <span>Kontak Admin</span>
             </a>
           </div>
         </div>

@@ -186,6 +186,22 @@ fun LoginScreen(
                     }
                 }
 
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(2.dp)
+                ) {
+                    Text(
+                        text = "Kontak Admin: 0812-2878-8912",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MarianPrimary
+                    )
+                    Text(
+                        text = "Kontak Pengurus: 0856-4398-5341",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MarianSecondary
+                    )
+                }
+
                 Text(
                     text = "© 2026 Misdinar SPMR Purbowardayan",
                     style = MaterialTheme.typography.labelSmall,
