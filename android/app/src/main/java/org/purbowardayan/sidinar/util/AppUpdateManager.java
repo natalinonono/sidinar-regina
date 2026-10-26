@@ -158,6 +158,9 @@ public class AppUpdateManager {
             }
 
             File targetDir = activity.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS);
+            if (targetDir != null && !targetDir.exists()) {
+                targetDir.mkdirs();
+            }
             String fileName = "sidinar_v" + updateInfo.getLatestVersionName() + ".apk";
             File apkFile = new File(targetDir, fileName);
 
@@ -170,7 +173,7 @@ public class AppUpdateManager {
             request.setDescription("Mengunduh pembaruan aplikasi...");
             request.setMimeType("application/vnd.android.package-archive");
             request.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED);
-            request.setDestinationUri(Uri.fromFile(apkFile));
+            request.setDestinationInExternalFilesDir(activity, Environment.DIRECTORY_DOWNLOADS, fileName);
 
             long downloadId = downloadManager.enqueue(request);
 
