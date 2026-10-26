@@ -143,7 +143,7 @@ BEGIN
 
     RETURN NEW;
 END;
-$$ LANGUAGE plpgsql;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
 
 DROP TRIGGER IF EXISTS trg_validate_booking ON public.bookings;
 CREATE TRIGGER trg_validate_booking

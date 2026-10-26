@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { createClient, createAdminClient } from '@/lib/supabase/server'
 
 export async function GET(request: Request) {
   try {
@@ -54,13 +54,15 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Jadwal misa (schedule_id) wajib dipilih.' }, { status: 400 })
     }
 
-    // Insert booking - atomic trigger trg_validate_booking enforces quota & 1x weekly/daily limit
-    const { data: newBooking, error } = await (supabase as any)
+    // Insert booking using createAdminClient to ensure database trigger trg_validate_booking
+    // can lock mass_schedules FOR UPDATE atomically without being blocked by RLS
+    const adminSupabase = createAdminClient()
+    const { data: newBooking, error } = await (adminSupabase as any)
       .from('bookings')
       .insert({
         schedule_id,
         user_id: user.id,
-        posisi_tugas: posisi_tugas || 'Petugas Altar / Umum',
+        posisi_tugas: posisi_tugas || 'Petugas Altar',
         status_kehadiran: 'terdaftar',
       })
       .select('*, schedule:mass_schedules(*)')
