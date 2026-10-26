@@ -16,6 +16,8 @@ export function getCurrentLiturgicalWeek(targetDate: Date = new Date()) {
     yearNumber,
     weekStart,
     weekEnd,
+    startDateStr: format(weekStart, 'yyyy-MM-dd'),
+    endDateStr: format(weekEnd, 'yyyy-MM-dd'),
     formattedRange: `${format(weekStart, 'dd MMM')} - ${format(weekEnd, 'dd MMM yyyy')}`
   }
 }

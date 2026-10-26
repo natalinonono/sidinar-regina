@@ -18,7 +18,7 @@ export default function PengurusDashboardPage() {
   const [generating, setGenerating] = useState(false)
   const [generateMsg, setGenerateMsg] = useState<string | null>(null)
 
-  const { weekNumber, yearNumber, formattedRange } = useMemo(() => getCurrentLiturgicalWeek(), [])
+  const { weekNumber, yearNumber, startDateStr, endDateStr, formattedRange } = useMemo(() => getCurrentLiturgicalWeek(), [])
 
   const loadData = async () => {
     try {
@@ -26,8 +26,8 @@ export default function PengurusDashboardPage() {
       const { data: scheduleList } = await supabase
         .from('mass_schedules')
         .select('*')
-        .eq('minggu_ke', weekNumber)
-        .eq('tahun', yearNumber)
+        .gte('tanggal_misa', startDateStr)
+        .lte('tanggal_misa', endDateStr)
         .order('tanggal_misa', { ascending: true })
         .order('jam_mulai', { ascending: true })
       setSchedules(scheduleList || [])

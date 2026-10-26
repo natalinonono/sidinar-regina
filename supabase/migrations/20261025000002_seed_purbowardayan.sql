@@ -8,21 +8,22 @@
 -- Catatan: Misa Harian (Kuota 8, jam 05:30), Misa Mingguan (Kuota 12, jam 17:00, 06:00, 08:00, 16:00, 18:00)
 INSERT INTO public.mass_schedules (
     judul_misa, kategori, tanggal_misa, jam_mulai, kuota_maksimal, minggu_ke, tahun, tahun_liturgi, warna_liturgi, nama_selebran
-) VALUES
--- Misa Harian
-('Misa Pagi Harian Senin', 'harian', CURRENT_DATE + (1 - EXTRACT(DOW FROM CURRENT_DATE)::INT)::INT, '05:30:00', 8, EXTRACT(WEEK FROM CURRENT_DATE)::INT, 2026, 'Tahun B / II', 'Hijau', 'Romo Robertus Budi Prastowo, Pr'),
-('Misa Pagi Harian Selasa', 'harian', CURRENT_DATE + (2 - EXTRACT(DOW FROM CURRENT_DATE)::INT)::INT, '05:30:00', 8, EXTRACT(WEEK FROM CURRENT_DATE)::INT, 2026, 'Tahun B / II', 'Hijau', 'Romo Yohanes Rasul Edy Purwanto, Pr'),
-('Misa Pagi Harian Rabu', 'harian', CURRENT_DATE + (3 - EXTRACT(DOW FROM CURRENT_DATE)::INT)::INT, '05:30:00', 8, EXTRACT(WEEK FROM CURRENT_DATE)::INT, 2026, 'Tahun B / II', 'Hijau', 'Romo Robertus Budi Prastowo, Pr'),
-('Misa Pagi Harian Kamis', 'harian', CURRENT_DATE + (4 - EXTRACT(DOW FROM CURRENT_DATE)::INT)::INT, '05:30:00', 8, EXTRACT(WEEK FROM CURRENT_DATE)::INT, 2026, 'Tahun B / II', 'Putih', 'Romo Yohanes Rasul Edy Purwanto, Pr'),
-('Misa Pagi Harian Jumat', 'harian', CURRENT_DATE + (5 - EXTRACT(DOW FROM CURRENT_DATE)::INT)::INT, '05:30:00', 8, EXTRACT(WEEK FROM CURRENT_DATE)::INT, 2026, 'Tahun B / II', 'Hijau', 'Romo Robertus Budi Prastowo, Pr'),
-('Misa Pagi Harian Sabtu', 'harian', CURRENT_DATE + (6 - EXTRACT(DOW FROM CURRENT_DATE)::INT)::INT, '05:30:00', 8, EXTRACT(WEEK FROM CURRENT_DATE)::INT, 2026, 'Tahun B / II', 'Putih', 'Romo Yohanes Rasul Edy Purwanto, Pr'),
-
--- Misa Mingguan (Sabtu Sore & Minggu)
-('Misa Mingguan Sabtu Sore', 'mingguan', CURRENT_DATE + (6 - EXTRACT(DOW FROM CURRENT_DATE)::INT)::INT, '17:00:00', 12, EXTRACT(WEEK FROM CURRENT_DATE)::INT, 2026, 'Tahun B / II', 'Hijau', '-'),
-('Misa Mingguan Pagi', 'mingguan', CURRENT_DATE + (7 - EXTRACT(DOW FROM CURRENT_DATE)::INT)::INT, '06:00:00', 12, EXTRACT(WEEK FROM CURRENT_DATE)::INT, 2026, 'Tahun B / II', 'Hijau', '-'),
-('Misa Mingguan Pagi', 'mingguan', CURRENT_DATE + (7 - EXTRACT(DOW FROM CURRENT_DATE)::INT)::INT, '08:00:00', 12, EXTRACT(WEEK FROM CURRENT_DATE)::INT, 2026, 'Tahun B / II', 'Hijau', '-'),
-('Misa Mingguan Sore', 'mingguan', CURRENT_DATE + (7 - EXTRACT(DOW FROM CURRENT_DATE)::INT)::INT, '16:00:00', 12, EXTRACT(WEEK FROM CURRENT_DATE)::INT, 2026, 'Tahun B / II', 'Hijau', '-'),
-('Misa Mingguan Sore', 'mingguan', CURRENT_DATE + (7 - EXTRACT(DOW FROM CURRENT_DATE)::INT)::INT, '18:00:00', 12, EXTRACT(WEEK FROM CURRENT_DATE)::INT, 2026, 'Tahun B / II', 'Hijau', '-');
+)
+SELECT 
+    judul_misa, kategori, tgl, jam_mulai, kuota, EXTRACT(WEEK FROM tgl)::INT, EXTRACT(ISOYEAR FROM tgl)::INT, 'Tahun B / II', warna, selebran
+FROM (VALUES
+    ('Misa Pagi Harian Senin', 'harian', '2026-10-26'::DATE, '05:30:00'::TIME, 8, 'Hijau', 'Romo Robertus Budi Prastowo, Pr'),
+    ('Misa Pagi Harian Selasa', 'harian', '2026-10-27'::DATE, '05:30:00'::TIME, 8, 'Hijau', 'Romo Yohanes Rasul Edy Purwanto, Pr'),
+    ('Misa Pagi Harian Rabu', 'harian', '2026-10-28'::DATE, '05:30:00'::TIME, 8, 'Hijau', 'Romo Robertus Budi Prastowo, Pr'),
+    ('Misa Pagi Harian Kamis', 'harian', '2026-10-29'::DATE, '05:30:00'::TIME, 8, 'Putih', 'Romo Yohanes Rasul Edy Purwanto, Pr'),
+    ('Misa Pagi Harian Jumat', 'harian', '2026-10-30'::DATE, '05:30:00'::TIME, 8, 'Hijau', 'Romo Robertus Budi Prastowo, Pr'),
+    ('Misa Pagi Harian Sabtu', 'harian', '2026-10-31'::DATE, '05:30:00'::TIME, 8, 'Putih', 'Romo Yohanes Rasul Edy Purwanto, Pr'),
+    ('Misa Mingguan Sabtu Sore', 'mingguan', '2026-10-31'::DATE, '17:00:00'::TIME, 12, 'Hijau', '-'),
+    ('Misa Mingguan Pagi', 'mingguan', '2026-11-01'::DATE, '06:00:00'::TIME, 12, 'Hijau', '-'),
+    ('Misa Mingguan Pagi', 'mingguan', '2026-11-01'::DATE, '08:00:00'::TIME, 12, 'Hijau', '-'),
+    ('Misa Mingguan Sore', 'mingguan', '2026-11-01'::DATE, '16:00:00'::TIME, 12, 'Hijau', '-'),
+    ('Misa Mingguan Sore', 'mingguan', '2026-11-01'::DATE, '18:00:00'::TIME, 12, 'Hijau', '-')
+) AS s(judul_misa, kategori, tgl, jam_mulai, kuota, warna, selebran);
 
 -- 2. SEED PENGUMUMAN PAROKI
 INSERT INTO public.announcements (judul, isi, is_pinned) VALUES

@@ -32,15 +32,15 @@ export default function PengurusJadwalPage() {
     nama_selebran: 'Romo Robertus Budi Prastowo, Pr',
   })
 
-  const { weekNumber, yearNumber } = useMemo(() => getCurrentLiturgicalWeek(), [])
+  const { weekNumber, yearNumber, startDateStr, endDateStr } = useMemo(() => getCurrentLiturgicalWeek(), [])
 
   const loadSchedulesAndBookings = async () => {
     try {
       const { data: scheduleList } = await supabase
         .from('mass_schedules')
         .select('*')
-        .eq('minggu_ke', weekNumber)
-        .eq('tahun', yearNumber)
+        .gte('tanggal_misa', startDateStr)
+        .lte('tanggal_misa', endDateStr)
         .order('tanggal_misa', { ascending: true })
         .order('jam_mulai', { ascending: true })
 

@@ -24,7 +24,7 @@ export default function AnggotaDashboardPage() {
   const [selectedScheduleForBooking, setSelectedScheduleForBooking] = useState<MassSchedule | null>(null)
   const [selectedBookingForCheckin, setSelectedBookingForCheckin] = useState<BookingWithDetails | null>(null)
 
-  const { weekNumber, yearNumber, formattedRange } = useMemo(() => getCurrentLiturgicalWeek(), [])
+  const { weekNumber, yearNumber, startDateStr, endDateStr, formattedRange } = useMemo(() => getCurrentLiturgicalWeek(), [])
 
   // 1. Initial Data Fetch
   const loadInitialData = async () => {
@@ -46,8 +46,8 @@ export default function AnggotaDashboardPage() {
       const { data: scheduleList } = await supabase
         .from('mass_schedules')
         .select('*')
-        .eq('minggu_ke', weekNumber)
-        .eq('tahun', yearNumber)
+        .gte('tanggal_misa', startDateStr)
+        .lte('tanggal_misa', endDateStr)
         .order('tanggal_misa', { ascending: true })
         .order('jam_mulai', { ascending: true })
 
@@ -105,8 +105,8 @@ export default function AnggotaDashboardPage() {
           supabase
             .from('mass_schedules')
             .select('*')
-            .eq('minggu_ke', weekNumber)
-            .eq('tahun', yearNumber)
+            .gte('tanggal_misa', startDateStr)
+            .lte('tanggal_misa', endDateStr)
             .order('tanggal_misa', { ascending: true })
             .order('jam_mulai', { ascending: true })
             .then(({ data }) => {
@@ -119,7 +119,7 @@ export default function AnggotaDashboardPage() {
     return () => {
       supabase.removeChannel(channel)
     }
-  }, [weekNumber, yearNumber])
+  }, [weekNumber, yearNumber, startDateStr, endDateStr])
 
   // Count user bookings in current week for limits
   const userBookings = useMemo(() => {
