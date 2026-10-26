@@ -36,41 +36,24 @@
                     android:gravity="center_horizontal"
                     android:orientation="vertical">
 
-                    <!-- Logo with SPMR Badge -->
-                    <FrameLayout
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content">
+                    <!-- Clean Official Logo Card -->
+                    <com.google.android.material.card.MaterialCardView
+                        android:layout_width="88dp"
+                        android:layout_height="88dp"
+                        app:cardCornerRadius="44dp"
+                        app:cardElevation="2dp"
+                        app:strokeColor="@color/surface_container"
+                        app:strokeWidth="1.5dp"
+                        app:cardBackgroundColor="@color/surface_container_lowest">
 
-                        <com.google.android.material.card.MaterialCardView
-                            android:layout_width="84dp"
-                            android:layout_height="84dp"
-                            app:cardCornerRadius="42dp"
-                            app:cardElevation="2dp"
-                            app:strokeColor="@color/surface_container"
-                            app:strokeWidth="1.5dp"
-                            app:cardBackgroundColor="@color/surface_container_low">
-
-                            <ImageView
-                                android:layout_width="match_parent"
-                                android:layout_height="match_parent"
-                                android:padding="6dp"
-                                android:src="@drawable/logo_misdinar"
-                                android:contentDescription="Logo Misdinar SPMR" />
-                        </com.google.android.material.card.MaterialCardView>
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_gravity="bottom|end"
-                            android:background="@drawable/bg_pill_primary"
-                            android:backgroundTint="@color/secondary"
-                            android:paddingHorizontal="7dp"
-                            android:paddingVertical="2dp"
-                            android:text="SPMR"
-                            android:textColor="@color/on_secondary"
-                            android:textSize="9sp"
-                            android:textStyle="bold" />
-                    </FrameLayout>
+                        <ImageView
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:padding="6dp"
+                            android:scaleType="fitCenter"
+                            android:src="@drawable/logo_misdinar"
+                            android:contentDescription="Logo Misdinar SPMR" />
+                    </com.google.android.material.card.MaterialCardView>
 
                     <!-- Chip "Sistem Informasi Misdinar Paroki" -->
                     <LinearLayout

@@ -43,12 +43,13 @@
                         app:cardElevation="2dp"
                         app:strokeColor="@color/surface_container"
                         app:strokeWidth="1.5dp"
-                        app:cardBackgroundColor="@color/surface_container_low">
+                        app:cardBackgroundColor="@color/surface_container_lowest">
 
                         <ImageView
                             android:layout_width="match_parent"
                             android:layout_height="match_parent"
                             android:padding="6dp"
+                            android:scaleType="fitCenter"
                             android:src="@drawable/logo_misdinar"
                             android:contentDescription="Logo Misdinar SPMR" />
                     </com.google.android.material.card.MaterialCardView>
@@ -128,7 +129,7 @@
                         android:layout_marginStart="8dp"
                         android:layout_weight="1"
                         android:lineSpacingExtra="2dp"
-                        android:text="Persetujuan Diperlukan: Akun baru memerlukan persetujuan dari Tim Pendamping Misdinar SPMR sebelum dapat memilih jadwal tugas misa."
+                        android:text="Pendaftaran Cepat: Akun baru langsung aktif secara otomatis setelah berhasil mendaftar dan dapat langsung memilih jadwal tugas altar."
                         android:textColor="@color/secondary"
                         android:textSize="11sp" />
                 </LinearLayout>

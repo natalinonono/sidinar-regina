@@ -52,20 +52,15 @@ export default function LoginPage() {
           <div className="p-6 sm:p-8 flex flex-col gap-6">
             {/* Header Brand & Ecclesiastical Identity */}
             <div className="flex flex-col items-center text-center space-y-3">
-              <div className="relative group">
-                <div className="w-20 h-20 rounded-full bg-surface-container-low shadow-md p-1.5 flex items-center justify-center border border-surface-container">
-                  <Image
-                    src="/logo-misdinar.png"
-                    alt="Logo Misdinar SP. Maria Regina Purbowardayan"
-                    width={80}
-                    height={80}
-                    className="object-contain rounded-full"
-                    priority
-                  />
-                </div>
-                <span className="absolute -bottom-1 -right-1 bg-secondary text-on-secondary text-[10px] font-bold px-1.5 py-0.5 rounded-full shadow-xs">
-                  SPMR
-                </span>
+              <div className="w-20 h-20 rounded-full bg-surface-container-lowest shadow-md p-1.5 flex items-center justify-center border border-surface-container">
+                <Image
+                  src="/logo-misdinar.png"
+                  alt="Logo Misdinar SP. Maria Regina Purbowardayan"
+                  width={80}
+                  height={80}
+                  className="object-contain rounded-full"
+                  priority
+                />
               </div>
 
               <div className="space-y-1">
