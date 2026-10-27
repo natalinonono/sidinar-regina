@@ -600,6 +600,37 @@ public class PengurusMainActivity extends AppCompatActivity implements
         rvMembers.setAdapter(rosterAdapter);
         rosterAdapter.updateList(membersForThisSchedule);
 
+        MaterialButton btnRemindAll = dialogView.findViewById(R.id.btnRosterRemindAll);
+        if (membersForThisSchedule.isEmpty()) {
+            btnRemindAll.setVisibility(View.GONE);
+        } else {
+            btnRemindAll.setVisibility(View.VISIBLE);
+            btnRemindAll.setOnClickListener(v -> {
+                new AlertDialog.Builder(this)
+                        .setTitle("Ingatkan Semua Petugas")
+                        .setMessage("Kirim notifikasi pengingat ke seluruh " + membersForThisSchedule.size() + " petugas misa ini?")
+                        .setPositiveButton("Kirim Pengingat", (d, w) -> {
+                            String token = sessionManager.getAuthHeader();
+                            for (Booking b : membersForThisSchedule) {
+                                ApiClient.getBackendApi().recordReminderSent(token, b.getId()).enqueue(new Callback<ResponseBody>() {
+                                    @Override
+                                    public void onResponse(@NonNull Call<ResponseBody> call, @NonNull Response<ResponseBody> response) {
+                                        b.setWaReminderSent(true);
+                                        rosterAdapter.notifyDataSetChanged();
+                                    }
+
+                                    @Override
+                                    public void onFailure(@NonNull Call<ResponseBody> call, @NonNull Throwable t) {
+                                    }
+                                });
+                            }
+                            Toast.makeText(this, "Notifikasi pengingat dikirim ke seluruh HP petugas!", Toast.LENGTH_SHORT).show();
+                        })
+                        .setNegativeButton("Batal", null)
+                        .show();
+            });
+        }
+
         btnClose.setOnClickListener(v -> dialog.dismiss());
 
         dialog.show();

@@ -263,6 +263,30 @@ public class ReminderSyncReceiver extends BroadcastReceiver {
                 }
             }
         }
+
+        // 4. Pengumuman / Warta Sakristi Baru dari Pengurus
+        try {
+            retrofit2.Response<List<org.purbowardayan.sidinar.model.Announcement>> aResp = ApiClient.getBackendApi()
+                    .getAnnouncements()
+                    .execute();
+            if (aResp.isSuccessful() && aResp.body() != null && !aResp.body().isEmpty()) {
+                org.purbowardayan.sidinar.model.Announcement latest = aResp.body().get(0);
+                String lastNotifiedAnnounceId = prefs.getString("last_notified_announcement_id", "");
+                if (latest.getId() != null && !latest.getId().equals(lastNotifiedAnnounceId)) {
+                    prefs.edit().putString("last_notified_announcement_id", latest.getId()).apply();
+                    // Hanya bunyikan notifikasi jika bukan saat initial load pertama kali
+                    if (!lastNotifiedAnnounceId.isEmpty()) {
+                        NotificationHelper.showReminderNotification(
+                                context,
+                                "📢 Warta Sakristi Baru: " + latest.getJudul(),
+                                latest.getIsi() != null ? latest.getIsi() : "Ada warta pengumuman sakristi terbaru dari pengurus.",
+                                "announcement_" + latest.getId()
+                        );
+                    }
+                }
+            }
+        } catch (Exception ignored) {
+        }
     }
 
     private void triggerPengurusReminder(Context context, SessionManager sessionManager, Booking booking) {
