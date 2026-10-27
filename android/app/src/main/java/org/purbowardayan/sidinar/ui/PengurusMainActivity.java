@@ -298,6 +298,26 @@ public class PengurusMainActivity extends AppCompatActivity implements
         ApiClient.getSupabaseApi().getAnnouncements(authHeader, "*", "is_pinned.desc,created_at.desc").enqueue(new Callback<List<Announcement>>() {
             @Override
             public void onResponse(@NonNull Call<List<Announcement>> call, @NonNull Response<List<Announcement>> response) {
+                if (response.isSuccessful() && response.body() != null && !response.body().isEmpty()) {
+                    announcementList.clear();
+                    announcementList.addAll(response.body());
+                    if (currentTab == 0) displayCurrentTab();
+                } else {
+                    fetchAnnouncementsFromBackend();
+                }
+            }
+
+            @Override
+            public void onFailure(@NonNull Call<List<Announcement>> call, @NonNull Throwable t) {
+                fetchAnnouncementsFromBackend();
+            }
+        });
+    }
+
+    private void fetchAnnouncementsFromBackend() {
+        ApiClient.getBackendApi().getAnnouncements().enqueue(new Callback<List<Announcement>>() {
+            @Override
+            public void onResponse(@NonNull Call<List<Announcement>> call, @NonNull Response<List<Announcement>> response) {
                 if (response.isSuccessful() && response.body() != null) {
                     announcementList.clear();
                     announcementList.addAll(response.body());
@@ -357,6 +377,28 @@ public class PengurusMainActivity extends AppCompatActivity implements
     private void loadSchedules() {
         String authHeader = "Bearer " + sessionManager.getToken();
         ApiClient.getSupabaseApi().getSchedules(authHeader, "*", "tanggal_misa.asc,jam_mulai.asc").enqueue(new Callback<List<MassSchedule>>() {
+            @Override
+            public void onResponse(@NonNull Call<List<MassSchedule>> call, @NonNull Response<List<MassSchedule>> response) {
+                if (response.isSuccessful() && response.body() != null && !response.body().isEmpty()) {
+                    binding.swipeRefreshPengurus.setRefreshing(false);
+                    scheduleList.clear();
+                    scheduleList.addAll(response.body());
+                    binding.tvStatActiveSchedules.setText(String.valueOf(scheduleList.size()));
+                    recalculateSchedules();
+                } else {
+                    fetchSchedulesFromBackend();
+                }
+            }
+
+            @Override
+            public void onFailure(@NonNull Call<List<MassSchedule>> call, @NonNull Throwable t) {
+                fetchSchedulesFromBackend();
+            }
+        });
+    }
+
+    private void fetchSchedulesFromBackend() {
+        ApiClient.getBackendApi().getSchedules().enqueue(new Callback<List<MassSchedule>>() {
             @Override
             public void onResponse(@NonNull Call<List<MassSchedule>> call, @NonNull Response<List<MassSchedule>> response) {
                 binding.swipeRefreshPengurus.setRefreshing(false);

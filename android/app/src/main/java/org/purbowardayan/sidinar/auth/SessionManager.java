@@ -64,6 +64,21 @@ public class SessionManager {
         return prefs.getString(KEY_TOKEN, null);
     }
 
+    public String getRefreshToken() {
+        return prefs.getString(KEY_REFRESH_TOKEN, null);
+    }
+
+    public void updateTokens(String accessToken, String refreshToken) {
+        SharedPreferences.Editor editor = prefs.edit();
+        if (accessToken != null) {
+            editor.putString(KEY_TOKEN, accessToken);
+        }
+        if (refreshToken != null) {
+            editor.putString(KEY_REFRESH_TOKEN, refreshToken);
+        }
+        editor.apply();
+    }
+
     public String getAuthHeader() {
         String token = getToken();
         return token != null ? "Bearer " + token : "";

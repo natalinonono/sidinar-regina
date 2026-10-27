@@ -22,6 +22,9 @@ public interface SupabaseApi {
     @POST("auth/v1/token?grant_type=password")
     Call<AuthResponse> login(@Body LoginRequest request);
 
+    @POST("auth/v1/token?grant_type=refresh_token")
+    Call<AuthResponse> refreshToken(@Body Map<String, String> request);
+
     @GET("rest/v1/profiles")
     Call<List<Profile>> getProfile(
             @Header("Authorization") String auth,

@@ -5,6 +5,7 @@ import android.content.Intent;
 import android.net.Uri;
 import android.widget.Toast;
 import java.util.concurrent.TimeUnit;
+import okhttp3.Authenticator;
 import okhttp3.Interceptor;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
@@ -40,8 +41,26 @@ public class ApiClient {
                 return chain.proceed(request);
             };
 
+            Authenticator tokenAuthenticator = (route, response) -> {
+                if (responseCount(response) >= 2) {
+                    return null;
+                }
+                boolean refreshed = refreshSessionSynchronous();
+                if (refreshed && org.purbowardayan.sidinar.SiDinarApplication.getInstance() != null) {
+                    org.purbowardayan.sidinar.auth.SessionManager sm = new org.purbowardayan.sidinar.auth.SessionManager(org.purbowardayan.sidinar.SiDinarApplication.getInstance());
+                    String newToken = sm.getToken();
+                    if (newToken != null && !newToken.isEmpty()) {
+                        return response.request().newBuilder()
+                                .header("Authorization", "Bearer " + newToken)
+                                .build();
+                    }
+                }
+                return null;
+            };
+
             OkHttpClient client = new OkHttpClient.Builder()
                     .addInterceptor(headerInterceptor)
+                    .authenticator(tokenAuthenticator)
                     .addInterceptor(logging)
                     .connectTimeout(30, TimeUnit.SECONDS)
                     .readTimeout(30, TimeUnit.SECONDS)
@@ -58,12 +77,82 @@ public class ApiClient {
         return supabaseApi;
     }
 
+    private static int responseCount(okhttp3.Response response) {
+        int result = 1;
+        while ((response = response.priorResponse()) != null) {
+            result++;
+        }
+        return result;
+    }
+
+    public static synchronized boolean refreshSessionSynchronous() {
+        if (org.purbowardayan.sidinar.SiDinarApplication.getInstance() == null) return false;
+        try {
+            org.purbowardayan.sidinar.auth.SessionManager sessionManager = new org.purbowardayan.sidinar.auth.SessionManager(org.purbowardayan.sidinar.SiDinarApplication.getInstance());
+            String refreshToken = sessionManager.getRefreshToken();
+            if (refreshToken == null || refreshToken.isEmpty()) return false;
+
+            OkHttpClient directClient = new OkHttpClient.Builder()
+                    .connectTimeout(15, TimeUnit.SECONDS)
+                    .readTimeout(15, TimeUnit.SECONDS)
+                    .build();
+
+            org.json.JSONObject bodyJson = new org.json.JSONObject();
+            bodyJson.put("refresh_token", refreshToken);
+
+            okhttp3.RequestBody requestBody = okhttp3.RequestBody.create(
+                    okhttp3.MediaType.parse("application/json"),
+                    bodyJson.toString()
+            );
+
+            Request request = new Request.Builder()
+                    .url(SUPABASE_URL + "auth/v1/token?grant_type=refresh_token")
+                    .header("apikey", SUPABASE_ANON_KEY)
+                    .header("Content-Type", "application/json")
+                    .post(requestBody)
+                    .build();
+
+            okhttp3.Response response = directClient.newCall(request).execute();
+            if (response.isSuccessful() && response.body() != null) {
+                String respStr = response.body().string();
+                org.json.JSONObject json = new org.json.JSONObject(respStr);
+                String newAccess = json.optString("access_token", null);
+                String newRefresh = json.optString("refresh_token", null);
+                if (newAccess != null && !newAccess.isEmpty()) {
+                    sessionManager.updateTokens(newAccess, newRefresh != null ? newRefresh : refreshToken);
+                    return true;
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+
     public static synchronized BackendApi getBackendApi() {
         if (backendApi == null) {
             HttpLoggingInterceptor logging = new HttpLoggingInterceptor();
             logging.setLevel(HttpLoggingInterceptor.Level.BODY);
 
+            Authenticator tokenAuthenticator = (route, response) -> {
+                if (responseCount(response) >= 2) {
+                    return null;
+                }
+                boolean refreshed = refreshSessionSynchronous();
+                if (refreshed && org.purbowardayan.sidinar.SiDinarApplication.getInstance() != null) {
+                    org.purbowardayan.sidinar.auth.SessionManager sm = new org.purbowardayan.sidinar.auth.SessionManager(org.purbowardayan.sidinar.SiDinarApplication.getInstance());
+                    String newToken = sm.getToken();
+                    if (newToken != null && !newToken.isEmpty()) {
+                        return response.request().newBuilder()
+                                .header("Authorization", "Bearer " + newToken)
+                                .build();
+                    }
+                }
+                return null;
+            };
+
             OkHttpClient client = new OkHttpClient.Builder()
+                    .authenticator(tokenAuthenticator)
                     .addInterceptor(logging)
                     .connectTimeout(30, TimeUnit.SECONDS)
                     .readTimeout(30, TimeUnit.SECONDS)

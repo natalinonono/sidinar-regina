@@ -1,8 +1,11 @@
 package org.purbowardayan.sidinar.network;
 
+import java.util.List;
 import java.util.Map;
 import okhttp3.ResponseBody;
+import org.purbowardayan.sidinar.model.Announcement;
 import org.purbowardayan.sidinar.model.AppVersionResponse;
+import org.purbowardayan.sidinar.model.MassSchedule;
 import org.purbowardayan.sidinar.model.RegisterRequest;
 import retrofit2.Call;
 import retrofit2.http.Body;
@@ -16,6 +19,13 @@ import retrofit2.http.Query;
 public interface BackendApi {
     @GET("api/app/version")
     Call<AppVersionResponse> getAppVersion();
+
+    @GET("api/schedules")
+    Call<List<MassSchedule>> getSchedules();
+
+    @GET("api/announcements")
+    Call<List<Announcement>> getAnnouncements();
+
     @POST("api/auth/register")
     Call<ResponseBody> register(@Body RegisterRequest request);
 

@@ -420,21 +420,41 @@ public class AnggotaMainActivity extends AppCompatActivity implements ScheduleAd
         ApiClient.getSupabaseApi().getSchedules(authHeader, "*", "tanggal_misa.asc,jam_mulai.asc").enqueue(new Callback<List<MassSchedule>>() {
             @Override
             public void onResponse(@NonNull Call<List<MassSchedule>> call, @NonNull Response<List<MassSchedule>> response) {
-                binding.swipeRefresh.setRefreshing(false);
-                if (response.isSuccessful() && response.body() != null) {
+                if (response.isSuccessful() && response.body() != null && !response.body().isEmpty()) {
+                    binding.swipeRefresh.setRefreshing(false);
                     allSchedules.clear();
                     allSchedules.addAll(response.body());
                     recalculateSchedulesQuota();
                 } else {
-                    binding.tvEmptySchedules.setVisibility(View.VISIBLE);
+                    fetchSchedulesFromBackend();
+                }
+            }
+
+            @Override
+            public void onFailure(@NonNull Call<List<MassSchedule>> call, @NonNull Throwable t) {
+                fetchSchedulesFromBackend();
+            }
+        });
+    }
+
+    private void fetchSchedulesFromBackend() {
+        ApiClient.getBackendApi().getSchedules().enqueue(new Callback<List<MassSchedule>>() {
+            @Override
+            public void onResponse(@NonNull Call<List<MassSchedule>> call, @NonNull Response<List<MassSchedule>> response) {
+                binding.swipeRefresh.setRefreshing(false);
+                if (response.isSuccessful() && response.body() != null && !response.body().isEmpty()) {
+                    allSchedules.clear();
+                    allSchedules.addAll(response.body());
+                    recalculateSchedulesQuota();
+                } else {
+                    binding.tvEmptySchedules.setVisibility(allSchedules.isEmpty() ? View.VISIBLE : View.GONE);
                 }
             }
 
             @Override
             public void onFailure(@NonNull Call<List<MassSchedule>> call, @NonNull Throwable t) {
                 binding.swipeRefresh.setRefreshing(false);
-                binding.tvEmptySchedules.setVisibility(View.VISIBLE);
-                Toast.makeText(AnggotaMainActivity.this, "Gagal memuat jadwal: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+                binding.tvEmptySchedules.setVisibility(allSchedules.isEmpty() ? View.VISIBLE : View.GONE);
             }
         });
     }
@@ -524,20 +544,42 @@ public class AnggotaMainActivity extends AppCompatActivity implements ScheduleAd
         ApiClient.getSupabaseApi().getAnnouncements(authHeader, "*", "is_pinned.desc,created_at.desc").enqueue(new Callback<List<Announcement>>() {
             @Override
             public void onResponse(@NonNull Call<List<Announcement>> call, @NonNull Response<List<Announcement>> response) {
-                if (response.isSuccessful() && response.body() != null) {
+                if (response.isSuccessful() && response.body() != null && !response.body().isEmpty()) {
                     List<Announcement> list = response.body();
                     allAnnouncements.clear();
                     allAnnouncements.addAll(list);
                     announcementAdapter.updateList(list);
                     binding.tvEmptyAnnouncements.setVisibility(list.isEmpty() ? View.VISIBLE : View.GONE);
                 } else {
-                    binding.tvEmptyAnnouncements.setVisibility(View.VISIBLE);
+                    fetchAnnouncementsFromBackend();
                 }
             }
 
             @Override
             public void onFailure(@NonNull Call<List<Announcement>> call, @NonNull Throwable t) {
-                binding.tvEmptyAnnouncements.setVisibility(View.VISIBLE);
+                fetchAnnouncementsFromBackend();
+            }
+        });
+    }
+
+    private void fetchAnnouncementsFromBackend() {
+        ApiClient.getBackendApi().getAnnouncements().enqueue(new Callback<List<Announcement>>() {
+            @Override
+            public void onResponse(@NonNull Call<List<Announcement>> call, @NonNull Response<List<Announcement>> response) {
+                if (response.isSuccessful() && response.body() != null && !response.body().isEmpty()) {
+                    List<Announcement> list = response.body();
+                    allAnnouncements.clear();
+                    allAnnouncements.addAll(list);
+                    announcementAdapter.updateList(list);
+                    binding.tvEmptyAnnouncements.setVisibility(list.isEmpty() ? View.VISIBLE : View.GONE);
+                } else {
+                    binding.tvEmptyAnnouncements.setVisibility(allAnnouncements.isEmpty() ? View.VISIBLE : View.GONE);
+                }
+            }
+
+            @Override
+            public void onFailure(@NonNull Call<List<Announcement>> call, @NonNull Throwable t) {
+                binding.tvEmptyAnnouncements.setVisibility(allAnnouncements.isEmpty() ? View.VISIBLE : View.GONE);
             }
         });
     }
