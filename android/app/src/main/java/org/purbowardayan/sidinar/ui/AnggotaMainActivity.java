@@ -178,6 +178,7 @@ public class AnggotaMainActivity extends AppCompatActivity implements ScheduleAd
                     .setTitle("Keluar Akun")
                     .setMessage("Apakah Anda yakin ingin keluar dari akun ini?")
                     .setPositiveButton("Keluar", (dialog, which) -> {
+                        org.purbowardayan.sidinar.receiver.ReminderSyncReceiver.stopBackgroundMonitoring(this);
                         sessionManager.clearSession();
                         Intent intent = new Intent(AnggotaMainActivity.this, LoginActivity.class);
                         intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);

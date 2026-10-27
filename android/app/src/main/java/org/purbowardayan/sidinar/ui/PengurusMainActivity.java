@@ -154,6 +154,7 @@ public class PengurusMainActivity extends AppCompatActivity implements
                     .setTitle("Keluar Akun")
                     .setMessage("Yakin ingin keluar dari akun pengurus?")
                     .setPositiveButton("Keluar", (dialog, which) -> {
+                        org.purbowardayan.sidinar.receiver.ReminderSyncReceiver.stopBackgroundMonitoring(this);
                         sessionManager.clearSession();
                         Intent intent = new Intent(PengurusMainActivity.this, LoginActivity.class);
                         intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);

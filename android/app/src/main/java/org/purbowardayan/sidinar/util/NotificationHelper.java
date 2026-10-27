@@ -69,7 +69,8 @@ public class NotificationHelper {
                 .setAutoCancel(true)
                 .setSound(defaultSoundUri)
                 .setVibrate(new long[]{0, 250, 150, 250})
-                .setPriority(NotificationCompat.PRIORITY_HIGH)
+                .setPriority(NotificationCompat.PRIORITY_MAX)
+                .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
                 .setCategory(NotificationCompat.CATEGORY_REMINDER)
                 .setContentIntent(pendingIntent);
 

@@ -144,6 +144,7 @@ public class LoginActivity extends AppCompatActivity {
     }
 
     private void navigateAfterLogin() {
+        org.purbowardayan.sidinar.receiver.ReminderSyncReceiver.startBackgroundMonitoring(this);
         Intent intent;
         if (sessionManager.isPengurus()) {
             intent = new Intent(LoginActivity.this, PengurusMainActivity.class);
