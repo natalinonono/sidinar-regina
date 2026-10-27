@@ -51,7 +51,7 @@ WITH CHECK (
 DROP POLICY IF EXISTS "Semua pengguna dapat melihat jadwal misa" ON public.mass_schedules;
 CREATE POLICY "Semua pengguna dapat melihat jadwal misa"
 ON public.mass_schedules FOR SELECT
-TO authenticated
+TO anon, authenticated
 USING (true);
 
 DROP POLICY IF EXISTS "Pengurus dapat mengelola jadwal misa" ON public.mass_schedules;
@@ -65,7 +65,7 @@ WITH CHECK (public.is_pengurus());
 DROP POLICY IF EXISTS "Semua pengguna dapat melihat data penugasan misa" ON public.bookings;
 CREATE POLICY "Semua pengguna dapat melihat data penugasan misa"
 ON public.bookings FOR SELECT
-TO authenticated
+TO anon, authenticated
 USING (true);
 
 DROP POLICY IF EXISTS "Anggota aktif dapat mendaftar jadwal misa" ON public.bookings;
@@ -91,7 +91,7 @@ USING (user_id = auth.uid() OR public.is_pengurus());
 DROP POLICY IF EXISTS "Semua pengguna dapat membaca pengumuman" ON public.announcements;
 CREATE POLICY "Semua pengguna dapat membaca pengumuman"
 ON public.announcements FOR SELECT
-TO authenticated
+TO anon, authenticated
 USING (true);
 
 DROP POLICY IF EXISTS "Hanya pengurus yang dapat membuat atau mengubah pengumuman" ON public.announcements;
