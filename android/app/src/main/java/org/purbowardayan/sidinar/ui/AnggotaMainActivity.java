@@ -94,6 +94,9 @@ public class AnggotaMainActivity extends AppCompatActivity implements ScheduleAd
 
         loadAllData();
 
+        // Aktifkan pemantau notifikasi latar belakang
+        org.purbowardayan.sidinar.receiver.ReminderSyncReceiver.startBackgroundMonitoring(this);
+
         // Cek update aplikasi secara otomatis saat membuka aplikasi
         AppUpdateManager.checkForUpdate(this, false);
     }
@@ -102,6 +105,7 @@ public class AnggotaMainActivity extends AppCompatActivity implements ScheduleAd
         super.onResume();
         loadAllData();
         startAutoSync();
+        org.purbowardayan.sidinar.receiver.ReminderSyncReceiver.startBackgroundMonitoring(this);
     }
 
     @Override
@@ -773,6 +777,12 @@ public class AnggotaMainActivity extends AppCompatActivity implements ScheduleAd
                     dialog.dismiss();
                     if (response.isSuccessful()) {
                         Toast.makeText(AnggotaMainActivity.this, "Berhasil mendaftar tugas misa!", Toast.LENGTH_LONG).show();
+                        NotificationHelper.showReminderNotification(
+                                AnggotaMainActivity.this,
+                                "🔔 Pendaftaran Tugas Berhasil!",
+                                "Anda telah terdaftar bertugas pada " + schedule.getJudulMisa() + " (" + schedule.getTanggalMisa() + " • " + schedule.getFormattedTime() + "). Berkah Dalem!",
+                                "booking_success_" + schedule.getId()
+                        );
                         loadAllData();
                     } else {
                         String errMsg = "Gagal mengambil tugas. Jadwal mungkin telah penuh atau kuota mingguan Anda sudah terpakai.";
@@ -1042,8 +1052,13 @@ public class AnggotaMainActivity extends AppCompatActivity implements ScheduleAd
     private void checkAndTriggerReminderNotification(Booking booking) {
         if (booking == null || booking.getSchedule() == null) return;
         android.content.SharedPreferences prefs = getSharedPreferences("sidinar_notifications", MODE_PRIVATE);
-        String notifKey = "notified_reminder_" + booking.getId();
-        if (!prefs.getBoolean(notifKey, false)) {
+        String notifKey = "last_notified_" + booking.getId();
+        long lastNotified = prefs.getLong(notifKey, 0);
+
+        // Hanya skip jika baru saja dinotifikasi dalam 30 menit terakhir
+        if (System.currentTimeMillis() - lastNotified > 30 * 60 * 1000L) {
+            prefs.edit().putLong(notifKey, System.currentTimeMillis()).apply();
+
             String massTitle = booking.getSchedule().getKategori() != null ? booking.getSchedule().getKategori().toUpperCase() : "MISA";
             String massTime = (booking.getSchedule().getTanggalMisa() != null ? booking.getSchedule().getTanggalMisa() : "") +
                     " • " + (booking.getSchedule().getJamMulai() != null ? booking.getSchedule().getJamMulai() : "") + " WIB";
@@ -1058,10 +1073,7 @@ public class AnggotaMainActivity extends AppCompatActivity implements ScheduleAd
             // 1. Show Android system notification in notification tray with chime & vibration
             NotificationHelper.showReminderNotification(this, title, message, booking.getId());
 
-            // 2. Mark as notified so we don't spam ringtones repeatedly
-            prefs.edit().putBoolean(notifKey, true).apply();
-
-            // 3. Show In-App Alert dialog if user is currently looking at the app
+            // 2. Show In-App Alert dialog if user is currently looking at the app
             showReminderInAppDialog(booking, title, message);
         }
     }
@@ -1102,20 +1114,66 @@ public class AnggotaMainActivity extends AppCompatActivity implements ScheduleAd
             }
         }
 
+        StringBuilder content = new StringBuilder();
         if (notifList.isEmpty()) {
-            new AlertDialog.Builder(this)
-                    .setTitle("Notifikasi & Pengingat")
-                    .setMessage("Belum ada notifikasi atau pengingat tugas aktif saat ini.")
-                    .setPositiveButton("Tutup", null)
-                    .show();
-            return;
+            content.append("Belum ada notifikasi warta atau pengingat tugas baru.\n\n");
+            content.append("💡 Anda dapat menekan tombol '🔔 Tes Notif (5 Detik)' di bawah untuk menguji suara, getar, dan banner notifikasi di HP Anda saat aplikasi diminimize/ditutup.");
+        } else {
+            for (int i = 0; i < notifList.size(); i++) {
+                content.append(notifList.get(i)).append("\n\n---\n\n");
+            }
         }
 
-        CharSequence[] items = notifList.toArray(new CharSequence[0]);
         new AlertDialog.Builder(this)
-                .setTitle("Notifikasi & Pengingat Tugas (" + notifList.size() + ")")
-                .setItems(items, null)
-                .setPositiveButton("Tutup", null)
+                .setTitle("Pusat Notifikasi (" + notifList.size() + ")")
+                .setMessage(content.toString().trim())
+                .setPositiveButton("🔔 Tes Notif (5 Detik)", (dialog, which) -> {
+                    testNotificationWithCountDown();
+                })
+                .setNeutralButton("🔋 Izin Baterai HP", (dialog, which) -> {
+                    openBatteryOptimizationSettings();
+                })
+                .setNegativeButton("Tutup", null)
                 .show();
+    }
+
+    private void testNotificationWithCountDown() {
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+            if (checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS) != android.content.pm.PackageManager.PERMISSION_GRANTED) {
+                requestPermissions(new String[]{android.Manifest.permission.POST_NOTIFICATIONS}, 101);
+                Toast.makeText(this, "Izinkan izin notifikasi terlebih dahulu.", Toast.LENGTH_SHORT).show();
+                return;
+            }
+        }
+
+        org.purbowardayan.sidinar.receiver.ReminderSyncReceiver.scheduleTest(this, 5000L);
+        Toast.makeText(this, "🔔 Notifikasi dijadwalkan! Aplikasi diminimize sekarang, tunggu 5 detik...", Toast.LENGTH_LONG).show();
+        moveTaskToBack(true);
+    }
+
+    private void openBatteryOptimizationSettings() {
+        try {
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
+                android.content.Intent intent = new android.content.Intent();
+                String packageName = getPackageName();
+                android.os.PowerManager pm = (android.os.PowerManager) getSystemService(android.content.Context.POWER_SERVICE);
+                if (pm != null && !pm.isIgnoringBatteryOptimizations(packageName)) {
+                    intent.setAction(android.provider.Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS);
+                    intent.setData(android.net.Uri.parse("package:" + packageName));
+                    startActivity(intent);
+                } else {
+                    Toast.makeText(this, "Aplikasi sudah diizinkan berjalan di latar belakang tanpa batasan baterai.", Toast.LENGTH_LONG).show();
+                }
+            } else {
+                Toast.makeText(this, "Pengaturan baterai tidak diperlukan untuk versi Android ini.", Toast.LENGTH_SHORT).show();
+            }
+        } catch (Exception e) {
+            try {
+                android.content.Intent intent = new android.content.Intent(android.provider.Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS);
+                startActivity(intent);
+            } catch (Exception ex) {
+                Toast.makeText(this, "Buka Pengaturan HP > Aplikasi > SiDinar Regina > Baterai: Pilih 'Tidak Ada Batasan'.", Toast.LENGTH_LONG).show();
+            }
+        }
     }
 }

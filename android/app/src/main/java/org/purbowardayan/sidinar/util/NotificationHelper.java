@@ -1,11 +1,13 @@
 package org.purbowardayan.sidinar.util;
 
+import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.BitmapFactory;
+import android.media.AudioAttributes;
 import android.media.RingtoneManager;
 import android.net.Uri;
 import android.os.Build;
@@ -16,7 +18,7 @@ import org.purbowardayan.sidinar.ui.AnggotaMainActivity;
 
 public class NotificationHelper {
 
-    public static final String CHANNEL_REMINDERS_ID = "sidinar_reminders_channel";
+    public static final String CHANNEL_REMINDERS_ID = "sidinar_reminders_v2";
     public static final String CHANNEL_REMINDERS_NAME = "Pengingat Tugas Misdinar";
 
     public static void createNotificationChannel(Context context) {
@@ -28,11 +30,21 @@ public class NotificationHelper {
                         CHANNEL_REMINDERS_NAME,
                         NotificationManager.IMPORTANCE_HIGH
                 );
-                channel.setDescription("Pemberitahuan otomatis saat Anda diingatkan bertugas oleh Pengurus Sakristi SPMR");
+                channel.setDescription("Pemberitahuan jadwal tugas misdinar dan presensi sakristi SPMR Purbowardayan");
                 channel.enableVibration(true);
-                channel.setVibrationPattern(new long[]{0, 250, 150, 250});
+                channel.setVibrationPattern(new long[]{0, 400, 200, 400});
                 channel.enableLights(true);
                 channel.setLightColor(0xFF904D00); // Liturgical Accent Gold
+                channel.setLockscreenVisibility(Notification.VISIBILITY_PUBLIC);
+                channel.setBypassDnd(true);
+
+                Uri defaultSoundUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
+                AudioAttributes audioAttributes = new AudioAttributes.Builder()
+                        .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                        .setUsage(AudioAttributes.USAGE_NOTIFICATION_EVENT)
+                        .build();
+                channel.setSound(defaultSoundUri, audioAttributes);
+
                 manager.createNotificationChannel(channel);
             }
         }
@@ -68,10 +80,12 @@ public class NotificationHelper {
                 .setStyle(new NotificationCompat.BigTextStyle().bigText(message))
                 .setAutoCancel(true)
                 .setSound(defaultSoundUri)
-                .setVibrate(new long[]{0, 250, 150, 250})
+                .setVibrate(new long[]{0, 400, 200, 400})
                 .setPriority(NotificationCompat.PRIORITY_MAX)
+                .setDefaults(NotificationCompat.DEFAULT_ALL)
                 .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
                 .setCategory(NotificationCompat.CATEGORY_REMINDER)
+                .setFullScreenIntent(pendingIntent, false)
                 .setContentIntent(pendingIntent);
 
         try {

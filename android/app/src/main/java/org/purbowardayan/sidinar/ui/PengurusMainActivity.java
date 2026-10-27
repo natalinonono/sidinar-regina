@@ -102,6 +102,9 @@ public class PengurusMainActivity extends AppCompatActivity implements
 
         loadAllData();
 
+        // Aktifkan pemantau notifikasi latar belakang
+        org.purbowardayan.sidinar.receiver.ReminderSyncReceiver.startBackgroundMonitoring(this);
+
         // Cek update aplikasi secara otomatis saat membuka aplikasi
         AppUpdateManager.checkForUpdate(this, false);
     }
@@ -277,6 +280,7 @@ public class PengurusMainActivity extends AppCompatActivity implements
         super.onResume();
         loadAllData();
         startAutoSync();
+        org.purbowardayan.sidinar.receiver.ReminderSyncReceiver.startBackgroundMonitoring(this);
     }
 
     @Override
