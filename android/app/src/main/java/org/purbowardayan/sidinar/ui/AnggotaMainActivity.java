@@ -99,7 +99,23 @@ public class AnggotaMainActivity extends AppCompatActivity implements ScheduleAd
 
         // Cek update aplikasi secara otomatis saat membuka aplikasi
         AppUpdateManager.checkForUpdate(this, false);
+
+        handleNotificationIntent(getIntent());
     }
+
+    @Override
+    protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        setIntent(intent);
+        handleNotificationIntent(intent);
+    }
+
+    private void handleNotificationIntent(Intent intent) {
+        if (intent != null && intent.getBooleanExtra("action_ready", false)) {
+            Toast.makeText(this, "✅ Terima kasih! Kesiapan pelayanan altar Anda telah dicatat. Berkah Dalem!", Toast.LENGTH_LONG).show();
+        }
+    }
+
     @Override
     protected void onResume() {
         super.onResume();
@@ -1125,13 +1141,13 @@ public class AnggotaMainActivity extends AppCompatActivity implements ScheduleAd
         }
 
         new AlertDialog.Builder(this)
-                .setTitle("Pusat Notifikasi (" + notifList.size() + ")")
+                .setTitle("Pusat Notifikasi & Pop-Up Banner")
                 .setMessage(content.toString().trim())
-                .setPositiveButton("🔔 Tes Notif (5 Detik)", (dialog, which) -> {
+                .setPositiveButton("🔔 Tes Pop-Up Banner (5 Detik)", (dialog, which) -> {
                     testNotificationWithCountDown();
                 })
-                .setNeutralButton("🔋 Izin Baterai HP", (dialog, which) -> {
-                    openBatteryOptimizationSettings();
+                .setNeutralButton("⚙️ Izin Pop-Up Banner HP", (dialog, which) -> {
+                    openBannerNotificationSettings();
                 })
                 .setNegativeButton("Tutup", null)
                 .show();
@@ -1147,8 +1163,31 @@ public class AnggotaMainActivity extends AppCompatActivity implements ScheduleAd
         }
 
         org.purbowardayan.sidinar.receiver.ReminderSyncReceiver.scheduleTest(this, 5000L);
-        Toast.makeText(this, "🔔 Notifikasi dijadwalkan! Aplikasi diminimize sekarang, tunggu 5 detik...", Toast.LENGTH_LONG).show();
+        Toast.makeText(this, "🔔 Pop-up banner dijadwalkan! Aplikasi diminimize sekarang, tunggu 5 detik...", Toast.LENGTH_LONG).show();
         moveTaskToBack(true);
+    }
+
+    private void openBannerNotificationSettings() {
+        try {
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+                android.content.Intent intent = new android.content.Intent(android.provider.Settings.ACTION_CHANNEL_NOTIFICATION_SETTINGS);
+                intent.putExtra(android.provider.Settings.EXTRA_APP_PACKAGE, getPackageName());
+                intent.putExtra(android.provider.Settings.EXTRA_CHANNEL_ID, org.purbowardayan.sidinar.util.NotificationHelper.CHANNEL_REMINDERS_ID);
+                startActivity(intent);
+            } else {
+                android.content.Intent intent = new android.content.Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
+                intent.setData(android.net.Uri.parse("package:" + getPackageName()));
+                startActivity(intent);
+            }
+        } catch (Exception e) {
+            try {
+                android.content.Intent intent = new android.content.Intent(android.provider.Settings.ACTION_APP_NOTIFICATION_SETTINGS);
+                intent.putExtra(android.provider.Settings.EXTRA_APP_PACKAGE, getPackageName());
+                startActivity(intent);
+            } catch (Exception ex) {
+                openBatteryOptimizationSettings();
+            }
+        }
     }
 
     private void openBatteryOptimizationSettings() {
