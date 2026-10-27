@@ -247,10 +247,28 @@ export default function PengurusJadwalPage() {
                         onClick={async () => {
                           if (!confirm(`Kirim notifikasi pengingat otomatis ke seluruh ${selectedBookings.length} petugas misa ini?`)) return
                           for (const b of selectedBookings) {
-                            await fetch(`/api/bookings/${b.id}/reminder`, { method: 'POST' })
+                            try {
+                              await fetch(`/api/bookings/${b.id}/reminder`, { method: 'POST' })
+                              // Siarkan broadcast realtime langsung dari browser agar seketika muncul di web & HP anggota
+                              const broadcastChannel = supabase.channel('reminders-broadcast')
+                              await broadcastChannel.send({
+                                type: 'broadcast',
+                                event: 'reminder_alert',
+                                payload: {
+                                  booking_id: b.id,
+                                  user_id: b.user_id,
+                                  recipient_name: b.profile?.nama_lengkap || 'Petugas',
+                                  title: `🔔 Pengingat Tugas: ${selectedSchedule.judul_misa}`,
+                                  message: `Pengurus sakristi mengingatkan tugas altar pada ${selectedSchedule.tanggal_misa} pukul ${selectedSchedule.jam_mulai.substring(0, 5)} WIB (${b.posisi_tugas || 'Petugas Altar'}).`,
+                                  timestamp: Date.now(),
+                                },
+                              })
+                            } catch (e) {
+                              console.warn('Reminder broadcast err:', e)
+                            }
                           }
                           loadSchedulesAndBookings()
-                          alert('Notifikasi pengingat berhasil dikirim ke seluruh perangkat petugas!')
+                          alert('Notifikasi pengingat berhasil disiarkan ke seluruh web dan handphone petugas!')
                         }}
                         className="px-3 py-1.5 rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 text-xs font-semibold flex items-center gap-1.5 transition-colors shadow-2xs"
                         type="button"
@@ -319,7 +337,25 @@ export default function PengurusJadwalPage() {
                                   onClick={async () => {
                                     const { waUrl } = generateWhatsAppReminderMessage(selectedSchedule, b.profile!)
                                     window.open(waUrl, '_blank')
-                                    await fetch(`/api/bookings/${b.id}/reminder`, { method: 'POST' })
+                                    try {
+                                      await fetch(`/api/bookings/${b.id}/reminder`, { method: 'POST' })
+                                      // Siarkan broadcast realtime langsung dari browser
+                                      const broadcastChannel = supabase.channel('reminders-broadcast')
+                                      await broadcastChannel.send({
+                                        type: 'broadcast',
+                                        event: 'reminder_alert',
+                                        payload: {
+                                          booking_id: b.id,
+                                          user_id: b.user_id,
+                                          recipient_name: b.profile?.nama_lengkap || 'Petugas',
+                                          title: `🔔 Pengingat Tugas: ${selectedSchedule.judul_misa}`,
+                                          message: `Pengurus sakristi mengingatkan tugas altar pada ${selectedSchedule.tanggal_misa} pukul ${selectedSchedule.jam_mulai.substring(0, 5)} WIB (${b.posisi_tugas || 'Petugas Altar'}).`,
+                                          timestamp: Date.now(),
+                                        },
+                                      })
+                                    } catch (e) {
+                                      console.warn('Reminder broadcast err:', e)
+                                    }
                                     loadSchedulesAndBookings()
                                   }}
                                   className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold flex items-center gap-1 transition-all shadow-2xs ${

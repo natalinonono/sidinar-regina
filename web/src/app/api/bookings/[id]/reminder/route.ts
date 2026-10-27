@@ -24,7 +24,10 @@ export async function POST(request: Request, context: RouteContext) {
       return NextResponse.json({ error: 'Data penugasan tidak ditemukan.' }, { status: 404 })
     }
 
-    // 2. Tandai wa_reminder_sent = true
+    const nowIso = new Date().toISOString()
+
+    // 2. Tandai wa_reminder_sent = true pada bookings dan perbarui updated_at pada profiles
+    // agar event UPDATE selalu terpicu di Supabase Realtime & listener database
     const { error: updateErr } = await (adminSupabase as any)
       .from('bookings')
       .update({ wa_reminder_sent: true })
@@ -32,6 +35,13 @@ export async function POST(request: Request, context: RouteContext) {
 
     if (updateErr) {
       return NextResponse.json({ error: updateErr.message }, { status: 400 })
+    }
+
+    if (booking.user_id) {
+      await (adminSupabase as any)
+        .from('profiles')
+        .update({ updated_at: nowIso })
+        .eq('id', booking.user_id)
     }
 
     // 3. Buat URL WhatsApp & pesan otomatis jika data lengkap
@@ -54,30 +64,33 @@ export async function POST(request: Request, context: RouteContext) {
       await new Promise<void>((resolve) => {
         channel.subscribe(async (status) => {
           if (status === 'SUBSCRIBED') {
-            await channel.send({
-              type: 'broadcast',
-              event: 'reminder_alert',
-              payload: {
-                booking_id: booking.id,
-                user_id: booking.user_id,
-                title: notifTitle,
-                message: notifBody,
-                tanggal: booking.schedule?.tanggal_misa,
-                jam_mulai: booking.schedule?.jam_mulai,
-                kategori: booking.schedule?.kategori,
-                posisi_tugas: booking.posisi_tugas,
-                timestamp: new Date().toISOString(),
-              },
-            })
-            adminSupabase.removeChannel(channel)
+            try {
+              await channel.send({
+                type: 'broadcast',
+                event: 'reminder_alert',
+                payload: {
+                  booking_id: booking.id,
+                  user_id: booking.user_id,
+                  recipient_name: memberName,
+                  title: notifTitle,
+                  message: notifBody,
+                  tanggal: booking.schedule?.tanggal_misa,
+                  jam_mulai: booking.schedule?.jam_mulai,
+                  kategori: booking.schedule?.kategori,
+                  posisi_tugas: booking.posisi_tugas,
+                  timestamp: Date.now(),
+                },
+              })
+            } catch (err) {
+              console.warn('Channel send error:', err)
+            }
             resolve()
           } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
-            adminSupabase.removeChannel(channel)
             resolve()
           }
         })
-        // Safety timeout
-        setTimeout(() => resolve(), 1200)
+        // Safety timeout 1500ms
+        setTimeout(() => resolve(), 1500)
       })
     } catch (broadcastErr) {
       console.warn('Realtime broadcast warning:', broadcastErr)
@@ -89,10 +102,12 @@ export async function POST(request: Request, context: RouteContext) {
       wa_reminder_sent: true,
       wa_url: waUrl,
       reminder_text: message,
+      timestamp: Date.now(),
       notification: {
         title: notifTitle,
         body: notifBody,
         user_id: booking.user_id,
+        booking_id: booking.id,
       },
     })
   } catch (err: any) {

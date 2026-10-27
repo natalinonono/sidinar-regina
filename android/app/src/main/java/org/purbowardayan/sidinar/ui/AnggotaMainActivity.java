@@ -1071,14 +1071,27 @@ public class AnggotaMainActivity extends AppCompatActivity implements ScheduleAd
         String notifKey = "last_notified_" + booking.getId();
         long lastNotified = prefs.getLong(notifKey, 0);
 
-        // Hanya skip jika baru saja dinotifikasi dalam 30 menit terakhir
-        if (System.currentTimeMillis() - lastNotified > 30 * 60 * 1000L) {
-            prefs.edit().putLong(notifKey, System.currentTimeMillis()).apply();
+        String userId = sessionManager.getUserId();
+        Profile profile = sessionManager.getProfile();
+        String currentUpdatedAt = profile != null ? profile.getUpdatedAt() : null;
+        String lastProfileUpdatedAt = prefs.getString("last_profile_updated_at_" + userId, "");
+
+        boolean profileTimestampChanged = false;
+        if (currentUpdatedAt != null && !currentUpdatedAt.isEmpty()) {
+            if (!currentUpdatedAt.equals(lastProfileUpdatedAt)) {
+                profileTimestampChanged = true;
+                prefs.edit().putString("last_profile_updated_at_" + userId, currentUpdatedAt).apply();
+            }
+        }
+
+        long now = System.currentTimeMillis();
+        // Beritahukan jika pengurus baru saja kirim reminder dari web, belum pernah dinotifikasi, atau pengingat berkala
+        if (profileTimestampChanged || lastNotified == 0 || (now - lastNotified > 10 * 1000L && profileTimestampChanged) || (now - lastNotified > 30 * 60 * 1000L)) {
+            prefs.edit().putLong(notifKey, now).apply();
 
             String massTitle = booking.getSchedule().getKategori() != null ? booking.getSchedule().getKategori().toUpperCase() : "MISA";
             String massTime = (booking.getSchedule().getTanggalMisa() != null ? booking.getSchedule().getTanggalMisa() : "") +
                     " • " + (booking.getSchedule().getJamMulai() != null ? booking.getSchedule().getJamMulai() : "") + " WIB";
-            Profile profile = sessionManager.getProfile();
             String nama = profile != null && profile.getNamaPanggilan() != null && !profile.getNamaPanggilan().isEmpty()
                     ? profile.getNamaPanggilan() : "Misdinar";
 

@@ -31,6 +31,9 @@ public class Profile implements Serializable {
     @SerializedName("status")
     private String status; // "aktif" | "pending" | "nonaktif"
 
+    @SerializedName("updated_at")
+    private String updatedAt;
+
     public Profile() {}
 
     public String getId() { return id; }
@@ -59,6 +62,9 @@ public class Profile implements Serializable {
 
     public String getStatus() { return status != null ? status : "aktif"; }
     public void setStatus(String status) { this.status = status; }
+
+    public String getUpdatedAt() { return updatedAt; }
+    public void setUpdatedAt(String updatedAt) { this.updatedAt = updatedAt; }
 
     public boolean isPengurus() {
         return "pengurus".equalsIgnoreCase(role);

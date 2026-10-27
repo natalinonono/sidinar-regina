@@ -25,13 +25,17 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({ profile 
   const [isOpen, setIsOpen] = useState(false)
   const [activeToast, setActiveToast] = useState<NotificationItem | null>(null)
   const dropdownRef = useRef<HTMLDivElement>(null)
+  const lastTriggeredTime = useRef<number>(0)
 
-  // Web Audio API Synthesized Chime (No external audio file needed!)
+  // Web Audio API Synthesized Chime (No external audio asset required, works everywhere)
   const playNotificationChime = () => {
     try {
       const AudioCtx = window.AudioContext || (window as any).webkitAudioContext
       if (!AudioCtx) return
       const ctx = new AudioCtx()
+      if (ctx.state === 'suspended') {
+        ctx.resume().catch(() => {})
+      }
 
       const now = ctx.currentTime
       // Tone 1: E5 (659.25 Hz)
@@ -39,33 +43,30 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({ profile 
       const gain1 = ctx.createGain()
       osc1.type = 'sine'
       osc1.frequency.setValueAtTime(659.25, now)
-      gain1.gain.setValueAtTime(0.15, now)
-      gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.4)
+      gain1.gain.setValueAtTime(0.2, now)
+      gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.35)
       osc1.connect(gain1)
       gain1.connect(ctx.destination)
       osc1.start(now)
-      osc1.stop(now + 0.4)
+      osc1.stop(now + 0.35)
 
       // Tone 2: A5 (880 Hz)
       const osc2 = ctx.createOscillator()
       const gain2 = ctx.createGain()
       osc2.type = 'sine'
-      osc2.frequency.setValueAtTime(880, now + 0.15)
-      gain2.gain.setValueAtTime(0.18, now + 0.15)
-      gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.7)
+      osc2.frequency.setValueAtTime(880, now + 0.12)
+      gain2.gain.setValueAtTime(0.25, now + 0.12)
+      gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.75)
       osc2.connect(gain2)
       gain2.connect(ctx.destination)
-      osc2.start(now + 0.15)
-      osc2.stop(now + 0.7)
+      osc2.start(now + 0.12)
+      osc2.stop(now + 0.75)
     } catch (e) {
       console.warn('Audio chime warning:', e)
     }
   }
 
-  const knownNotificationIds = useRef<Set<string>>(new Set())
-  const isInitialLoad = useRef(true)
-
-  // Load existing notifications
+  // Load notifications from API
   const loadNotifications = async () => {
     try {
       const res = await fetch('/api/notifications')
@@ -74,23 +75,6 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({ profile 
         setNotifications(data.notifications)
         const unread = data.notifications.filter((n: any) => n.type === 'reminder').length
         setUnreadCount(unread)
-
-        // Check for new reminders arrived since last poll
-        if (!isInitialLoad.current) {
-          for (const item of data.notifications) {
-            if (item.type === 'reminder' && !knownNotificationIds.current.has(item.id)) {
-              triggerInAppNotification(item)
-              break
-            }
-          }
-        } else {
-          isInitialLoad.current = false
-        }
-
-        // Register all current IDs
-        data.notifications.forEach((item: any) => {
-          knownNotificationIds.current.add(item.id)
-        })
       }
     } catch {
       // silent
@@ -117,34 +101,53 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({ profile 
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
-  // Listen to Supabase Realtime for instant notification triggers + 5s polling fallback
+  // Listen to Supabase Realtime for instant notification triggers + 8s polling fallback
   useEffect(() => {
     loadNotifications()
 
-    // 5-second active polling fallback to guarantee real-time delivery even if WebSockets are throttled
+    // 8-second polling fallback
     const pollInterval = setInterval(() => {
       loadNotifications()
-    }, 5000)
+    }, 8000)
 
     const supabase = createClient()
 
-    // 1. Listen to broadcast on 'reminders-broadcast' (matched with server channel)
+    // 1. Listen to broadcast on 'reminders-broadcast'
     const broadcastChannel = supabase
       .channel('reminders-broadcast')
       .on('broadcast', { event: 'reminder_alert' }, (event) => {
         const payload = event.payload
-        if (profile && payload && payload.user_id === profile.id) {
-          const notifId = `reminder-${payload.booking_id || Date.now()}`
-          if (!knownNotificationIds.current.has(notifId)) {
-            knownNotificationIds.current.add(notifId)
-            triggerInAppNotification({
-              id: notifId,
-              booking_id: payload.booking_id,
-              type: 'reminder',
-              title: payload.title || '🔔 Pengingat Tugas Misdinar!',
-              message: payload.message || 'Pengurus mengingatkan jadwal tugas misa Anda.',
-            })
-          }
+        if (!payload) return
+
+        const now = Date.now()
+        // Debounce within 1500ms
+        if (now - lastTriggeredTime.current < 1500) {
+          return
+        }
+
+        // Case A: Target Misdinar
+        if (profile && payload.user_id === profile.id) {
+          lastTriggeredTime.current = now
+          triggerInAppNotification({
+            id: `reminder-${payload.booking_id || now}`,
+            booking_id: payload.booking_id,
+            type: 'reminder',
+            title: payload.title || '🔔 Pengingat Tugas Misdinar!',
+            message: payload.message || 'Pengurus mengingatkan jadwal tugas misa Anda.',
+          })
+          loadNotifications()
+        }
+        // Case B: Pengurus Sakristi (Feedback confirming reminder broadcast was received across the web)
+        else if (profile && profile.role === 'pengurus') {
+          lastTriggeredTime.current = now
+          triggerInAppNotification({
+            id: `reminder-broadcast-${payload.booking_id || now}`,
+            booking_id: payload.booking_id,
+            type: 'reminder',
+            title: `🔔 Pengingat Disiarkan: ${payload.recipient_name || 'Petugas'}`,
+            message: payload.message || 'Pengingat tugas altar berhasil disiarkan ke web dan handphone anggota.',
+          })
+          loadNotifications()
         }
       })
       .subscribe()
@@ -157,19 +160,25 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({ profile 
         { event: 'UPDATE', schema: 'public', table: 'bookings' },
         (payload) => {
           const newBooking = payload.new as any
-          if (profile && newBooking.user_id === profile.id && newBooking.wa_reminder_sent) {
-            const notifId = `reminder-${newBooking.id}`
-            if (!knownNotificationIds.current.has(notifId)) {
-              knownNotificationIds.current.add(notifId)
-              triggerInAppNotification({
-                id: notifId,
-                booking_id: newBooking.id,
-                type: 'reminder',
-                title: '🔔 Pengingat Tugas Misdinar!',
-                message: 'Pengurus sakristi baru saja mengirimkan pengingat tugas misa Anda. Harap hadir H-30 menit.',
-              })
-            }
+          if (!newBooking || !newBooking.wa_reminder_sent) return
+
+          const now = Date.now()
+          if (now - lastTriggeredTime.current < 1500) {
+            loadNotifications()
+            return
           }
+
+          if (profile && newBooking.user_id === profile.id) {
+            lastTriggeredTime.current = now
+            triggerInAppNotification({
+              id: `reminder-${newBooking.id}-${now}`,
+              booking_id: newBooking.id,
+              type: 'reminder',
+              title: '🔔 Pengingat Tugas Misdinar!',
+              message: 'Pengurus sakristi baru saja mengirimkan pengingat tugas misa Anda. Harap hadir di sakristi H-30 menit!',
+            })
+          }
+          loadNotifications()
         }
       )
       .subscribe()
@@ -179,7 +188,7 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({ profile 
       supabase.removeChannel(broadcastChannel)
       supabase.removeChannel(bookingsChannel)
     }
-  }, [profile?.id])
+  }, [profile?.id, profile?.role])
 
   const triggerInAppNotification = (item: NotificationItem) => {
     playNotificationChime()
@@ -190,7 +199,7 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({ profile 
       setActiveToast((curr) => (curr?.id === item.id ? null : curr))
     }, 8000)
 
-    // Also trigger Browser native Desktop Notification
+    // Trigger Browser native Desktop Notification
     if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
       try {
         new Notification(item.title, {
@@ -208,7 +217,7 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({ profile 
 
   return (
     <div className="relative" ref={dropdownRef}>
-      {/* Floating In-App Top Notification Banner Toast */}
+      {/* Floating In-App Top Notification Banner Toast (Heads-Up Style) */}
       {activeToast && (
         <div className="fixed top-20 right-4 sm:right-8 z-50 max-w-sm w-full bg-surface-container-lowest border-2 border-primary shadow-2xl rounded-2xl p-4 animate-in slide-in-from-top-4 duration-300">
           <div className="flex items-start gap-3">
@@ -221,6 +230,7 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({ profile 
                 <button
                   onClick={() => setActiveToast(null)}
                   className="text-on-surface-variant hover:text-primary p-0.5"
+                  aria-label="Tutup notifikasi"
                 >
                   <span className="material-symbols-outlined text-[16px]">close</span>
                 </button>
@@ -285,6 +295,25 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({ profile 
                 {unreadCount} Pengingat Baru
               </span>
             )}
+          </div>
+
+          {/* Test notification button */}
+          <div className="p-2.5 bg-primary/5 border-b border-surface-container">
+            <button
+              onClick={() => {
+                triggerInAppNotification({
+                  id: `test-${Date.now()}`,
+                  type: 'reminder',
+                  title: '🔔 Tes Notifikasi Web SiDinar Berhasil!',
+                  message: 'Suara lonceng altar & pop-up banner web berfungsi normal dengan sangat baik.',
+                })
+              }}
+              className="w-full py-1.5 px-3 rounded-xl bg-primary text-on-primary hover:bg-primary/90 font-bold text-xs flex items-center justify-center gap-1.5 transition-colors shadow-2xs"
+              type="button"
+            >
+              <span className="material-symbols-outlined text-[15px]">notifications_active</span>
+              <span>Uji Bunyi &amp; Banner Web</span>
+            </button>
           </div>
 
           <div className="max-h-80 overflow-y-auto divide-y divide-surface-container">

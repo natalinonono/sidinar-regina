@@ -192,15 +192,36 @@ public class ReminderSyncReceiver extends BroadcastReceiver {
             e.printStackTrace();
         }
 
-        if (bookings == null || bookings.isEmpty()) return;
+        // Ambil profil terbaru untuk mendeteksi apakah pengurus baru saja mengirimkan pengingat dari Web
+        Profile currentProfile = null;
+        try {
+            Response<List<Profile>> pResp = ApiClient.getSupabaseApi()
+                    .getProfile(authHeader, "eq." + userId, "*")
+                    .execute();
+            if (pResp.isSuccessful() && pResp.body() != null && !pResp.body().isEmpty()) {
+                currentProfile = pResp.body().get(0);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        SharedPreferences prefs = context.getSharedPreferences("sidinar_notifications", Context.MODE_PRIVATE);
+        String lastProfileUpdatedAt = prefs.getString("last_profile_updated_at_" + userId, "");
+        String currentUpdatedAt = currentProfile != null ? currentProfile.getUpdatedAt() : null;
+
+        boolean profileTimestampChanged = false;
+        if (currentUpdatedAt != null && !currentUpdatedAt.isEmpty()) {
+            if (!currentUpdatedAt.equals(lastProfileUpdatedAt)) {
+                profileTimestampChanged = true;
+                prefs.edit().putString("last_profile_updated_at_" + userId, currentUpdatedAt).apply();
+            }
+        }
 
         SimpleDateFormat sdfDate = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
         Calendar cal = Calendar.getInstance();
         String todayStr = sdfDate.format(cal.getTime());
         cal.add(Calendar.DAY_OF_YEAR, 1);
         String tomorrowStr = sdfDate.format(cal.getTime());
-
-        SharedPreferences prefs = context.getSharedPreferences("sidinar_notifications", Context.MODE_PRIVATE);
 
         for (Booking b : bookings) {
             if (!userId.equals(b.getUserId()) || b.getSchedule() == null) continue;
@@ -212,9 +233,14 @@ public class ReminderSyncReceiver extends BroadcastReceiver {
             // 1. Pengingat manual dari pengurus (wa_reminder_sent == true)
             if (b.isWaReminderSent()) {
                 long lastNotified = prefs.getLong("last_notified_" + id, 0);
-                // Beritahukan jika belum pernah dinotifikasi atau sudah lewat 30 menit
-                if (System.currentTimeMillis() - lastNotified > 30 * 60 * 1000L) {
-                    prefs.edit().putLong("last_notified_" + id, System.currentTimeMillis()).apply();
+                long now = System.currentTimeMillis();
+
+                // Beritahukan jika:
+                // a. Terjadi perubahan timestamp (pengurus baru saja kirim pengingat dari Web)
+                // b. Belum pernah dinotifikasi sama sekali (lastNotified == 0)
+                // c. Sudah lewat 30 menit (pengingat berkala)
+                if (profileTimestampChanged || lastNotified == 0 || (now - lastNotified > 30 * 60 * 1000L)) {
+                    prefs.edit().putLong("last_notified_" + id, now).apply();
                     triggerPengurusReminder(context, sessionManager, b);
                 }
             }

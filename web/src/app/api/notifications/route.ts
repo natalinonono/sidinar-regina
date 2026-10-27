@@ -16,13 +16,34 @@ export async function GET() {
     // Ambil tanggal hari ini dalam format YYYY-MM-DD
     const today = new Date().toISOString().split('T')[0]
 
-    // 1. Ambil penugasan mendatang yang sudah diingatkan (wa_reminder_sent = true)
-    const { data: reminderBookings, error: bError } = await (supabase as any)
-      .from('bookings')
-      .select('*, schedule:mass_schedules(*)')
-      .eq('user_id', user.id)
-      .eq('wa_reminder_sent', true)
-      .order('created_at', { ascending: false })
+    // Ambil profil pengguna
+    const { data: profile } = await (supabase as any)
+      .from('profiles')
+      .select('id, role, nama_lengkap, updated_at')
+      .eq('id', user.id)
+      .single()
+
+    const isPengurus = profile?.role === 'pengurus'
+
+    // 1. Ambil penugasan yang sudah diingatkan (wa_reminder_sent = true)
+    let reminderBookings: any[] = []
+    if (isPengurus) {
+      const { data } = await (supabase as any)
+        .from('bookings')
+        .select('*, schedule:mass_schedules(*), profile:profiles(*)')
+        .eq('wa_reminder_sent', true)
+        .order('created_at', { ascending: false })
+        .limit(10)
+      reminderBookings = data || []
+    } else {
+      const { data } = await (supabase as any)
+        .from('bookings')
+        .select('*, schedule:mass_schedules(*)')
+        .eq('user_id', user.id)
+        .eq('wa_reminder_sent', true)
+        .order('created_at', { ascending: false })
+      reminderBookings = data || []
+    }
 
     // 2. Ambil pengumuman sakristi terbaru
     const { data: announcements, error: aError } = await (supabase as any)
@@ -38,17 +59,32 @@ export async function GET() {
       reminderBookings.forEach((b: any) => {
         // Hanya tampilkan jika jadwal misa belum lewat (atau tanggal hari ini ke atas)
         if (b.schedule && (!b.schedule.tanggal_misa || b.schedule.tanggal_misa >= today)) {
-          notifications.push({
-            id: `reminder-${b.id}`,
-            booking_id: b.id,
-            schedule_id: b.schedule_id,
-            type: 'reminder',
-            title: `🔔 Pengingat Tugas: ${b.schedule.kategori?.toUpperCase()} (${b.posisi_tugas || 'Petugas Altar'})`,
-            message: `Pengurus Sakristi mengingatkan tugas altar pada ${b.schedule.tanggal_misa || ''} pukul ${b.schedule.jam_mulai || ''} WIB. Harap hadir di sakristi paling lambat 30 menit sebelum misa.`,
-            schedule: b.schedule,
-            created_at: b.created_at,
-            is_active: true,
-          })
+          if (isPengurus) {
+            const petugasName = b.profile?.nama_lengkap || b.profile?.nama_panggilan || 'Petugas'
+            notifications.push({
+              id: `reminder-${b.id}`,
+              booking_id: b.id,
+              schedule_id: b.schedule_id,
+              type: 'reminder',
+              title: `🔔 Pengingat Disiarkan: ${b.schedule.kategori?.toUpperCase()} - ${petugasName}`,
+              message: `Pengingat tugas ${b.posisi_tugas || 'Petugas Altar'} pada ${b.schedule.tanggal_misa || ''} (${b.schedule.jam_mulai || ''} WIB) telah dikirim ke ${petugasName}.`,
+              schedule: b.schedule,
+              created_at: b.created_at,
+              is_active: true,
+            })
+          } else {
+            notifications.push({
+              id: `reminder-${b.id}`,
+              booking_id: b.id,
+              schedule_id: b.schedule_id,
+              type: 'reminder',
+              title: `🔔 Pengingat Tugas: ${b.schedule.kategori?.toUpperCase()} (${b.posisi_tugas || 'Petugas Altar'})`,
+              message: `Pengurus Sakristi mengingatkan tugas altar pada ${b.schedule.tanggal_misa || ''} pukul ${b.schedule.jam_mulai || ''} WIB. Harap hadir di sakristi paling lambat 30 menit sebelum misa.`,
+              schedule: b.schedule,
+              created_at: b.created_at,
+              is_active: true,
+            })
+          }
         }
       })
     }
