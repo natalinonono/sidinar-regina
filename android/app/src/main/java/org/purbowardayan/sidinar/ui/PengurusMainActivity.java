@@ -507,7 +507,7 @@ public class PengurusMainActivity extends AppCompatActivity implements
             String kuotaStr = etKuota.getText() != null ? etKuota.getText().toString().trim() : "12";
             String tanggal = etTanggal.getText() != null ? etTanggal.getText().toString().trim() : "";
             String jam = etJam.getText() != null ? etJam.getText().toString().trim() : "08:00";
-            String selebran = etSelebran.getText() != null ? etSelebran.getText().toString().trim() : "Romo Paroki";
+            String selebran = etSelebran != null && etSelebran.getText() != null ? etSelebran.getText().toString().trim() : "";
             String warna = actvWarna.getText() != null ? actvWarna.getText().toString().trim() : "Hijau";
 
             if (TextUtils.isEmpty(judul) || TextUtils.isEmpty(tanggal) || TextUtils.isEmpty(jam)) {
@@ -530,7 +530,7 @@ public class PengurusMainActivity extends AppCompatActivity implements
             newSchedule.setTanggalMisa(tanggal);
             newSchedule.setJamMulai(jam.length() == 5 ? jam + ":00" : jam);
             newSchedule.setKuotaMaksimal(kuota);
-            newSchedule.setNamaSelebran(selebran);
+            newSchedule.setNamaSelebran(TextUtils.isEmpty(selebran) ? null : selebran);
             newSchedule.setWarnaLiturgi(warna);
             newSchedule.setTahunLiturgi("Tahun B / II");
 
@@ -578,7 +578,9 @@ public class PengurusMainActivity extends AppCompatActivity implements
 
         tvJudul.setText(schedule.getJudulMisa());
         tvWaktu.setText(schedule.getTanggalMisa() + " • " + schedule.getFormattedTime());
-        tvSelebran.setText("Selebran: " + (schedule.getNamaSelebran() != null ? schedule.getNamaSelebran() : "Romo Paroki"));
+        if (tvSelebran != null) {
+            tvSelebran.setVisibility(View.GONE);
+        }
         tvWarna.setText(schedule.getWarnaLiturgi() != null ? schedule.getWarnaLiturgi() : "Hijau");
 
         List<Booking> membersForThisSchedule = new ArrayList<>();

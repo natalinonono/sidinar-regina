@@ -173,14 +173,15 @@
             </com.google.android.material.textfield.TextInputLayout>
         </LinearLayout>
 
-        <!-- Romo Selebran -->
+        <!-- Selebran (Hidden) -->
         <com.google.android.material.textfield.TextInputLayout
             android:id="@+id/tilScheduleSelebran"
             style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="10dp"
-            android:hint="Romo Selebran"
+            android:hint="Selebran"
+            android:visibility="gone"
             app:boxStrokeColor="@color/primary"
             app:boxCornerRadiusTopStart="12dp"
             app:boxCornerRadiusTopEnd="12dp"
@@ -191,7 +192,7 @@
                 android:id="@+id/etScheduleSelebran"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Romo Robertus Budi Prastowo, Pr"
+                android:text=""
                 android:textSize="13sp" />
         </com.google.android.material.textfield.TextInputLayout>
 
