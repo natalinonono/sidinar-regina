@@ -41,3 +41,6 @@ local.properties
 Thumbs.db
 *.swp
 *.swo
+
+# Local Mirror Projects
+php_native/

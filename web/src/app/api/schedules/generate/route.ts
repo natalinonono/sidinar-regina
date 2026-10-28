@@ -29,11 +29,6 @@ export async function POST(request: Request) {
     const today = new Date()
     const schedulesToInsert = []
 
-    const selebranList = [
-      'Romo Robertus Budi Prastowo, Pr',
-      'Romo Yohanes Rasul Edy Purwanto, Pr',
-    ]
-
     for (let i = 0; i < daysCount; i++) {
       const targetDate = addDays(today, i)
       const dayOfWeek = targetDate.getDay() // 0 = Minggu, 6 = Sabtu
@@ -54,7 +49,7 @@ export async function POST(request: Request) {
           tahun: yearNumber,
           tahun_liturgi: 'Tahun B / II',
           warna_liturgi: (dayOfWeek === 4 ? 'Putih' : 'Hijau') as any,
-          nama_selebran: selebranList[i % selebranList.length],
+          nama_selebran: '',
         })
       }
 
@@ -70,7 +65,7 @@ export async function POST(request: Request) {
           tahun: yearNumber,
           tahun_liturgi: 'Tahun B / II',
           warna_liturgi: 'Hijau' as any,
-          nama_selebran: '-',
+          nama_selebran: '',
         })
       }
 
@@ -94,7 +89,7 @@ export async function POST(request: Request) {
             tahun: yearNumber,
             tahun_liturgi: 'Tahun B / II',
             warna_liturgi: 'Hijau' as any,
-            nama_selebran: '-',
+            nama_selebran: '',
           })
         }
       }

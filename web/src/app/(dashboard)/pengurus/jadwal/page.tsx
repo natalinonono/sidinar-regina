@@ -30,7 +30,7 @@ export default function PengurusJadwalPage() {
     kuota_maksimal: 12,
     tahun_liturgi: 'Tahun B / II',
     warna_liturgi: 'Hijau' as WarnaLiturgi,
-    nama_selebran: 'Romo Robertus Budi Prastowo, Pr',
+    nama_selebran: '',
   })
 
   const { weekNumber, yearNumber, startDateStr, endDateStr } = useMemo(() => getCurrentLiturgicalWeek(), [])
