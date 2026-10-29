@@ -120,10 +120,6 @@ export const CheckinModal: React.FC<CheckinModalProps> = ({
           {/* Duty & Person Info */}
           <div className="w-full p-3 rounded-xl bg-surface-container-low flex flex-col gap-1.5 text-xs text-left border border-surface-container">
             <div className="flex items-center justify-between">
-              <span className="text-on-surface-variant font-medium">Peran / Posisi:</span>
-              <span className="font-semibold text-primary">{booking.posisi_tugas}</span>
-            </div>
-            <div className="flex items-center justify-between">
               <span className="text-on-surface-variant font-medium">Status Saat Ini:</span>
               <span
                 className={`font-semibold capitalize px-2 py-0.5 rounded text-[11px] ${

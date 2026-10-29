@@ -88,7 +88,7 @@ export const ScheduleCard: React.FC<ScheduleCardProps> = ({
                 <span className="material-symbols-outlined text-sm" style={{ fontVariationSettings: "'FILL' 1" }}>
                   check_circle
                 </span>
-                <span>Terdaftar ({userBooking.posisi_tugas})</span>
+                <span>Terdaftar</span>
               </div>
             </div>
             <div className="flex items-center gap-2">

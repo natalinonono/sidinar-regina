@@ -6,7 +6,6 @@ import { createClient } from '@/lib/supabase/client'
 import { MassSchedule, BookingWithDetails, WarnaLiturgi } from '@/types/database'
 import { LiturgyBadge } from '@/components/LiturgyBadge'
 import { PositionBadge } from '@/components/PositionBadge'
-import { LITURGICAL_POSITIONS } from '@/lib/utils/positions'
 import { getCurrentLiturgicalWeek, isMassToleranceExpired } from '@/lib/utils/time'
 import { generateWhatsAppReminderMessage } from '@/lib/utils/calendar'
 
