@@ -74,7 +74,7 @@ public class RiwayatAdapter extends RecyclerView.Adapter<RiwayatAdapter.ViewHold
             String pos = item.getPosisiTugas() != null ? item.getPosisiTugas() : "Petugas Altar";
             tvRiwayatPosisi.setText("Peran: " + pos);
 
-            String status = item.getStatusKehadiran() != null ? item.getStatusKehadiran() : "terdaftar";
+            String status = item.getEffectiveStatusKehadiran();
             tvRiwayatStatusBadge.setText(status.toUpperCase());
 
             if ("hadir".equalsIgnoreCase(status)) {

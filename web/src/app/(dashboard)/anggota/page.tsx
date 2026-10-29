@@ -8,7 +8,7 @@ import { BookingModal } from '@/components/BookingModal'
 import { CheckinModal } from '@/components/CheckinModal'
 import { EditBookingModal } from '@/components/EditBookingModal'
 import { EditProfileModal } from '@/components/EditProfileModal'
-import { getCurrentLiturgicalWeek, evaluateCheckinWindow } from '@/lib/utils/time'
+import { getCurrentLiturgicalWeek, evaluateCheckinWindow, isMassToleranceExpired } from '@/lib/utils/time'
 import { generateGoogleCalendarUrl, downloadIcsFile } from '@/lib/utils/calendar'
 
 export default function AnggotaDashboardPage() {
@@ -65,7 +65,29 @@ export default function AnggotaDashboardPage() {
         .eq('minggu_ke', weekNumber)
         .eq('tahun', yearNumber)
 
-      setAllBookings(bookingList || [])
+      const items = (bookingList || []) as BookingWithDetails[]
+      const expiredIds: string[] = []
+      const now = new Date()
+
+      for (const b of items) {
+        if (
+          b.status_kehadiran === 'terdaftar' &&
+          b.schedule &&
+          isMassToleranceExpired(b.schedule.tanggal_misa, b.schedule.jam_mulai, now)
+        ) {
+          b.status_kehadiran = 'alpa'
+          expiredIds.push(b.id)
+        }
+      }
+
+      if (expiredIds.length > 0) {
+        ;(supabase.from('bookings') as any)
+          .update({ status_kehadiran: 'alpa' })
+          .in('id', expiredIds)
+          .then(() => {})
+      }
+
+      setAllBookings(items)
 
       // Fetch announcements
       const { data: annList } = await supabase
@@ -99,7 +121,28 @@ export default function AnggotaDashboardPage() {
             .eq('minggu_ke', weekNumber)
             .eq('tahun', yearNumber)
             .then(({ data }) => {
-              if (data) setAllBookings(data)
+              if (data) {
+                const updated = data as BookingWithDetails[]
+                const expIds: string[] = []
+                const n = new Date()
+                for (const b of updated) {
+                  if (
+                    b.status_kehadiran === 'terdaftar' &&
+                    b.schedule &&
+                    isMassToleranceExpired(b.schedule.tanggal_misa, b.schedule.jam_mulai, n)
+                  ) {
+                    b.status_kehadiran = 'alpa'
+                    expIds.push(b.id)
+                  }
+                }
+                if (expIds.length > 0) {
+                  ;(supabase.from('bookings') as any)
+                    .update({ status_kehadiran: 'alpa' })
+                    .in('id', expIds)
+                    .then(() => {})
+                }
+                setAllBookings(updated)
+              }
             })
         }
       )

@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createClient, createAdminClient } from '@/lib/supabase/server'
+import { isMassToleranceExpired } from '@/lib/utils/time'
 
 export async function GET(request: Request) {
   try {
@@ -29,6 +30,35 @@ export async function GET(request: Request) {
 
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 400 })
+    }
+
+    // Auto-update bookings yang telah melewati toleransi misa (120 menit pasca jam mulai)
+    if (bookings && bookings.length > 0) {
+      const expiredIds: string[] = []
+      const now = new Date()
+
+      for (const b of bookings as any[]) {
+        if (
+          b.status_kehadiran === 'terdaftar' &&
+          b.schedule &&
+          isMassToleranceExpired(b.schedule.tanggal_misa, b.schedule.jam_mulai, now)
+        ) {
+          b.status_kehadiran = 'alpa'
+          expiredIds.push(b.id)
+        }
+      }
+
+      if (expiredIds.length > 0) {
+        try {
+          const adminSupabase = createAdminClient()
+          await (adminSupabase as any)
+            .from('bookings')
+            .update({ status_kehadiran: 'alpa' })
+            .in('id', expiredIds)
+        } catch {
+          // Non-blocking background sync
+        }
+      }
     }
 
     return NextResponse.json({ bookings })

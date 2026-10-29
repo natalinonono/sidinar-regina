@@ -255,7 +255,7 @@ public class PengurusMainActivity extends AppCompatActivity implements
     private void updateAttendanceCounters() {
         int hadir = 0, terlambat = 0, izin = 0, alpa = 0;
         for (Booking b : bookingList) {
-            String s = b.getStatusKehadiran();
+            String s = b.getEffectiveStatusKehadiran();
             if ("hadir".equalsIgnoreCase(s)) hadir++;
             else if ("terlambat".equalsIgnoreCase(s)) terlambat++;
             else if ("izin".equalsIgnoreCase(s)) izin++;
@@ -369,6 +369,20 @@ public class PengurusMainActivity extends AppCompatActivity implements
                 if (response.isSuccessful() && response.body() != null) {
                     bookingList.clear();
                     bookingList.addAll(response.body());
+
+                    // Auto-sync pendaftaran yang telah melewati toleransi ke alpa
+                    for (Booking b : bookingList) {
+                        if (b.isToleranceExpired() && "terdaftar".equalsIgnoreCase(b.getStatusKehadiran())) {
+                            b.setStatusKehadiran("alpa");
+                            Map<String, Object> updateAlpa = new HashMap<>();
+                            updateAlpa.put("status_kehadiran", "alpa");
+                            ApiClient.getSupabaseApi().updateAttendanceStatus(authHeader, "eq." + b.getId(), updateAlpa).enqueue(new Callback<Void>() {
+                                @Override public void onResponse(@NonNull Call<Void> call, @NonNull Response<Void> response) {}
+                                @Override public void onFailure(@NonNull Call<Void> call, @NonNull Throwable t) {}
+                            });
+                        }
+                    }
+
                     recalculateSchedules();
                     if (currentTab == 3) displayCurrentTab();
                 }

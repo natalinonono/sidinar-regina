@@ -72,6 +72,44 @@ public class Booking implements Serializable {
     public String getStatusKehadiran() { return statusKehadiran != null ? statusKehadiran : "terdaftar"; }
     public void setStatusKehadiran(String statusKehadiran) { this.statusKehadiran = statusKehadiran; }
 
+    /**
+     * Mengecek apakah jadwal misa telah melewati batas toleransi presensi:
+     * Durasi perkiraan misa (~75 menit) + toleransi presensi pasca misa (45 menit) = 120 menit (2 jam).
+     * Contoh: Misa Kamis jam 05:30 -> Batas toleransi s/d jam 07:30.
+     */
+    public boolean isToleranceExpired() {
+        if (schedule == null || schedule.getTanggalMisa() == null || schedule.getJamMulai() == null) {
+            return false;
+        }
+        try {
+            String timePart = schedule.getJamMulai().trim();
+            if (timePart.length() == 5) {
+                timePart += ":00";
+            }
+            String dtStr = schedule.getTanggalMisa().trim() + " " + timePart;
+            java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.getDefault());
+            java.util.Date massStart = sdf.parse(dtStr);
+            if (massStart != null) {
+                // 120 minutes = mass duration + 45 min tolerance
+                long cutoffMillis = massStart.getTime() + (120L * 60 * 1000);
+                return System.currentTimeMillis() > cutoffMillis;
+            }
+        } catch (Exception ignored) {}
+        return false;
+    }
+
+    /**
+     * Mengembalikan status kehadiran efektif:
+     * Jika status masih 'terdaftar' namun waktu telah melewati batas toleransi, otomatis mengembalikan 'alpa'.
+     */
+    public String getEffectiveStatusKehadiran() {
+        String status = getStatusKehadiran();
+        if ("terdaftar".equalsIgnoreCase(status) && isToleranceExpired()) {
+            return "alpa";
+        }
+        return status;
+    }
+
     public String getWaktuCheckin() { return waktuCheckin; }
     public void setWaktuCheckin(String waktuCheckin) { this.waktuCheckin = waktuCheckin; }
 

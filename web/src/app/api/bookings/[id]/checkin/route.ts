@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { evaluateCheckinWindow } from '@/lib/utils/time'
+import { evaluateCheckinWindow, isMassToleranceExpired } from '@/lib/utils/time'
 
 export async function POST(
   request: Request,
@@ -39,8 +39,22 @@ export async function POST(
       return NextResponse.json({ error: 'Anda tidak memiliki hak akses untuk presensi tugas ini.' }, { status: 403 })
     }
 
-    // Evaluate checkin window
     const now = new Date()
+
+    // Cek batas toleransi akhir (durasi misa ~75 menit + 45 menit toleransi pasca misa = 120 menit)
+    if (isMassToleranceExpired(booking.schedule.tanggal_misa, booking.schedule.jam_mulai, now)) {
+      await (supabase.from('bookings') as any)
+        .update({ status_kehadiran: 'alpa' })
+        .eq('id', bookingId)
+
+      return NextResponse.json({
+        allowed: false,
+        status: 'alpa',
+        error: 'Batas waktu toleransi presensi telah berakhir (45 menit pasca misa). Status tugas otomatis tercatat Alpa.',
+      }, { status: 400 })
+    }
+
+    // Evaluate checkin window
     const evaluation = evaluateCheckinWindow(
       booking.schedule.tanggal_misa,
       booking.schedule.jam_mulai,

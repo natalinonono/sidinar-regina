@@ -42,7 +42,7 @@ export const CheckinModal: React.FC<CheckinModalProps> = ({
 
   if (!isOpen || !booking || !booking.schedule) return null
 
-  const isAlreadyCheckedIn = booking.status_kehadiran === 'hadir' || booking.status_kehadiran === 'terlambat'
+  const isAlreadyCheckedIn = booking.status_kehadiran === 'hadir' || booking.status_kehadiran === 'terlambat' || booking.status_kehadiran === 'alpa'
 
   const handlePerformCheckin = async () => {
     setLoading(true)
@@ -131,6 +131,8 @@ export const CheckinModal: React.FC<CheckinModalProps> = ({
                     ? 'bg-emerald-100 text-emerald-800'
                     : booking.status_kehadiran === 'terlambat'
                     ? 'bg-amber-100 text-amber-800'
+                    : booking.status_kehadiran === 'alpa'
+                    ? 'bg-red-100 text-red-800'
                     : 'bg-primary-fixed text-primary'
                 }`}
               >

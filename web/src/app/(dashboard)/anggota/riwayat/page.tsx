@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { BookingWithDetails } from '@/types/database'
+import { isMassToleranceExpired } from '@/lib/utils/time'
 
 export default function RiwayatTugasPage() {
   const supabase = createClient()
@@ -22,7 +23,29 @@ export default function RiwayatTugasPage() {
           .eq('user_id', user.id)
           .order('created_at', { ascending: false })
 
-        setBookings(data || [])
+        const items = (data || []) as BookingWithDetails[]
+        const expiredIds: string[] = []
+        const now = new Date()
+
+        for (const b of items) {
+          if (
+            b.status_kehadiran === 'terdaftar' &&
+            b.schedule &&
+            isMassToleranceExpired(b.schedule.tanggal_misa, b.schedule.jam_mulai, now)
+          ) {
+            b.status_kehadiran = 'alpa'
+            expiredIds.push(b.id)
+          }
+        }
+
+        if (expiredIds.length > 0) {
+          ;(supabase.from('bookings') as any)
+            .update({ status_kehadiran: 'alpa' })
+            .in('id', expiredIds)
+            .then(() => {})
+        }
+
+        setBookings(items)
       }
       setLoading(false)
     }

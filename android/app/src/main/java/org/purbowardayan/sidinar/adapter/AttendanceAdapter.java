@@ -92,7 +92,7 @@ public class AttendanceAdapter extends RecyclerView.Adapter<AttendanceAdapter.Vi
                 tvAttendanceTime.setText("Belum check-in sakristi");
             }
 
-            String status = booking.getStatusKehadiran();
+            String status = booking.getEffectiveStatusKehadiran();
             tvAttendanceStatus.setText(status);
 
             if ("hadir".equalsIgnoreCase(status)) {

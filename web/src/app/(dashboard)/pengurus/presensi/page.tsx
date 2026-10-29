@@ -4,7 +4,7 @@ import React, { useEffect, useState, useMemo } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { BookingWithDetails, AttendanceStatus } from '@/types/database'
 import { PositionBadge } from '@/components/PositionBadge'
-import { getCurrentLiturgicalWeek } from '@/lib/utils/time'
+import { getCurrentLiturgicalWeek, isMassToleranceExpired } from '@/lib/utils/time'
 
 export default function PengurusPresensiPage() {
   const supabase = createClient()
@@ -24,7 +24,30 @@ export default function PengurusPresensiPage() {
         .eq('tahun', yearNumber)
         .order('waktu_checkin', { ascending: false, nullsFirst: false })
 
-      setBookings(data || [])
+      const items = (data || []) as BookingWithDetails[]
+      const expiredIds: string[] = []
+      const now = new Date()
+
+      for (const b of items) {
+        if (
+          b.status_kehadiran === 'terdaftar' &&
+          b.schedule &&
+          isMassToleranceExpired(b.schedule.tanggal_misa, b.schedule.jam_mulai, now)
+        ) {
+          b.status_kehadiran = 'alpa'
+          expiredIds.push(b.id)
+        }
+      }
+
+      if (expiredIds.length > 0) {
+        // Sync ke database secara background
+        ;(supabase.from('bookings') as any)
+          .update({ status_kehadiran: 'alpa' })
+          .in('id', expiredIds)
+          .then(() => {})
+      }
+
+      setBookings(items)
       setLoading(false)
     } catch {
       setLoading(false)

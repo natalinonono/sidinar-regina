@@ -350,6 +350,19 @@ public class AnggotaMainActivity extends AppCompatActivity implements ScheduleAd
                     allBookings.clear();
                     allBookings.addAll(response.body());
 
+                    // Auto-sync pendaftaran yang melewati toleransi misa ke alpa
+                    for (Booking b : allBookings) {
+                        if (b.isToleranceExpired() && "terdaftar".equalsIgnoreCase(b.getStatusKehadiran())) {
+                            b.setStatusKehadiran("alpa");
+                            Map<String, Object> updateAlpa = new HashMap<>();
+                            updateAlpa.put("status_kehadiran", "alpa");
+                            ApiClient.getSupabaseApi().updateAttendanceStatus(authHeader, "eq." + b.getId(), updateAlpa).enqueue(new Callback<Void>() {
+                                @Override public void onResponse(@NonNull Call<Void> call, @NonNull Response<Void> response) {}
+                                @Override public void onFailure(@NonNull Call<Void> call, @NonNull Throwable t) {}
+                            });
+                        }
+                    }
+
                     // Find current user's active booking
                     String myId = sessionManager.getUserId();
                     myUpcomingBooking = null;
@@ -418,7 +431,7 @@ public class AnggotaMainActivity extends AppCompatActivity implements ScheduleAd
             binding.cardMyBooking.setVisibility(View.VISIBLE);
             binding.tvMyBookingTitle.setText(myUpcomingBooking.getSchedule().getJudulMisa());
             binding.tvMyBookingTime.setText(myUpcomingBooking.getSchedule().getTanggalMisa() + " • " + myUpcomingBooking.getSchedule().getFormattedTime());
-            String status = myUpcomingBooking.getStatusKehadiran() != null ? myUpcomingBooking.getStatusKehadiran() : "terdaftar";
+            String status = myUpcomingBooking.getEffectiveStatusKehadiran();
             binding.tvMyBookingStatus.setText(status);
 
             if ("hadir".equalsIgnoreCase(status)) {
@@ -427,9 +440,12 @@ public class AnggotaMainActivity extends AppCompatActivity implements ScheduleAd
             } else if ("terlambat".equalsIgnoreCase(status)) {
                 binding.tvMyBookingStatus.setBackgroundResource(R.drawable.bg_badge_amber);
                 binding.tvMyBookingStatus.setTextColor(androidx.core.content.ContextCompat.getColor(this, R.color.amber_800));
+            } else if ("alpa".equalsIgnoreCase(status)) {
+                binding.tvMyBookingStatus.setBackgroundResource(R.drawable.bg_pill_warning);
+                binding.tvMyBookingStatus.setTextColor(androidx.core.content.ContextCompat.getColor(this, R.color.error));
             } else {
-                binding.tvMyBookingStatus.setBackgroundResource(R.drawable.bg_badge_emerald);
-                binding.tvMyBookingStatus.setTextColor(androidx.core.content.ContextCompat.getColor(this, R.color.emerald_800));
+                binding.tvMyBookingStatus.setBackgroundResource(R.drawable.bg_segmented_selected);
+                binding.tvMyBookingStatus.setTextColor(androidx.core.content.ContextCompat.getColor(this, R.color.on_surface_variant));
             }
         } else {
             binding.cardMyBooking.setVisibility(View.GONE);
@@ -914,7 +930,7 @@ public class AnggotaMainActivity extends AppCompatActivity implements ScheduleAd
         tvKodeTugas.setText("KODE TUGAS: " + idShort);
 
         tvPeran.setText(booking.getPosisiTugas() != null ? booking.getPosisiTugas() : "Petugas Altar");
-        tvStatus.setText(booking.getStatusKehadiran() != null ? booking.getStatusKehadiran() : "terdaftar");
+        tvStatus.setText(booking.getEffectiveStatusKehadiran());
 
         try {
             com.journeyapps.barcodescanner.BarcodeEncoder encoder = new com.journeyapps.barcodescanner.BarcodeEncoder();
@@ -925,8 +941,13 @@ public class AnggotaMainActivity extends AppCompatActivity implements ScheduleAd
             ivQr.setImageResource(R.drawable.ic_qr_code);
         }
 
-        boolean isAlreadyCheckedIn = "hadir".equalsIgnoreCase(booking.getStatusKehadiran()) || "terlambat".equalsIgnoreCase(booking.getStatusKehadiran());
-        if (isAlreadyCheckedIn) {
+        boolean isToleranceExpired = booking.isToleranceExpired();
+        boolean isAlreadyCheckedIn = "hadir".equalsIgnoreCase(booking.getStatusKehadiran()) || "terlambat".equalsIgnoreCase(booking.getStatusKehadiran()) || "alpa".equalsIgnoreCase(booking.getStatusKehadiran()) || isToleranceExpired;
+
+        if (isToleranceExpired || "alpa".equalsIgnoreCase(booking.getStatusKehadiran())) {
+            btnDirect.setEnabled(false);
+            btnDirect.setText("Masa Toleransi Berakhir (Status: ALPA)");
+        } else if (isAlreadyCheckedIn) {
             btnDirect.setEnabled(false);
             btnDirect.setText("Presensi Sudah Tercatat (" + booking.getStatusKehadiran() + ")");
         } else {

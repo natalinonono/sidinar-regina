@@ -68,6 +68,8 @@ export function evaluateCheckinWindow(
     ontimeDeadline = subMinutes(massStartTime, 30)
   }
 
+  const cutoffToleranceTime = addMinutes(massStartTime, 120)
+
   // Comparison
   if (now < windowOpenTime) {
     const diffMins = Math.ceil((windowOpenTime.getTime() - now.getTime()) / (1000 * 60))
@@ -76,6 +78,17 @@ export function evaluateCheckinWindow(
       status: 'belum_buka',
       message: `Presensi belum dibuka. Presensi dibuka ${kategori === 'harian' ? 'pukul 05.00 WIB (H-30)' : '60 menit sebelum misa'}. Tunggu ${diffMins} menit lagi.`,
       minutesRemaining: diffMins,
+      windowOpenTime,
+      ontimeDeadline,
+      massStartTime
+    }
+  }
+
+  if (now > cutoffToleranceTime) {
+    return {
+      allowed: false,
+      status: 'lewat',
+      message: 'Masa tugas telah berakhir dan melewati batas toleransi presensi (45 menit pasca misa). Status tugas otomatis Alpa.',
       windowOpenTime,
       ontimeDeadline,
       massStartTime
@@ -112,5 +125,25 @@ export function evaluateCheckinWindow(
       ontimeDeadline,
       massStartTime
     }
+  }
+}
+
+/**
+ * Checks if a duty has passed the mass cutoff tolerance window (120 minutes / 2 hours after mass start time).
+ * Rule: Misa start + ~75m mass duration + 45m tolerance = 120m.
+ * (e.g. Mass at 05:30 -> Cutoff at 07:30, after which unconfirmed attendance is marked as 'alpa').
+ */
+export function isMassToleranceExpired(
+  tanggalMisa: string,
+  jamMulai: string,
+  now: Date = new Date()
+): boolean {
+  try {
+    const massDateTimeStr = `${tanggalMisa}T${jamMulai}`
+    const massStartTime = parseISO(massDateTimeStr)
+    const cutoffTime = addMinutes(massStartTime, 120)
+    return now.getTime() > cutoffTime.getTime()
+  } catch {
+    return false
   }
 }
