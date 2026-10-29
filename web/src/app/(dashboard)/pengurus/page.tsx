@@ -47,7 +47,7 @@ export default function PengurusDashboardPage() {
         if (
           b.status_kehadiran === 'terdaftar' &&
           b.schedule &&
-          isMassToleranceExpired(b.schedule.tanggal_misa, b.schedule.jam_mulai, now)
+          isMassToleranceExpired(b.schedule.tanggal_misa, b.schedule.jam_mulai, b.schedule.kategori, now)
         ) {
           b.status_kehadiran = 'alpa'
           expiredIds.push(b.id)

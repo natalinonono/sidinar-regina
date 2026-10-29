@@ -69,7 +69,8 @@ export function evaluateCheckinWindow(
     ontimeDeadline = subMinutes(massStartTime, 30)
   }
 
-  const cutoffToleranceTime = addMinutes(massStartTime, 120)
+  const cutoffMinutes = kategori === 'harian' ? 75 : 120 // 30m+45m vs 75m+45m
+  const cutoffToleranceTime = addMinutes(massStartTime, cutoffMinutes)
 
   // Comparison
   if (now < windowOpenTime) {
@@ -130,20 +131,24 @@ export function evaluateCheckinWindow(
 }
 
 /**
- * Checks if a duty has passed the mass cutoff tolerance window (120 minutes / 2 hours after mass start time).
- * Rule: Misa start + ~75m mass duration + 45m tolerance = 120m.
- * (e.g. Mass at 05:30 -> Cutoff at 07:30, after which unconfirmed attendance is marked as 'alpa').
+ * Checks if a duty has passed the mass cutoff tolerance window (+45 minutes after estimated mass end).
+ * Rule:
+ * - Misa Harian: 30m mass duration + 45m tolerance = 75m from start time. (e.g. 05:30 -> Cutoff at 06:45 WIB).
+ * - Misa Mingguan: 75m mass duration + 45m tolerance = 120m from start time. (e.g. 05:30 -> Cutoff at 07:30 WIB).
+ * After cutoff, unconfirmed attendance is marked as 'alpa'.
  */
 export function isMassToleranceExpired(
   tanggalMisa: string,
   jamMulai: string,
+  kategori: 'harian' | 'mingguan' | string = 'mingguan',
   now: Date = new Date()
 ): boolean {
   try {
     const timeClean = jamMulai.length === 5 ? `${jamMulai}:00` : jamMulai
     const massDateTimeStr = `${tanggalMisa}T${timeClean}+07:00`
     const massStartTime = new Date(massDateTimeStr)
-    const cutoffTime = addMinutes(massStartTime, 120)
+    const cutoffMinutes = (kategori && kategori.toLowerCase() === 'harian') ? 75 : 120
+    const cutoffTime = addMinutes(massStartTime, cutoffMinutes)
     return now.getTime() > cutoffTime.getTime()
   } catch {
     return false

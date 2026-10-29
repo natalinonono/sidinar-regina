@@ -73,7 +73,7 @@ export default function AnggotaDashboardPage() {
         if (
           b.status_kehadiran === 'terdaftar' &&
           b.schedule &&
-          isMassToleranceExpired(b.schedule.tanggal_misa, b.schedule.jam_mulai, now)
+          isMassToleranceExpired(b.schedule.tanggal_misa, b.schedule.jam_mulai, b.schedule.kategori, now)
         ) {
           b.status_kehadiran = 'alpa'
           expiredIds.push(b.id)
@@ -129,7 +129,7 @@ export default function AnggotaDashboardPage() {
                   if (
                     b.status_kehadiran === 'terdaftar' &&
                     b.schedule &&
-                    isMassToleranceExpired(b.schedule.tanggal_misa, b.schedule.jam_mulai, n)
+                    isMassToleranceExpired(b.schedule.tanggal_misa, b.schedule.jam_mulai, b.schedule.kategori, n)
                   ) {
                     b.status_kehadiran = 'alpa'
                     expIds.push(b.id)
@@ -389,18 +389,18 @@ export default function AnggotaDashboardPage() {
                         ? 'bg-emerald-500 text-white'
                         : nextUserDuty.status_kehadiran === 'terlambat'
                         ? 'bg-amber-400 text-on-surface'
-                        : nextUserDuty.status_kehadiran === 'alpa' || isMassToleranceExpired(nextUserDuty.schedule?.tanggal_misa, nextUserDuty.schedule?.jam_mulai)
+                        : nextUserDuty.status_kehadiran === 'alpa' || isMassToleranceExpired(nextUserDuty.schedule?.tanggal_misa, nextUserDuty.schedule?.jam_mulai, nextUserDuty.schedule?.kategori)
                         ? 'bg-rose-600 text-white'
                         : 'bg-white/20 text-white'
                     }`}
                   >
-                    {nextUserDuty.status_kehadiran === 'terdaftar' && isMassToleranceExpired(nextUserDuty.schedule?.tanggal_misa, nextUserDuty.schedule?.jam_mulai)
+                    {nextUserDuty.status_kehadiran === 'terdaftar' && isMassToleranceExpired(nextUserDuty.schedule?.tanggal_misa, nextUserDuty.schedule?.jam_mulai, nextUserDuty.schedule?.kategori)
                       ? 'alpa'
                       : nextUserDuty.status_kehadiran}
                   </span>
                 </div>
 
-                {nextUserDuty.status_kehadiran === 'alpa' || isMassToleranceExpired(nextUserDuty.schedule?.tanggal_misa, nextUserDuty.schedule?.jam_mulai) ? (
+                {nextUserDuty.status_kehadiran === 'alpa' || isMassToleranceExpired(nextUserDuty.schedule?.tanggal_misa, nextUserDuty.schedule?.jam_mulai, nextUserDuty.schedule?.kategori) ? (
                   <div className="w-full mt-2 p-3 rounded-xl bg-error-container text-on-error-container text-xs font-semibold flex items-center justify-center gap-2 border border-error/30">
                     <span className="material-symbols-outlined text-base">warning</span>
                     <span>Batas Waktu Presensi Telah Berakhir (Status: ALPA)</span>

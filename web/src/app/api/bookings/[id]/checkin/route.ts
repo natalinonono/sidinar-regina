@@ -41,8 +41,8 @@ export async function POST(
 
     const now = new Date()
 
-    // Cek batas toleransi akhir (durasi misa ~75 menit + 45 menit toleransi pasca misa = 120 menit)
-    if (isMassToleranceExpired(booking.schedule.tanggal_misa, booking.schedule.jam_mulai, now)) {
+    // Cek batas toleransi akhir (+45 menit toleransi pasca misa: 75m untuk harian, 120m untuk mingguan)
+    if (isMassToleranceExpired(booking.schedule.tanggal_misa, booking.schedule.jam_mulai, booking.schedule.kategori, now)) {
       await (supabase.from('bookings') as any)
         .update({ status_kehadiran: 'alpa' })
         .eq('id', bookingId)

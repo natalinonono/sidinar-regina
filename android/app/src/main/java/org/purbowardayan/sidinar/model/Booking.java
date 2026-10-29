@@ -74,8 +74,8 @@ public class Booking implements Serializable {
 
     /**
      * Mengecek apakah jadwal misa telah melewati batas toleransi presensi:
-     * Durasi perkiraan misa (~75 menit) + toleransi presensi pasca misa (45 menit) = 120 menit (2 jam).
-     * Contoh: Misa Kamis jam 05:30 -> Batas toleransi s/d jam 07:30.
+     * - Misa Harian: durasi maks 30 menit + 45 menit toleransi pasca misa = 75 menit dari jam mulai misa (misal 05:30 -> cutoff 06:45 WIB).
+     * - Misa Mingguan: durasi maks 75 menit + 45 menit toleransi pasca misa = 120 menit dari jam mulai misa (misal 05:30 -> cutoff 07:30 WIB).
      */
     public boolean isToleranceExpired() {
         if (schedule == null || schedule.getTanggalMisa() == null || schedule.getJamMulai() == null) {
@@ -91,8 +91,13 @@ public class Booking implements Serializable {
             sdf.setTimeZone(java.util.TimeZone.getTimeZone("Asia/Jakarta"));
             java.util.Date massStart = sdf.parse(dtStr);
             if (massStart != null) {
-                // 120 minutes = mass duration + 45 min tolerance
-                long cutoffMillis = massStart.getTime() + (120L * 60 * 1000);
+                String kat = schedule.getKategori();
+                if (kat == null || kat.trim().isEmpty()) {
+                    kat = getKategoriMisa();
+                }
+                boolean isHarian = "harian".equalsIgnoreCase(kat);
+                long toleranceMinutes = isHarian ? 75L : 120L;
+                long cutoffMillis = massStart.getTime() + (toleranceMinutes * 60 * 1000);
                 return System.currentTimeMillis() > cutoffMillis;
             }
         } catch (Exception ignored) {}
