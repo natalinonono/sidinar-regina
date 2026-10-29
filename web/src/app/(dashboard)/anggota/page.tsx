@@ -389,31 +389,42 @@ export default function AnggotaDashboardPage() {
                         ? 'bg-emerald-500 text-white'
                         : nextUserDuty.status_kehadiran === 'terlambat'
                         ? 'bg-amber-400 text-on-surface'
+                        : nextUserDuty.status_kehadiran === 'alpa' || isMassToleranceExpired(nextUserDuty.schedule?.tanggal_misa, nextUserDuty.schedule?.jam_mulai)
+                        ? 'bg-rose-600 text-white'
                         : 'bg-white/20 text-white'
                     }`}
                   >
-                    {nextUserDuty.status_kehadiran}
+                    {nextUserDuty.status_kehadiran === 'terdaftar' && isMassToleranceExpired(nextUserDuty.schedule?.tanggal_misa, nextUserDuty.schedule?.jam_mulai)
+                      ? 'alpa'
+                      : nextUserDuty.status_kehadiran}
                   </span>
                 </div>
 
-                <div className="w-full flex flex-col sm:flex-row gap-2 mt-2">
-                  <button
-                    onClick={() => setSelectedBookingForEdit(nextUserDuty)}
-                    className="flex-1 py-2.5 px-3 rounded-xl font-headline font-bold text-xs bg-white/15 hover:bg-white/25 text-white transition-all border border-white/20 flex items-center justify-center gap-1.5"
-                    type="button"
-                  >
-                    <span className="material-symbols-outlined text-base">edit_calendar</span>
-                    <span>Ubah / Batal</span>
-                  </button>
-                  <button
-                    onClick={() => setSelectedBookingForCheckin(nextUserDuty)}
-                    className="flex-1 py-2.5 px-3 rounded-xl font-headline font-bold text-xs bg-secondary-container text-on-secondary-container hover:bg-secondary-fixed transition-all shadow-md flex items-center justify-center gap-1.5 group"
-                    type="button"
-                  >
-                    <span className="material-symbols-outlined text-base">qr_code_scanner</span>
-                    <span>Presensi Sakristi</span>
-                  </button>
-                </div>
+                {nextUserDuty.status_kehadiran === 'alpa' || isMassToleranceExpired(nextUserDuty.schedule?.tanggal_misa, nextUserDuty.schedule?.jam_mulai) ? (
+                  <div className="w-full mt-2 p-3 rounded-xl bg-error-container text-on-error-container text-xs font-semibold flex items-center justify-center gap-2 border border-error/30">
+                    <span className="material-symbols-outlined text-base">warning</span>
+                    <span>Batas Waktu Presensi Telah Berakhir (Status: ALPA)</span>
+                  </div>
+                ) : (
+                  <div className="w-full flex flex-col sm:flex-row gap-2 mt-2">
+                    <button
+                      onClick={() => setSelectedBookingForEdit(nextUserDuty)}
+                      className="flex-1 py-2.5 px-3 rounded-xl font-headline font-bold text-xs bg-white/15 hover:bg-white/25 text-white transition-all border border-white/20 flex items-center justify-center gap-1.5"
+                      type="button"
+                    >
+                      <span className="material-symbols-outlined text-base">edit_calendar</span>
+                      <span>Ubah / Batal</span>
+                    </button>
+                    <button
+                      onClick={() => setSelectedBookingForCheckin(nextUserDuty)}
+                      className="flex-1 py-2.5 px-3 rounded-xl font-headline font-bold text-xs bg-secondary-container text-on-secondary-container hover:bg-secondary-fixed transition-all shadow-md flex items-center justify-center gap-1.5 group"
+                      type="button"
+                    >
+                      <span className="material-symbols-outlined text-base">qr_code_scanner</span>
+                      <span>Presensi Sakristi</span>
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
           </div>

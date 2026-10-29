@@ -88,6 +88,7 @@ public class Booking implements Serializable {
             }
             String dtStr = schedule.getTanggalMisa().trim() + " " + timePart;
             java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.getDefault());
+            sdf.setTimeZone(java.util.TimeZone.getTimeZone("Asia/Jakarta"));
             java.util.Date massStart = sdf.parse(dtStr);
             if (massStart != null) {
                 // 120 minutes = mass duration + 45 min tolerance

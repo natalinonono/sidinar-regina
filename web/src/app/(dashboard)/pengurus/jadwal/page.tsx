@@ -7,7 +7,7 @@ import { MassSchedule, BookingWithDetails, WarnaLiturgi } from '@/types/database
 import { LiturgyBadge } from '@/components/LiturgyBadge'
 import { PositionBadge } from '@/components/PositionBadge'
 import { LITURGICAL_POSITIONS } from '@/lib/utils/positions'
-import { getCurrentLiturgicalWeek } from '@/lib/utils/time'
+import { getCurrentLiturgicalWeek, isMassToleranceExpired } from '@/lib/utils/time'
 import { generateWhatsAppReminderMessage } from '@/lib/utils/calendar'
 
 export default function PengurusJadwalPage() {
@@ -57,7 +57,29 @@ export default function PengurusJadwalPage() {
         .eq('minggu_ke', weekNumber)
         .eq('tahun', yearNumber)
 
-      setBookings(bookingList || [])
+      const items = (bookingList || []) as BookingWithDetails[]
+      const expiredIds: string[] = []
+      const now = new Date()
+
+      for (const b of items) {
+        if (
+          b.status_kehadiran === 'terdaftar' &&
+          b.schedule &&
+          isMassToleranceExpired(b.schedule.tanggal_misa, b.schedule.jam_mulai, now)
+        ) {
+          b.status_kehadiran = 'alpa'
+          expiredIds.push(b.id)
+        }
+      }
+
+      if (expiredIds.length > 0) {
+        ;(supabase.from('bookings') as any)
+          .update({ status_kehadiran: 'alpa' })
+          .in('id', expiredIds)
+          .then(() => {})
+      }
+
+      setBookings(items)
       setLoading(false)
     } catch {
       setLoading(false)

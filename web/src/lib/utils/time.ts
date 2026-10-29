@@ -51,9 +51,10 @@ export function evaluateCheckinWindow(
   kategori: 'harian' | 'mingguan',
   now: Date = new Date()
 ): CheckinEvaluation {
-  // Combine date and time (WIB context)
-  const massDateTimeStr = `${tanggalMisa}T${jamMulai}`
-  const massStartTime = parseISO(massDateTimeStr)
+  // Combine date and time with explicit WIB (+07:00) context
+  const timeClean = jamMulai.length === 5 ? `${jamMulai}:00` : jamMulai
+  const massDateTimeStr = `${tanggalMisa}T${timeClean}+07:00`
+  const massStartTime = new Date(massDateTimeStr)
 
   let windowOpenTime: Date
   let ontimeDeadline: Date
@@ -139,8 +140,9 @@ export function isMassToleranceExpired(
   now: Date = new Date()
 ): boolean {
   try {
-    const massDateTimeStr = `${tanggalMisa}T${jamMulai}`
-    const massStartTime = parseISO(massDateTimeStr)
+    const timeClean = jamMulai.length === 5 ? `${jamMulai}:00` : jamMulai
+    const massDateTimeStr = `${tanggalMisa}T${timeClean}+07:00`
+    const massStartTime = new Date(massDateTimeStr)
     const cutoffTime = addMinutes(massStartTime, 120)
     return now.getTime() > cutoffTime.getTime()
   } catch {

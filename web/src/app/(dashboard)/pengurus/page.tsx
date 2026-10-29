@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { MassSchedule, BookingWithDetails, Profile } from '@/types/database'
 import { LiturgyBadge } from '@/components/LiturgyBadge'
-import { getCurrentLiturgicalWeek } from '@/lib/utils/time'
+import { getCurrentLiturgicalWeek, isMassToleranceExpired } from '@/lib/utils/time'
 
 export default function PengurusDashboardPage() {
   const supabase = createClient()
@@ -38,7 +38,30 @@ export default function PengurusDashboardPage() {
         .select('*, schedule:mass_schedules(*), profile:profiles(*)')
         .eq('minggu_ke', weekNumber)
         .eq('tahun', yearNumber)
-      setBookings(bookingList || [])
+
+      const items = (bookingList || []) as BookingWithDetails[]
+      const expiredIds: string[] = []
+      const now = new Date()
+
+      for (const b of items) {
+        if (
+          b.status_kehadiran === 'terdaftar' &&
+          b.schedule &&
+          isMassToleranceExpired(b.schedule.tanggal_misa, b.schedule.jam_mulai, now)
+        ) {
+          b.status_kehadiran = 'alpa'
+          expiredIds.push(b.id)
+        }
+      }
+
+      if (expiredIds.length > 0) {
+        ;(supabase.from('bookings') as any)
+          .update({ status_kehadiran: 'alpa' })
+          .in('id', expiredIds)
+          .then(() => {})
+      }
+
+      setBookings(items)
 
       // 3. Fetch pending members
       const { data: pending } = await supabase
