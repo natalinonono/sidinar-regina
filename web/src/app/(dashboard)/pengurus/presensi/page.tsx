@@ -231,7 +231,6 @@ export default function PengurusPresensiPage() {
               <tr>
                 <th className="py-3.5 px-4">Nama Petugas Misdinar</th>
                 <th className="py-3.5 px-4">Misa yang Dilayani</th>
-                <th className="py-3.5 px-4">Peran / Posisi</th>
                 <th className="py-3.5 px-4">Status Presensi</th>
                 <th className="py-3.5 px-4">Waktu Check-In</th>
                 <th className="py-3.5 px-4 text-right">Override Pengurus</th>
@@ -255,9 +254,6 @@ export default function PengurusPresensiPage() {
                     <span className="text-[11px] text-on-surface-variant">
                       {b.schedule?.tanggal_misa} ({b.schedule?.jam_mulai.substring(0, 5)} WIB)
                     </span>
-                  </td>
-                  <td className="py-3.5 px-4">
-                    <PositionBadge position={b.posisi_tugas} />
                   </td>
                   <td className="py-3.5 px-4">
                     <span
