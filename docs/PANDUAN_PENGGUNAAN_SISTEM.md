@@ -163,7 +163,6 @@ Jika akun Anda berstatus **Pengurus**, aplikasi Android menyediakan fitur sakris
 
 ---
 
-### 📞 Kontak Pengurus & Bantuan Teknis
-- **Pengurus Sakristi SPMR:** `0856-4398-5341`
-- **Admin / Bantuan Sistem:** `0812-2878-8912`
+### 🌐 Tautan Portal
 - **Portal Web Resmi:** [sidinar-regina.vercel.app](https://sidinar-regina.vercel.app)
+
