@@ -109,6 +109,40 @@ export default function PengurusJadwalPage() {
     return bookings.filter((b) => b.schedule_id === selectedSchedule.id)
   }, [bookings, selectedSchedule])
 
+  const [isDeleting, setIsDeleting] = useState(false)
+
+  const handleDeleteSchedule = async (scheduleId: string, judulMisa: string) => {
+    if (
+      !confirm(
+        `Apakah Anda yakin ingin menghapus jadwal "${judulMisa}" beserta seluruh pendaftaran di dalamnya?\n\nTindakan ini tidak dapat dibatalkan.`
+      )
+    ) {
+      return
+    }
+
+    setIsDeleting(true)
+    try {
+      const res = await fetch(`/api/schedules?id=${encodeURIComponent(scheduleId)}`, {
+        method: 'DELETE',
+      })
+      const data = await res.json()
+
+      if (!res.ok) {
+        alert(data.error || 'Gagal menghapus jadwal misa.')
+        setIsDeleting(false)
+        return
+      }
+
+      alert('Jadwal misa berhasil dihapus.')
+      await loadSchedulesAndBookings()
+      setSelectedScheduleId(null)
+    } catch (err: any) {
+      alert(err.message || 'Terjadi kesalahan saat menghapus jadwal.')
+    } finally {
+      setIsDeleting(false)
+    }
+  }
+
   const handleUpdatePosition = async (bookingId: string, newPosition: string) => {
     try {
       const { error } = await (supabase.from('bookings') as any)
@@ -218,9 +252,23 @@ export default function PengurusJadwalPage() {
                     <span className="text-[11px] font-semibold text-secondary uppercase tracking-wider px-2 py-0.5 rounded-full bg-secondary-fixed/40">
                       {s.kategori === 'harian' ? 'Harian' : 'Mingguan'}
                     </span>
-                    <span className="text-[11px] font-semibold text-primary">
-                      {sBookings.length} / {s.kuota_maksimal} Terisi
-                    </span>
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-[11px] font-semibold text-primary">
+                        {sBookings.length} / {s.kuota_maksimal} Terisi
+                      </span>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handleDeleteSchedule(s.id, s.judul_misa)
+                        }}
+                        disabled={isDeleting}
+                        title="Hapus jadwal misa ini"
+                        className="p-1 rounded-md text-error/70 hover:text-error hover:bg-error/10 transition-colors"
+                        type="button"
+                      >
+                        <span className="material-symbols-outlined text-base leading-none">delete</span>
+                      </button>
+                    </div>
                   </div>
                   <h3 className="font-headline font-bold text-primary line-clamp-1">{s.judul_misa}</h3>
                   <div className="flex items-center gap-1.5 text-on-surface-variant text-[11px] mt-1">
@@ -244,9 +292,21 @@ export default function PengurusJadwalPage() {
                   <span className="px-2.5 py-0.5 rounded-full bg-white/10 text-secondary-fixed font-bold text-[11px] uppercase">
                     {selectedSchedule.kategori === 'harian' ? 'Misa Harian' : 'Misa Mingguan'}
                   </span>
-                  <span className="text-xs font-mono text-on-primary/80">
-                    Pukul {selectedSchedule.jam_mulai.substring(0, 5)} WIB
-                  </span>
+                  <div className="flex items-center gap-3">
+                    <span className="text-xs font-mono text-on-primary/80">
+                      Pukul {selectedSchedule.jam_mulai.substring(0, 5)} WIB
+                    </span>
+                    <button
+                      onClick={() => handleDeleteSchedule(selectedSchedule.id, selectedSchedule.judul_misa)}
+                      disabled={isDeleting}
+                      title="Hapus jadwal misa ini"
+                      className="px-3 py-1.5 rounded-xl bg-error/90 hover:bg-error text-white text-xs font-bold flex items-center gap-1.5 transition-colors shadow-sm disabled:opacity-50"
+                      type="button"
+                    >
+                      <span className="material-symbols-outlined text-sm leading-none">delete</span>
+                      <span>Hapus Jadwal</span>
+                    </button>
+                  </div>
                 </div>
                 <div>
                   <h2 className="font-headline font-bold text-xl">{selectedSchedule.judul_misa}</h2>

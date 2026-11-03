@@ -90,6 +90,7 @@ Akun dengan hak akses pengurus memiliki menu kendali lengkap:
 2. **Manajemen Jadwal Misa (`/pengurus/jadwal`):**
    - **Pilih Jadwal:** Klik salah satu kartu misa di sisi kiri untuk melihat daftar nama petugas yang terdaftar di sisi kanan.
    - **Tambah Jadwal Baru:** Klik tombol **+ Tambah Jadwal Baru**, isi nama perayaan, kategori (Harian/Mingguan), warna liturgi, tanggal, jam, dan kapasitas kuota.
+   - **Hapus Jadwal Misa:** Klik tombol merah **Hapus Jadwal** pada kartu detail misa terpilih atau ikon tong sampah pada kartu jadwal di sisi kiri jika misa ditiadakan atau ingin dijadwalkan ulang. Sistem akan meminta konfirmasi terlebih dahulu untuk memastikan keamanan data.
    - **Penugasan Manual:** Klik tombol **Tambah Petugas** untuk menugaskan anggota yang belum mendaftar secara langsung ke jadwal tersebut.
    - **Ingatkan Semua Petugas:** Kirim notifikasi pengingat secara serentak ke HP dan akun seluruh petugas yang terdaftar pada misa tersebut.
    - **Pengingat WhatsApp:** Klik ikon **Kirim Pengingat WA** di samping nama petugas untuk membuka chat WhatsApp resmi yang otomatis terisi pesan pengingat jadwal tugas.
@@ -140,7 +141,10 @@ Jika akun Anda berstatus **Pengurus**, aplikasi Android menyediakan fitur sakris
    - Izinkan akses kamera HP.
    - Arahkan kamera ke layar HP anggota yang menampilkan QR Code tugas mereka.
    - Sistem akan langsung bergetar/berbunyi konfirmasi hijau dan mencatat presensi anggota tersebut secara seketika (*real-time*).
-3. **Kirim WhatsApp Cepat:**
+3. **Manajemen & Hapus Jadwal Misa:**
+   - Di tab Jadwal, pengurus dapat mengetuk kartu misa untuk melihat rincian alokasi tugas (*Roster*).
+   - Pengurus dapat mengubah penataan posisi/peran liturgi misdinar, mengirim pengingat serentak, atau menekan tombol **Hapus Jadwal** (disertai konfirmasi keamanan) jika misa ditiadakan atau dijadwalkan ulang.
+4. **Kirim WhatsApp Cepat:**
    - Pengurus dapat melihat daftar anggota yang belum hadir 30 menit sebelum misa dan menekan tombol WhatsApp untuk langsung menghubungi anggota tersebut.
 
 ---

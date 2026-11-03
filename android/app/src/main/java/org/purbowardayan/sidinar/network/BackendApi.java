@@ -78,6 +78,12 @@ public interface BackendApi {
             @retrofit2.http.Path("id") String bookingId
     );
 
+    @DELETE("api/schedules")
+    Call<ResponseBody> deleteSchedule(
+            @Header("Authorization") String auth,
+            @Query("id") String scheduleId
+    );
+
     @PATCH("api/profile")
     Call<ResponseBody> updateProfile(
             @Header("Authorization") String auth,

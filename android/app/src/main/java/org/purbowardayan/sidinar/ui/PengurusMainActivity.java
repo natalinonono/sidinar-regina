@@ -647,9 +647,66 @@ public class PengurusMainActivity extends AppCompatActivity implements
             });
         }
 
+        MaterialButton btnDeleteSchedule = dialogView.findViewById(R.id.btnDeleteSchedule);
+        if (btnDeleteSchedule != null) {
+            btnDeleteSchedule.setOnClickListener(v -> {
+                new AlertDialog.Builder(this)
+                        .setTitle("Hapus Jadwal Misa")
+                        .setMessage("Apakah Anda yakin ingin menghapus jadwal \"" + schedule.getJudulMisa() + "\" beserta seluruh pendaftaran di dalamnya?\n\nTindakan ini tidak dapat dibatalkan.")
+                        .setPositiveButton("Hapus", (d, w) -> {
+                            dialog.dismiss();
+                            deleteScheduleItem(schedule);
+                        })
+                        .setNegativeButton("Batal", null)
+                        .show();
+            });
+        }
+
         btnClose.setOnClickListener(v -> dialog.dismiss());
 
         dialog.show();
+    }
+
+    private void deleteScheduleItem(MassSchedule schedule) {
+        String authHeader = sessionManager.getAuthHeader();
+        Toast.makeText(this, "Menghapus jadwal...", Toast.LENGTH_SHORT).show();
+
+        ApiClient.getBackendApi().deleteSchedule(authHeader, schedule.getId()).enqueue(new Callback<ResponseBody>() {
+            @Override
+            public void onResponse(@NonNull Call<ResponseBody> call, @NonNull Response<ResponseBody> response) {
+                if (response.isSuccessful()) {
+                    Toast.makeText(PengurusMainActivity.this, "Jadwal misa berhasil dihapus.", Toast.LENGTH_SHORT).show();
+                    loadAllData();
+                } else {
+                    deleteScheduleDirectSupabase(schedule);
+                }
+            }
+
+            @Override
+            public void onFailure(@NonNull Call<ResponseBody> call, @NonNull Throwable t) {
+                deleteScheduleDirectSupabase(schedule);
+            }
+        });
+    }
+
+    private void deleteScheduleDirectSupabase(MassSchedule schedule) {
+        String authHeader = sessionManager.getAuthHeader();
+        ApiClient.getSupabaseApi().deleteSchedule(authHeader, "eq." + schedule.getId()).enqueue(new Callback<Void>() {
+            @Override
+            public void onResponse(@NonNull Call<Void> call, @NonNull Response<Void> response) {
+                if (response.isSuccessful()) {
+                    Toast.makeText(PengurusMainActivity.this, "Jadwal misa berhasil dihapus.", Toast.LENGTH_SHORT).show();
+                    loadAllData();
+                } else {
+                    Toast.makeText(PengurusMainActivity.this, "Gagal menghapus jadwal misa.", Toast.LENGTH_SHORT).show();
+                }
+            }
+
+            @Override
+            public void onFailure(@NonNull Call<Void> call, @NonNull Throwable t) {
+                Toast.makeText(PengurusMainActivity.this, "Koneksi gagal: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+            }
+        });
     }
 
     private void showPositionChooserDialog(Booking booking, MassSchedule schedule, AlertDialog parentDialog) {
