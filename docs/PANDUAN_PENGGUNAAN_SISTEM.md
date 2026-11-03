@@ -53,7 +53,8 @@ Akses web melalui browser di: **`https://sidinar-regina.vercel.app`**
    - Tentukan kata sandi (*password*) minimal 6 karakter.
    - Klik **Daftar Sekarang**.
    > [!IMPORTANT]
-   > Akun baru langsung aktif secara otomatis (**tanpa perlu menunggu persetujuan pengurus**). Setelah mendaftar, Anda dapat langsung login.
+   > - Akun baru langsung aktif secara otomatis (**tanpa perlu menunggu persetujuan pengurus**). Setelah mendaftar, Anda dapat langsung login.
+   > - Seluruh akun baru secara default memiliki hak akses sebagai **Anggota (Misdinar)**. Bagi pengurus yang ingin mendapatkan hak akses (**Role Pengurus**), dapat menghubungi **Admin: 081228788912 (Ino)**.
 2. **Masuk Akun (Login):**
    - Masukkan alamat Email dan Kata Sandi.
    - Sistem secara otomatis mengarahkan ke dasbor yang sesuai: **Dasbor Anggota** atau **Dasbor Pengurus**.
@@ -160,6 +161,9 @@ Jika akun Anda berstatus **Pengurus**, aplikasi Android menyediakan fitur sakris
 
 **Q4: Apakah pendaftaran akun baru masih perlu konfirmasi pengurus?**  
 *Jawab:* Tidak perlu. Sistem pendaftaran saat ini langsung aktif secara instan sehingga misdinar baru dapat langsung login dan memilih jadwal pelayanan tanpa menunggu verifikasi manual.
+
+**Q5: Bagaimana jika pengurus ingin mendapatkan hak akses (Role Pengurus)?**  
+*Jawab:* Seluruh pendaftaran baru otomatis mendapatkan peran sebagai Anggota. Bagi pengurus yang ingin mendapatkan atau mengaktifkan hak akses (Role Pengurus) untuk mengelola jadwal dan presensi, dapat langsung menghubungi **Admin: 081228788912 (Ino)**.
 
 ---
 
