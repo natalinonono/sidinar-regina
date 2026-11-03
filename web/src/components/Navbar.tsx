@@ -129,8 +129,15 @@ export const Navbar: React.FC<NavbarProps> = ({ profile, realtimeConnected = tru
                       : 'text-on-surface-variant hover:bg-surface-container hover:text-primary'
                   }`}
                 >
-                  <span className="material-symbols-outlined text-[16px]">qr_code_scanner</span>
+                  <span className="material-symbols-outlined text-[16px]">checklist</span>
                   Monitor Presensi
+                </Link>
+                <Link
+                  href="/pengurus/presensi?scan=true"
+                  className="px-3 py-2 rounded-lg text-xs font-bold transition-colors flex items-center gap-1.5 bg-primary-fixed text-on-primary-fixed hover:bg-primary-fixed-dim shadow-xs"
+                >
+                  <span className="material-symbols-outlined text-[16px]">qr_code_scanner</span>
+                  Scan QR
                 </Link>
                 <Link
                   href="/pengurus/pengumuman"
@@ -289,11 +296,19 @@ export const Navbar: React.FC<NavbarProps> = ({ profile, realtimeConnected = tru
                   Kelola Jadwal
                 </Link>
                 <Link
+                  href="/pengurus/presensi?scan=true"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="px-3 py-2 rounded-lg text-xs font-bold bg-primary-fixed text-on-primary-fixed hover:bg-primary-fixed-dim flex items-center gap-2 shadow-xs"
+                >
+                  <span className="material-symbols-outlined text-sm">qr_code_scanner</span>
+                  Scan QR Petugas
+                </Link>
+                <Link
                   href="/pengurus/presensi"
                   onClick={() => setMobileMenuOpen(false)}
                   className="px-3 py-2 rounded-lg text-xs font-semibold hover:bg-surface-container flex items-center gap-2"
                 >
-                  <span className="material-symbols-outlined text-sm">qr_code_scanner</span>
+                  <span className="material-symbols-outlined text-sm">checklist</span>
                   Monitor Presensi
                 </Link>
                 <Link

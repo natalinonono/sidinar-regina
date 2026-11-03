@@ -13,6 +13,7 @@ import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -20,6 +21,8 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.checkbox.MaterialCheckBox;
 import com.google.android.material.textfield.TextInputEditText;
+import com.google.zxing.integration.android.IntentIntegrator;
+import com.google.zxing.integration.android.IntentResult;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -140,6 +143,9 @@ public class PengurusMainActivity extends AppCompatActivity implements
 
     private void setupListeners() {
         binding.swipeRefreshPengurus.setOnRefreshListener(this::loadAllData);
+
+        binding.btnPengurusScanQr.setOnClickListener(v -> launchQrScanner());
+        binding.btnPresensiTabScanQr.setOnClickListener(v -> launchQrScanner());
 
         binding.btnViewAsAnggota.setOnClickListener(v -> {
             startActivity(new Intent(PengurusMainActivity.this, AnggotaMainActivity.class));
@@ -941,5 +947,76 @@ public class PengurusMainActivity extends AppCompatActivity implements
         } else {
             Toast.makeText(this, "Nomor WhatsApp anggota tidak tersedia.", Toast.LENGTH_SHORT).show();
         }
+    }
+
+    private void launchQrScanner() {
+        IntentIntegrator integrator = new IntentIntegrator(this);
+        integrator.setPrompt("Arahkan kamera ke QR Code di layar HP misdinar");
+        integrator.setBeepEnabled(true);
+        integrator.setOrientationLocked(false);
+        integrator.initiateScan();
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        IntentResult result = IntentIntegrator.parseActivityResult(requestCode, resultCode, data);
+        if (result != null && result.getContents() != null) {
+            String scannedContent = result.getContents();
+            processPresensiScan(scannedContent);
+        }
+    }
+
+    private void processPresensiScan(String scannedContent) {
+        String token = sessionManager.getAuthHeader();
+        Map<String, Object> body = new HashMap<>();
+        body.put("qr_data", scannedContent);
+
+        Toast.makeText(this, "Memproses verifikasi presensi...", Toast.LENGTH_SHORT).show();
+
+        ApiClient.getBackendApi().checkIn(token, body).enqueue(new Callback<ResponseBody>() {
+            @Override
+            public void onResponse(@NonNull Call<ResponseBody> call, @NonNull Response<ResponseBody> response) {
+                if (response.isSuccessful()) {
+                    String msg = "Presensi petugas altar berhasil dicatat!";
+                    try {
+                        if (response.body() != null) {
+                            org.json.JSONObject obj = new org.json.JSONObject(response.body().string());
+                            if (obj.has("message")) msg = obj.getString("message");
+                        }
+                    } catch (Exception ignored) {}
+
+                    new AlertDialog.Builder(PengurusMainActivity.this)
+                            .setTitle("Presensi Berhasil! ✅")
+                            .setMessage(msg)
+                            .setPositiveButton("Selesai", (d, w) -> loadAllData())
+                            .setNeutralButton("Scan Petugas Lain", (d, w) -> {
+                                loadAllData();
+                                launchQrScanner();
+                            })
+                            .show();
+                } else {
+                    String errMsg = "QR Code tidak valid atau jadwal belum dibuka / telah kedaluwarsa.";
+                    try {
+                        if (response.errorBody() != null) {
+                            org.json.JSONObject obj = new org.json.JSONObject(response.errorBody().string());
+                            if (obj.has("error")) errMsg = obj.getString("error");
+                        }
+                    } catch (Exception ignored) {}
+
+                    new AlertDialog.Builder(PengurusMainActivity.this)
+                            .setTitle("Presensi Gagal ❌")
+                            .setMessage(errMsg)
+                            .setPositiveButton("Tutup", null)
+                            .setNeutralButton("Scan Ulang", (d, w) -> launchQrScanner())
+                            .show();
+                }
+            }
+
+            @Override
+            public void onFailure(@NonNull Call<ResponseBody> call, @NonNull Throwable t) {
+                Toast.makeText(PengurusMainActivity.this, "Koneksi gagal: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+            }
+        });
     }
 }

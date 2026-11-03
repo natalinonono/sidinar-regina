@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/client'
 import { BookingWithDetails, AttendanceStatus } from '@/types/database'
 import { PositionBadge } from '@/components/PositionBadge'
 import { getCurrentLiturgicalWeek, isMassToleranceExpired } from '@/lib/utils/time'
+import ScannerModal from '@/components/ScannerModal'
 
 export default function PengurusPresensiPage() {
   const supabase = createClient()
@@ -12,6 +13,7 @@ export default function PengurusPresensiPage() {
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] = useState<'semua' | AttendanceStatus>('semua')
+  const [showScanner, setShowScanner] = useState(false)
 
   const { weekNumber, yearNumber, formattedRange } = useMemo(() => getCurrentLiturgicalWeek(), [])
 
@@ -56,6 +58,10 @@ export default function PengurusPresensiPage() {
 
   useEffect(() => {
     loadPresensi()
+
+    if (typeof window !== 'undefined' && window.location.search.includes('scan=true')) {
+      setShowScanner(true)
+    }
 
     // Supabase Realtime subscription
     const channel = supabase
@@ -144,14 +150,25 @@ export default function PengurusPresensiPage() {
           </p>
         </div>
 
-        <button
-          onClick={() => window.print()}
-          className="px-4 py-2.5 rounded-xl bg-surface-container text-on-surface hover:bg-surface-container-high text-xs font-semibold flex items-center gap-1.5 transition-colors self-start sm:self-auto"
-          type="button"
-        >
-          <span className="material-symbols-outlined text-base text-primary">print</span>
-          <span>Cetak Rekap Presensi</span>
-        </button>
+        <div className="flex flex-wrap items-center gap-2.5 self-start sm:self-auto">
+          <button
+            onClick={() => setShowScanner(true)}
+            className="px-4 py-2.5 rounded-xl bg-primary text-on-primary hover:bg-primary-container text-xs font-headline font-bold flex items-center gap-2 shadow-sm transition-all"
+            type="button"
+          >
+            <span className="material-symbols-outlined text-base">qr_code_scanner</span>
+            <span>Buka Kamera Scanner</span>
+          </button>
+
+          <button
+            onClick={() => window.print()}
+            className="px-4 py-2.5 rounded-xl bg-surface-container text-on-surface hover:bg-surface-container-high text-xs font-semibold flex items-center gap-1.5 transition-colors"
+            type="button"
+          >
+            <span className="material-symbols-outlined text-base text-primary">print</span>
+            <span>Cetak Rekap Presensi</span>
+          </button>
+        </div>
       </div>
 
       {/* Summary Stat Pills */}
@@ -324,6 +341,12 @@ export default function PengurusPresensiPage() {
           </table>
         </div>
       )}
+      {/* Scanner Modal */}
+      <ScannerModal
+        isOpen={showScanner}
+        onClose={() => setShowScanner(false)}
+        onSuccessCheckin={() => loadPresensi()}
+      />
     </div>
   )
 }

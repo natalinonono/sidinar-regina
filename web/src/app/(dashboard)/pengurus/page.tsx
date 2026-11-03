@@ -214,11 +214,11 @@ export default function PengurusDashboardPage() {
             </button>
 
             <Link
-              href="/pengurus/presensi"
-              className="px-4 py-2.5 rounded-xl bg-surface-container-high text-on-surface hover:bg-surface-container-highest text-xs font-semibold transition-colors flex items-center gap-1.5"
+              href="/pengurus/presensi?scan=true"
+              className="px-4 py-2.5 rounded-xl bg-primary-fixed text-on-primary-fixed hover:bg-primary-fixed-dim text-xs font-semibold transition-colors flex items-center gap-1.5 shadow-xs"
             >
               <span className="material-symbols-outlined text-base text-primary">qr_code_scanner</span>
-              <span>Scanner Presensi</span>
+              <span>Buka Scanner Presensi</span>
             </Link>
 
             <Link
