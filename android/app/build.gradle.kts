@@ -10,8 +10,8 @@ android {
         applicationId = "org.purbowardayan.sidinar"
         minSdk = 24
         targetSdk = 34
-        versionCode = 9
-        versionName = "1.2.6"
+        versionCode = 10
+        versionName = "1.2.7"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
