@@ -108,11 +108,10 @@ Akun dengan hak akses pengurus memiliki menu kendali lengkap:
 Aplikasi Android **SiDinar Regina** dirancang agar misdinar dapat memantau jadwal dan melakukan absensi dengan cepat langsung dari saku mereka.
 
 ### A. Cara Mengunduh & Memasang Aplikasi
-1. Buka Web SiDinar Regina di browser HP Anda.
-2. Di beranda anggota, klik tombol **Unduh Aplikasi Android (APK)**.
-3. Setelah file `app-release.apk` selesai diunduh, buka file tersebut.
-4. Jika muncul peringatan keamanan instalasi dari sumber tidak dikenal (*Install Unknown Apps*), berikan izin (*Allow from this source*).
-5. Klik **Install**, lalu buka aplikasi **SiDinar Regina**.
+1. Unduh file APK versi resmi melalui tautan rilis GitHub: **[https://github.com/natalinonono/sidinar-regina/releases/tag/v1.2.6](https://github.com/natalinonono/sidinar-regina/releases/tag/v1.2.6)** (atau klik tombol **Unduh Aplikasi Android (APK)** pada dasbor web SiDinar Regina).
+2. Setelah file `app-release.apk` selesai diunduh, buka file tersebut di HP Anda.
+3. Jika muncul peringatan keamanan instalasi dari sumber tidak dikenal (*Install Unknown Apps*), berikan izin (*Allow from this source*).
+4. Klik **Install**, lalu buka aplikasi **SiDinar Regina**.
 
 > [!TIP]
 > **Pembaruan Otomatis (In-App OTA Update):**
@@ -165,8 +164,13 @@ Jika akun Anda berstatus **Pengurus**, aplikasi Android menyediakan fitur sakris
 **Q5: Bagaimana jika pengurus ingin mendapatkan hak akses (Role Pengurus)?**  
 *Jawab:* Seluruh pendaftaran baru otomatis mendapatkan peran sebagai Anggota. Bagi pengurus yang ingin mendapatkan atau mengaktifkan hak akses (Role Pengurus) untuk mengelola jadwal dan presensi, dapat langsung menghubungi **Admin: 081228788912 (Ino)**.
 
+**Q6: Bagaimana jika menemukan bug, error, atau kendala teknis pada web maupun aplikasi?**  
+*Jawab:* Jika menemukan bug, error, atau kendala sistem apa pun saat mengakses web atau aplikasi Android, Anda dapat langsung menghubungi **Admin: 081228788912 (Ino)** agar dapat segera ditangani dan diperbaiki oleh tim IT.
+
 ---
 
-### 🌐 Tautan Portal
+### 🌐 Tautan Portal & Layanan Bantuan
+- **Tautan Unduh APK Android (v1.2.6):** [https://github.com/natalinonono/sidinar-regina/releases/tag/v1.2.6](https://github.com/natalinonono/sidinar-regina/releases/tag/v1.2.6)
 - **Portal Web Resmi:** [sidinar-regina.vercel.app](https://sidinar-regina.vercel.app)
+- **Laporan Bug / Error / Bantuan Admin:** `081228788912 (Ino)`
 
