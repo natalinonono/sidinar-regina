@@ -46,3 +46,10 @@ Thumbs.db
 
 # Local Mirror Projects
 php_native/
+
+# Presentations & Internal Slide Decks (Do not commit)
+*.pptx
+docs/*.pptx
+docs/PRESENTASI*
+docs/MATERI_PRESENTASI*
+docs/PANDUAN_3_PRESENTASI*
