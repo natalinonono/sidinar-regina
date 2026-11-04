@@ -97,3 +97,4 @@ Disusun oleh: Ino (Anggota Misdinar SPMR Purbowardayan)
 
 3. **T: "Bagaimana kalau mendadak anak sakit atau ada keperluan keluarga mendadak?"**
    * **Jawab:** *"Di aplikasi ada tombol 'Ubah / Batal'. Anak atau orang tua bisa membatalkan tugas lebih awal atau memindahkan ke hari lain, sehingga kuotanya terbuka kembali untuk rekan misdinar lain yang bisa menggantikan."*
+
