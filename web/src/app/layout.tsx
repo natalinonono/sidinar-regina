@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import './globals.css'
+import { SecurityConsoleNotice } from '@/components/SecurityConsoleNotice'
 
 export const metadata: Metadata = {
   title: 'SiDinar Regina - Sistem Digital Misdinar Paroki Purbowardayan',
@@ -21,6 +22,7 @@ export default function RootLayout({
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
       </head>
       <body className="min-h-screen bg-background text-on-surface antialiased flex flex-col">
+        <SecurityConsoleNotice />
         {children}
       </body>
     </html>

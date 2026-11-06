@@ -11,6 +11,23 @@ export async function GET(request: Request) {
 
     const supabase = await createClient()
 
+    // Cek identitas dan role pemanggil untuk proteksi privasi data anggota
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
+
+    let isPengurus = false
+    if (user) {
+      const { data: callerProfile } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', user.id)
+        .single()
+      if ((callerProfile as any)?.role === 'pengurus') {
+        isPengurus = true
+      }
+    }
+
     let query = supabase
       .from('bookings')
       .select('*, schedule:mass_schedules(*), profile:profiles(*)')
@@ -33,6 +50,7 @@ export async function GET(request: Request) {
     }
 
     // Auto-update bookings yang telah melewati toleransi misa (120 menit pasca jam mulai)
+    // dan lakukan sensor data privasi jika pemanggil bukan pengurus
     if (bookings && bookings.length > 0) {
       const expiredIds: string[] = []
       const now = new Date()
@@ -45,6 +63,15 @@ export async function GET(request: Request) {
         ) {
           b.status_kehadiran = 'alpa'
           expiredIds.push(b.id)
+        }
+
+        // PERLINDUNGAN INSPECT ELEMENT / DEVTOOLS:
+        // Jika bukan pengurus dan bukan data dirinya sendiri, sensor no_telepon & email
+        if (!isPengurus && b.profile) {
+          if (b.user_id !== user?.id) {
+            delete b.profile.no_telepon
+            delete b.profile.email
+          }
         }
       }
 

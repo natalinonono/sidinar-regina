@@ -61,7 +61,7 @@ export default function AnggotaDashboardPage() {
       // Fetch bookings for current week
       const { data: bookingList } = await supabase
         .from('bookings')
-        .select('*, schedule:mass_schedules(*), profile:profiles(*)')
+        .select('*, schedule:mass_schedules(*)')
         .eq('minggu_ke', weekNumber)
         .eq('tahun', yearNumber)
 
@@ -117,7 +117,7 @@ export default function AnggotaDashboardPage() {
           // Re-fetch bookings on any change
           supabase
             .from('bookings')
-            .select('*, schedule:mass_schedules(*), profile:profiles(*)')
+            .select('*, schedule:mass_schedules(*)')
             .eq('minggu_ke', weekNumber)
             .eq('tahun', yearNumber)
             .then(({ data }) => {

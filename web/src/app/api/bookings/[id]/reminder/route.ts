@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { createAdminClient } from '@/lib/supabase/server'
+import { createClient, createAdminClient } from '@/lib/supabase/server'
 import { generateWhatsAppReminderMessage } from '@/lib/utils/calendar'
 
 interface RouteContext {
@@ -10,6 +10,29 @@ interface RouteContext {
 
 export async function POST(request: Request, context: RouteContext) {
   try {
+    const supabase = await createClient()
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
+
+    if (!user) {
+      return NextResponse.json({ error: 'Autentikasi diperlukan.' }, { status: 401 })
+    }
+
+    // Verifikasi role pengurus - hanya pengurus yang boleh memicu reminder atau mengakses wa_url
+    const { data: callerProfile } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', user.id)
+      .single()
+
+    if ((callerProfile as any)?.role !== 'pengurus') {
+      return NextResponse.json(
+        { error: 'Akses ditolak: Hanya pengurus sakristi yang dapat menyiarkan pengingat tugas.' },
+        { status: 403 }
+      )
+    }
+
     const { id } = await context.params
     const adminSupabase = createAdminClient()
 
