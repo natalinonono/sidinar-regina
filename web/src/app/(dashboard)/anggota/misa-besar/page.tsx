@@ -285,18 +285,18 @@ export default function AnggotaMisaBesarPage() {
                   Belum ada rangkaian Misa Besar yang dipublikasikan untuk tahun ini.
                 </div>
               ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="flex flex-col gap-4">
                   {events.map((ev) => (
                     <div
                       key={ev.id}
-                      className="p-4 rounded-2xl bg-surface-container-lowest border border-surface-container flex flex-col gap-2"
+                      className="p-4 rounded-2xl bg-surface-container-lowest border border-surface-container flex flex-col gap-3"
                     >
                       <div className="flex items-center justify-between">
-                        <span className="font-headline font-bold text-sm text-primary">
+                        <span className="font-headline font-bold text-sm sm:text-base text-primary">
                           {ev.nama_perayaan}
                         </span>
                         <span
-                          className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                          className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full ${
                             ev.warna_liturgi === 'Merah'
                               ? 'bg-rose-100 text-rose-800'
                               : 'bg-amber-100 text-amber-800'
@@ -305,21 +305,41 @@ export default function AnggotaMisaBesarPage() {
                           {ev.jumlah_sesi} {ev.jenis_sesi}
                         </span>
                       </div>
-                      <div className="flex flex-wrap gap-1.5">
-                        {(ev.sessions || []).map((s) => (
-                          <span
-                            key={s.id}
-                            className="text-[10px] px-2 py-1 rounded-lg bg-surface-container-low text-on-surface-variant font-medium"
-                          >
-                            {s.nama_sesi} ({s.jam_mulai})
-                          </span>
-                        ))}
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
+                        {(ev.sessions || []).map((s) => {
+                          const sessPetugasCount = (ev.petugas || []).filter(
+                            (p) => p.session_id === s.id
+                          ).length
+                          const sessLatihan = (ev.latihan || []).filter(
+                            (l) => !l.session_id || l.session_id === s.id
+                          )
+                          return (
+                            <div
+                              key={s.id}
+                              className="p-3 rounded-xl bg-surface-container-low border border-surface-container flex flex-col gap-1"
+                            >
+                              <div className="flex items-center justify-between gap-1">
+                                <span className="text-xs font-bold text-primary">
+                                  {s.nama_sesi}
+                                </span>
+                                <span className="text-[10px] font-semibold text-on-surface-variant">
+                                  {sessPetugasCount}/{s.kuota_petugas} ptg
+                                </span>
+                              </div>
+                              <span className="text-[11px] text-on-surface-variant">
+                                {s.tanggal_misa ? `${s.tanggal_misa} • ` : ''}
+                                {s.jam_mulai} WIB
+                              </span>
+                              <span className="text-[10px] text-secondary font-semibold mt-0.5">
+                                {sessLatihan.length > 0
+                                  ? `${sessLatihan.length} jadwal latihan`
+                                  : 'Jadwal latihan menyusul'}
+                              </span>
+                            </div>
+                          )
+                        })}
                       </div>
-                      {(ev.latihan || []).length > 0 && (
-                        <div className="pt-1.5 border-t border-surface-container text-[10px] text-primary font-semibold">
-                          {(ev.latihan || []).length} jadwal latihan tercatat
-                        </div>
-                      )}
                     </div>
                   ))}
                 </div>

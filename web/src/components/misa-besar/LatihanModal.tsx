@@ -9,6 +9,7 @@ interface LatihanModalProps {
   eventId: string
   eventName: string
   sessions: MisaBesarSession[]
+  defaultSessionId?: string | null
   editingLatihan?: MisaBesarLatihan | null
   onSuccess: (createdId?: string) => void
 }
@@ -19,6 +20,7 @@ export function LatihanModal({
   eventId,
   eventName,
   sessions,
+  defaultSessionId = null,
   editingLatihan,
   onSuccess,
 }: LatihanModalProps) {
@@ -42,15 +44,22 @@ export function LatihanModal({
       setCatatan(editingLatihan.catatan || '')
     } else {
       const todayStr = new Date().toISOString().split('T')[0]
-      setJudul(`Latihan ${eventName}`)
-      setSessionId('')
+      const targetSess = defaultSessionId
+        ? sessions.find((s) => s.id === defaultSessionId)
+        : null
+      setJudul(
+        targetSess
+          ? `Latihan ${eventName} - ${targetSess.nama_sesi}`
+          : `Latihan ${eventName}`
+      )
+      setSessionId(defaultSessionId || '')
       setTanggal(todayStr)
       setJam('16:00')
       setLokasi('Gereja & Sakristi SPMR Purbowardayan')
       setCatatan('')
     }
     setErrorMsg(null)
-  }, [isOpen, editingLatihan, eventName])
+  }, [isOpen, editingLatihan, eventName, defaultSessionId, sessions])
 
   if (!isOpen) return null
 
@@ -229,3 +238,4 @@ export function LatihanModal({
     </div>
   )
 }
+

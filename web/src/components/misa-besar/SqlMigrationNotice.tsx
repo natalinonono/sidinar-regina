@@ -64,3 +64,4 @@ export function SqlMigrationNotice({ migrationSql, onRetry }: SqlMigrationNotice
     </div>
   )
 }
+

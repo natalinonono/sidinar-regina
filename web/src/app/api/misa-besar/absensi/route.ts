@@ -82,15 +82,16 @@ export async function POST(request: Request) {
         }
       }
 
-      // Cari penugasan petugas di event (atau session jika latihan khusus sesi tertentu)
+      // Cari penugasan petugas di event (dibatasi ke session jika latihan khusus atau panel sesi dipilih)
+      const scopedSessionId = latihanData.session_id || session_id || null
       let petugasQuery = (admin as any)
         .from('misa_besar_petugas')
         .select('*, profile:profiles(nama_lengkap, nama_panggilan), session:misa_besar_sessions(nama_sesi)')
         .eq('event_id', latihanData.event_id)
         .eq('user_id', targetUserId)
 
-      if (latihanData.session_id) {
-        petugasQuery = petugasQuery.eq('session_id', latihanData.session_id)
+      if (scopedSessionId) {
+        petugasQuery = petugasQuery.eq('session_id', scopedSessionId)
       }
 
       const { data: matchedPetugas } = await petugasQuery
@@ -106,7 +107,7 @@ export async function POST(request: Request) {
         if (userProf) {
           return NextResponse.json(
             {
-              error: `${userProf.nama_lengkap} belum terdaftar sebagai petugas pada ${latihanData.event?.nama_perayaan || 'perayaan ini'}${latihanData.session_id ? ' (sesi ini)' : ''}. Tambahkan ke Daftar Petugas terlebih dahulu.`,
+              error: `${userProf.nama_lengkap} belum terdaftar sebagai petugas pada ${latihanData.event?.nama_perayaan || 'perayaan ini'}${scopedSessionId ? ' (sesi misa/ibadat ini)' : ''}. Tambahkan ke Daftar Petugas sesi ini terlebih dahulu.`,
             },
             { status: 404 }
           )
@@ -313,3 +314,4 @@ export async function POST(request: Request) {
     )
   }
 }
+

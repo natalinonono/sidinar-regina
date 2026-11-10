@@ -160,3 +160,4 @@ EXCEPTION WHEN duplicate_object THEN null; END $$;
 DO $$ BEGIN
     ALTER PUBLICATION supabase_realtime ADD TABLE public.misa_besar_absensi;
 EXCEPTION WHEN duplicate_object THEN null; END $$;
+

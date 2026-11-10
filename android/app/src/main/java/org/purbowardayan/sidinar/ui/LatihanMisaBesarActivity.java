@@ -54,7 +54,7 @@ public class LatihanMisaBesarActivity extends AppCompatActivity implements MisaB
 
     private String selectedEventId = null;
     private String selectedLatihanId = null;
-    private String selectedSessionFilterId = "semua";
+    private String selectedSessionFilterId = null;
 
     private static final String[] POSITIONS = new String[]{
             "Pembawa Salib Prosesi",
@@ -184,10 +184,12 @@ public class LatihanMisaBesarActivity extends AppCompatActivity implements MisaB
                         if (!stillExists) {
                             selectedEventId = events.get(0).getId();
                             selectedLatihanId = null;
-                            selectedSessionFilterId = "semua";
+                            List<MisaBesarResponse.MisaBesarSession> firstSess = events.get(0).getSessions();
+                            selectedSessionFilterId = (firstSess != null && !firstSess.isEmpty()) ? firstSess.get(0).getId() : null;
                         }
                     } else {
                         selectedEventId = null;
+                        selectedSessionFilterId = null;
                     }
 
                     renderEventChips();
@@ -213,12 +215,38 @@ public class LatihanMisaBesarActivity extends AppCompatActivity implements MisaB
         return events.isEmpty() ? null : events.get(0);
     }
 
-    private MisaBesarResponse.MisaBesarLatihan getSelectedLatihan(MisaBesarResponse.MisaBesarEvent ev) {
-        if (ev == null || ev.getLatihan() == null || ev.getLatihan().isEmpty()) return null;
+    private MisaBesarResponse.MisaBesarSession getSelectedSession(MisaBesarResponse.MisaBesarEvent ev) {
+        if (ev == null || ev.getSessions() == null || ev.getSessions().isEmpty()) return null;
+        for (MisaBesarResponse.MisaBesarSession s : ev.getSessions()) {
+            if (s.getId().equals(selectedSessionFilterId)) return s;
+        }
+        return ev.getSessions().get(0);
+    }
+
+    private List<MisaBesarResponse.MisaBesarLatihan> getRelevantLatihan(
+            MisaBesarResponse.MisaBesarEvent ev,
+            MisaBesarResponse.MisaBesarSession sess
+    ) {
+        List<MisaBesarResponse.MisaBesarLatihan> list = new ArrayList<>();
+        if (ev == null || ev.getLatihan() == null) return list;
         for (MisaBesarResponse.MisaBesarLatihan l : ev.getLatihan()) {
+            if (l.getSessionId() == null || (sess != null && l.getSessionId().equals(sess.getId()))) {
+                list.add(l);
+            }
+        }
+        return list;
+    }
+
+    private MisaBesarResponse.MisaBesarLatihan getSelectedLatihan(
+            MisaBesarResponse.MisaBesarEvent ev,
+            MisaBesarResponse.MisaBesarSession sess
+    ) {
+        List<MisaBesarResponse.MisaBesarLatihan> rel = getRelevantLatihan(ev, sess);
+        if (rel.isEmpty()) return null;
+        for (MisaBesarResponse.MisaBesarLatihan l : rel) {
             if (l.getId().equals(selectedLatihanId)) return l;
         }
-        return ev.getLatihan().get(0);
+        return rel.get(0);
     }
 
     private void renderEventChips() {
@@ -231,7 +259,8 @@ public class LatihanMisaBesarActivity extends AppCompatActivity implements MisaB
             chip.setOnClickListener(v -> {
                 selectedEventId = ev.getId();
                 selectedLatihanId = null;
-                selectedSessionFilterId = "semua";
+                List<MisaBesarResponse.MisaBesarSession> sList = ev.getSessions();
+                selectedSessionFilterId = (sList != null && !sList.isEmpty()) ? sList.get(0).getId() : null;
                 renderSelectedEvent();
             });
             binding.chipGroupMbEvents.addView(chip);
@@ -249,7 +278,12 @@ public class LatihanMisaBesarActivity extends AppCompatActivity implements MisaB
             return;
         }
 
-        MisaBesarResponse.MisaBesarLatihan lat = getSelectedLatihan(ev);
+        MisaBesarResponse.MisaBesarSession activeSess = getSelectedSession(ev);
+        if (activeSess != null) {
+            selectedSessionFilterId = activeSess.getId();
+        }
+
+        MisaBesarResponse.MisaBesarLatihan lat = getSelectedLatihan(ev, activeSess);
         if (lat != null) {
             selectedLatihanId = lat.getId();
         } else {
@@ -257,39 +291,30 @@ public class LatihanMisaBesarActivity extends AppCompatActivity implements MisaB
         }
 
         if (isPengurusMode) {
-            binding.tvMbActiveEventInfo.setText(ev.getNamaPerayaan() + " " + ev.getTahun()
-                    + " (" + ev.getJumlahSesi() + " " + ev.getJenisSesi() + ")");
+            String sessTitle = activeSess != null ? (" — " + activeSess.getNamaSesi()) : "";
+            binding.tvMbActiveEventInfo.setText(ev.getNamaPerayaan() + " " + ev.getTahun() + sessTitle);
 
             if (lat != null) {
-                binding.tvMbActiveLatihanInfo.setText("Latihan Aktif: " + lat.getJudulLatihan()
+                binding.tvMbActiveLatihanInfo.setText("Latihan: " + lat.getJudulLatihan()
                         + " • " + lat.getTanggalLatihan() + " (" + lat.getJamMulai() + " WIB)");
             } else {
-                binding.tvMbActiveLatihanInfo.setText("Belum ada sesi latihan. Tekan '+ Latihan' untuk membuat.");
+                binding.tvMbActiveLatihanInfo.setText("Belum ada latihan untuk sesi ini. Tekan '+ Latihan'.");
             }
 
             binding.btnMbTogglePaskahCount.setVisibility("paskah".equals(ev.getKodePerayaan()) ? View.VISIBLE : View.GONE);
             binding.btnMbTogglePaskahCount.setText(ev.getJumlahSesi() == 2 ? "Ubah ke 3 Misa" : "Ubah ke 2 Misa");
 
-            // Render session filter chips
+            // Render separated Per-Misa / Per-Ibadat tabs
             binding.chipGroupMbSessions.removeAllViews();
-            Chip allChip = new Chip(this);
-            allChip.setText("Semua " + ev.getJenisSesi());
-            allChip.setCheckable(true);
-            allChip.setChecked("semua".equals(selectedSessionFilterId));
-            allChip.setOnClickListener(v -> {
-                selectedSessionFilterId = "semua";
-                renderSelectedEvent();
-            });
-            binding.chipGroupMbSessions.addView(allChip);
-
             if (ev.getSessions() != null) {
                 for (MisaBesarResponse.MisaBesarSession sess : ev.getSessions()) {
                     Chip sc = new Chip(this);
                     sc.setText(sess.getNamaSesi());
                     sc.setCheckable(true);
-                    sc.setChecked(sess.getId().equals(selectedSessionFilterId));
+                    sc.setChecked(activeSess != null && sess.getId().equals(activeSess.getId()));
                     sc.setOnClickListener(v -> {
                         selectedSessionFilterId = sess.getId();
+                        selectedLatihanId = null;
                         renderSelectedEvent();
                     });
                     binding.chipGroupMbSessions.addView(sc);
@@ -317,10 +342,7 @@ public class LatihanMisaBesarActivity extends AppCompatActivity implements MisaB
                         filteredPetugas.add(p);
                     }
                 } else {
-                    if (lat != null && lat.getSessionId() != null && !lat.getSessionId().equals(p.getSessionId())) {
-                        continue;
-                    }
-                    if (!"semua".equals(selectedSessionFilterId) && !selectedSessionFilterId.equals(p.getSessionId())) {
+                    if (activeSess != null && !activeSess.getId().equals(p.getSessionId())) {
                         continue;
                     }
                     filteredPetugas.add(p);
@@ -388,20 +410,22 @@ public class LatihanMisaBesarActivity extends AppCompatActivity implements MisaB
 
     private void showSelectLatihanDialog() {
         MisaBesarResponse.MisaBesarEvent ev = getSelectedEvent();
-        if (ev == null || ev.getLatihan() == null || ev.getLatihan().isEmpty()) {
-            Toast.makeText(this, "Belum ada sesi latihan. Tekan '+ Latihan' terlebih dahulu.", Toast.LENGTH_SHORT).show();
+        MisaBesarResponse.MisaBesarSession activeSess = getSelectedSession(ev);
+        List<MisaBesarResponse.MisaBesarLatihan> rel = getRelevantLatihan(ev, activeSess);
+        if (rel.isEmpty()) {
+            Toast.makeText(this, "Belum ada sesi latihan untuk sesi ini. Tekan '+ Latihan' terlebih dahulu.", Toast.LENGTH_SHORT).show();
             return;
         }
-        String[] labels = new String[ev.getLatihan().size()];
-        for (int i = 0; i < ev.getLatihan().size(); i++) {
-            MisaBesarResponse.MisaBesarLatihan l = ev.getLatihan().get(i);
+        String[] labels = new String[rel.size()];
+        for (int i = 0; i < rel.size(); i++) {
+            MisaBesarResponse.MisaBesarLatihan l = rel.get(i);
             labels[i] = l.getJudulLatihan() + " (" + l.getTanggalLatihan() + " • " + l.getJamMulai() + ")";
         }
 
         new AlertDialog.Builder(this)
                 .setTitle("Pilih Pertemuan Latihan")
                 .setItems(labels, (d, idx) -> {
-                    selectedLatihanId = ev.getLatihan().get(idx).getId();
+                    selectedLatihanId = rel.get(idx).getId();
                     renderSelectedEvent();
                 })
                 .setNegativeButton("Tutup", null)
@@ -414,6 +438,7 @@ public class LatihanMisaBesarActivity extends AppCompatActivity implements MisaB
             Toast.makeText(this, "Siapkan perayaan terlebih dahulu.", Toast.LENGTH_SHORT).show();
             return;
         }
+        MisaBesarResponse.MisaBesarSession activeSess = getSelectedSession(ev);
 
         LinearLayout container = new LinearLayout(this);
         container.setOrientation(LinearLayout.VERTICAL);
@@ -421,7 +446,9 @@ public class LatihanMisaBesarActivity extends AppCompatActivity implements MisaB
 
         EditText etJudul = new EditText(this);
         etJudul.setHint("Judul (mis: Latihan 1 / Gladi Bersih)");
-        etJudul.setText("Latihan " + ev.getNamaPerayaan());
+        etJudul.setText(activeSess != null
+                ? "Latihan " + ev.getNamaPerayaan() + " - " + activeSess.getNamaSesi()
+                : "Latihan " + ev.getNamaPerayaan());
         container.addView(etJudul);
 
         EditText etTanggal = new EditText(this);
@@ -437,15 +464,20 @@ public class LatihanMisaBesarActivity extends AppCompatActivity implements MisaB
         Spinner spScope = new Spinner(this);
         List<String> scopeNames = new ArrayList<>();
         final List<String> scopeIds = new ArrayList<>();
+        int defaultSelectionIdx = 0;
         scopeNames.add("Latihan Gabungan (Semua Sesi)");
         scopeIds.add("");
         if (ev.getSessions() != null) {
             for (MisaBesarResponse.MisaBesarSession s : ev.getSessions()) {
                 scopeNames.add("Khusus " + s.getNamaSesi());
                 scopeIds.add(s.getId());
+                if (activeSess != null && s.getId().equals(activeSess.getId())) {
+                    defaultSelectionIdx = scopeIds.size() - 1;
+                }
             }
         }
         spScope.setAdapter(new ArrayAdapter<>(this, android.R.layout.simple_spinner_dropdown_item, scopeNames));
+        spScope.setSelection(defaultSelectionIdx);
         container.addView(spScope);
 
         new AlertDialog.Builder(this)
@@ -484,6 +516,7 @@ public class LatihanMisaBesarActivity extends AppCompatActivity implements MisaB
             Toast.makeText(this, "Tidak ada daftar anggota aktif.", Toast.LENGTH_SHORT).show();
             return;
         }
+        MisaBesarResponse.MisaBesarSession activeSess = getSelectedSession(ev);
 
         LinearLayout container = new LinearLayout(this);
         container.setOrientation(LinearLayout.VERTICAL);
@@ -491,10 +524,16 @@ public class LatihanMisaBesarActivity extends AppCompatActivity implements MisaB
 
         Spinner spSession = new Spinner(this);
         List<String> sessNames = new ArrayList<>();
-        for (MisaBesarResponse.MisaBesarSession s : ev.getSessions()) {
+        int defaultSessIdx = 0;
+        for (int i = 0; i < ev.getSessions().size(); i++) {
+            MisaBesarResponse.MisaBesarSession s = ev.getSessions().get(i);
             sessNames.add(s.getNamaSesi() + " (" + s.getJamMulai() + ")");
+            if (activeSess != null && s.getId().equals(activeSess.getId())) {
+                defaultSessIdx = i;
+            }
         }
         spSession.setAdapter(new ArrayAdapter<>(this, android.R.layout.simple_spinner_dropdown_item, sessNames));
+        spSession.setSelection(defaultSessIdx);
         container.addView(spSession);
 
         Spinner spMember = new Spinner(this);
@@ -534,18 +573,20 @@ public class LatihanMisaBesarActivity extends AppCompatActivity implements MisaB
             Toast.makeText(this, "Buat atau pilih sesi latihan terlebih dahulu.", Toast.LENGTH_SHORT).show();
             return;
         }
+        MisaBesarResponse.MisaBesarSession activeSess = getSelectedSession(getSelectedEvent());
+        String sessLabel = activeSess != null ? activeSess.getNamaSesi() : "sesi ini";
         new AlertDialog.Builder(this)
                 .setTitle("Tandai Semua Hadir?")
-                .setMessage("Semua petugas pada filter sesi ini akan dicatat sebagai HADIR.")
+                .setMessage("Semua petugas di " + sessLabel + " akan dicatat sebagai HADIR.")
                 .setPositiveButton("Ya, Tandai Hadir", (d, w) -> {
                     Map<String, Object> body = new HashMap<>();
                     body.put("latihan_id", selectedLatihanId);
                     body.put("bulk_action", "all_hadir");
-                    if (!"semua".equals(selectedSessionFilterId)) {
-                        body.put("session_id", selectedSessionFilterId);
+                    if (activeSess != null) {
+                        body.put("session_id", activeSess.getId());
                     }
                     ApiClient.getBackendApi().submitMisaBesarAbsensi(sessionManager.getAuthHeader(), body)
-                            .enqueue(simpleReloadCallback("Semua petugas berhasil dicatat hadir!"));
+                            .enqueue(simpleReloadCallback("Semua petugas " + sessLabel + " berhasil dicatat hadir!"));
                 })
                 .setNegativeButton("Batal", null)
                 .show();
@@ -570,6 +611,9 @@ public class LatihanMisaBesarActivity extends AppCompatActivity implements MisaB
         if (result != null && result.getContents() != null && selectedLatihanId != null) {
             Map<String, Object> body = new HashMap<>();
             body.put("latihan_id", selectedLatihanId);
+            if (selectedSessionFilterId != null) {
+                body.put("session_id", selectedSessionFilterId);
+            }
             body.put("qr_data", result.getContents().trim());
 
             Toast.makeText(this, "Memproses QR Latihan...", Toast.LENGTH_SHORT).show();
@@ -688,3 +732,4 @@ public class LatihanMisaBesarActivity extends AppCompatActivity implements MisaB
         };
     }
 }
+
