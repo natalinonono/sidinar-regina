@@ -133,6 +133,17 @@ export const Navbar: React.FC<NavbarProps> = ({ profile, realtimeConnected = tru
                   Monitor Presensi
                 </Link>
                 <Link
+                  href="/pengurus/latihan"
+                  className={`px-3 py-2 rounded-lg text-xs font-semibold transition-colors flex items-center gap-1.5 ${
+                    pathname.startsWith('/pengurus/latihan')
+                      ? 'bg-primary text-on-primary shadow-xs'
+                      : 'text-on-surface-variant hover:bg-surface-container hover:text-primary'
+                  }`}
+                >
+                  <span className="material-symbols-outlined text-[16px]">church</span>
+                  Misa Besar
+                </Link>
+                <Link
                   href="/pengurus/presensi?scan=true"
                   className="px-3 py-2 rounded-lg text-xs font-bold transition-colors flex items-center gap-1.5 bg-primary-fixed text-on-primary-fixed hover:bg-primary-fixed-dim shadow-xs"
                 >
@@ -163,6 +174,17 @@ export const Navbar: React.FC<NavbarProps> = ({ profile, realtimeConnected = tru
                 >
                   <span className="material-symbols-outlined text-[16px]">event_available</span>
                   Jadwal Misa
+                </Link>
+                <Link
+                  href="/anggota/misa-besar"
+                  className={`px-3 py-2 rounded-lg text-xs font-semibold transition-colors flex items-center gap-1.5 ${
+                    pathname.startsWith('/anggota/misa-besar')
+                      ? 'bg-primary text-on-primary shadow-xs'
+                      : 'text-on-surface-variant hover:bg-surface-container hover:text-primary'
+                  }`}
+                >
+                  <span className="material-symbols-outlined text-[16px]">church</span>
+                  Misa Besar
                 </Link>
                 <Link
                   href="/anggota/riwayat"
@@ -296,6 +318,14 @@ export const Navbar: React.FC<NavbarProps> = ({ profile, realtimeConnected = tru
                   Kelola Jadwal
                 </Link>
                 <Link
+                  href="/pengurus/latihan"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="px-3 py-2 rounded-lg text-xs font-semibold hover:bg-surface-container flex items-center gap-2"
+                >
+                  <span className="material-symbols-outlined text-sm">church</span>
+                  Absensi Latihan Misa Besar
+                </Link>
+                <Link
                   href="/pengurus/presensi?scan=true"
                   onClick={() => setMobileMenuOpen(false)}
                   className="px-3 py-2 rounded-lg text-xs font-bold bg-primary-fixed text-on-primary-fixed hover:bg-primary-fixed-dim flex items-center gap-2 shadow-xs"
@@ -337,6 +367,14 @@ export const Navbar: React.FC<NavbarProps> = ({ profile, realtimeConnected = tru
                 >
                   <span className="material-symbols-outlined text-sm">event_available</span>
                   Jadwal Misa
+                </Link>
+                <Link
+                  href="/anggota/misa-besar"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="px-3 py-2 rounded-lg text-xs font-semibold hover:bg-surface-container flex items-center gap-2"
+                >
+                  <span className="material-symbols-outlined text-sm">church</span>
+                  Misa Besar &amp; QR Latihan
                 </Link>
                 <Link
                   href="/anggota/riwayat"

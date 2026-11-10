@@ -63,6 +63,12 @@
             android:exported="false"
             android:windowSoftInputMode="adjustResize" />
 
+        <!-- Absensi Latihan Petugas Misa Besar Activity -->
+        <activity
+            android:name=".ui.LatihanMisaBesarActivity"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
+
         <!-- ZXing Capture Activity for Barcode/QR Scanning -->
         <activity
             android:name="com.journeyapps.barcodescanner.CaptureActivity"

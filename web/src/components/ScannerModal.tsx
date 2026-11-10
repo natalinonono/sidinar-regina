@@ -7,12 +7,24 @@ interface ScannerModalProps {
   isOpen: boolean
   onClose: () => void
   onSuccessCheckin?: (petugasData: any) => void
+  endpoint?: string
+  extraPayload?: Record<string, any>
+  modalTitle?: string
+  modalSubtitle?: string
+  manualPlaceholder?: string
+  manualHint?: string
 }
 
 export default function ScannerModal({
   isOpen,
   onClose,
   onSuccessCheckin,
+  endpoint = '/api/checkin',
+  extraPayload,
+  modalTitle = 'Pindai Presensi Petugas',
+  modalSubtitle = 'Sorot kamera ke QR Code di layar HP misdinar',
+  manualPlaceholder = 'Contoh: 7E587393 atau SIDINAR:...',
+  manualHint = 'Ketik 8 karakter kode tugas yang tertera tepat di bawah QR code HP anggota.',
 }: ScannerModalProps) {
   const [scanning, setScanning] = useState(false)
   const [cameraError, setCameraError] = useState<string | null>(null)
@@ -26,6 +38,10 @@ export default function ScannerModal({
 
   const scannerRef = useRef<Html5Qrcode | null>(null)
   const isRunningRef = useRef(false)
+  const endpointRef = useRef(endpoint)
+  const extraPayloadRef = useRef(extraPayload)
+  endpointRef.current = endpoint
+  extraPayloadRef.current = extraPayload
 
   // Start scanner when modal opens
   useEffect(() => {
@@ -107,10 +123,13 @@ export default function ScannerModal({
     setScanResult(null)
 
     try {
-      const res = await fetch('/api/checkin', {
+      const res = await fetch(endpointRef.current, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ qr_data: codeToVerify.trim() }),
+        body: JSON.stringify({
+          ...(extraPayloadRef.current || {}),
+          qr_data: codeToVerify.trim(),
+        }),
       })
 
       const data = await res.json()
@@ -162,8 +181,8 @@ export default function ScannerModal({
               qr_code_scanner
             </span>
             <div>
-              <h3 className="font-headline font-bold text-base">Pindai Presensi Petugas</h3>
-              <p className="text-[11px] text-on-primary/80">Sorot kamera ke QR Code di layar HP misdinar</p>
+              <h3 className="font-headline font-bold text-base">{modalTitle}</h3>
+              <p className="text-[11px] text-on-primary/80">{modalSubtitle}</p>
             </div>
           </div>
           <button
@@ -254,7 +273,7 @@ export default function ScannerModal({
                 type="text"
                 value={manualCode}
                 onChange={(e) => setManualCode(e.target.value)}
-                placeholder="Contoh: 7E587393 atau SIDINAR:..."
+                placeholder={manualPlaceholder}
                 className="flex-1 px-3.5 py-2.5 rounded-xl bg-surface-container-low text-xs border border-surface-container focus:outline-none focus:ring-1 focus:ring-primary font-mono"
               />
               <button
@@ -266,7 +285,7 @@ export default function ScannerModal({
               </button>
             </div>
             <p className="text-[10px] text-on-surface-variant">
-              Ketik 8 karakter kode tugas yang tertera tepat di bawah QR code HP anggota.
+              {manualHint}
             </p>
           </form>
         </div>

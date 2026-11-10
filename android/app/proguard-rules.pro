@@ -25,3 +25,6 @@
 # Supabase and Ktor
 -keep class io.github.jan.supabase.** { *; }
 -keep class io.ktor.** { *; }
+
+# Keep Gson models
+-keep class org.purbowardayan.sidinar.model.** { *; }

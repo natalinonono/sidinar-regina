@@ -225,6 +225,22 @@
                         </LinearLayout>
                     </LinearLayout>
 
+                    <!-- Quick Access: Latihan Petugas Misa Besar -->
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnPengurusMisaBesar"
+                        android:layout_width="match_parent"
+                        android:layout_height="42dp"
+                        android:layout_marginTop="12dp"
+                        android:backgroundTint="@color/secondary"
+                        android:text="Absensi Latihan Misa Besar (Natal / Paskah)"
+                        android:textColor="@color/on_secondary"
+                        android:textSize="12sp"
+                        android:textStyle="bold"
+                        app:cornerRadius="12dp"
+                        app:icon="@drawable/ic_church"
+                        app:iconSize="18dp"
+                        app:iconTint="@color/on_secondary" />
+
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 

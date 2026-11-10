@@ -146,6 +146,11 @@ public class PengurusMainActivity extends AppCompatActivity implements
 
         binding.btnPengurusScanQr.setOnClickListener(v -> launchQrScanner());
         binding.btnPresensiTabScanQr.setOnClickListener(v -> launchQrScanner());
+        binding.btnPengurusMisaBesar.setOnClickListener(v -> {
+            Intent intent = new Intent(PengurusMainActivity.this, LatihanMisaBesarActivity.class);
+            intent.putExtra("is_pengurus", true);
+            startActivity(intent);
+        });
 
         binding.btnViewAsAnggota.setOnClickListener(v -> {
             startActivity(new Intent(PengurusMainActivity.this, AnggotaMainActivity.class));

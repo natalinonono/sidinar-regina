@@ -229,6 +229,12 @@ public class AnggotaMainActivity extends AppCompatActivity implements ScheduleAd
             startActivity(new Intent(AnggotaMainActivity.this, RiwayatTugasActivity.class));
         });
 
+        binding.btnAnggotaMisaBesar.setOnClickListener(v -> {
+            Intent intent = new Intent(AnggotaMainActivity.this, LatihanMisaBesarActivity.class);
+            intent.putExtra("is_pengurus", false);
+            startActivity(intent);
+        });
+
         binding.btnMyBookingCheckin.setOnClickListener(v -> {
             if (myUpcomingBooking != null) {
                 showCheckinDialog(myUpcomingBooking);

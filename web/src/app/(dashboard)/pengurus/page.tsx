@@ -214,6 +214,14 @@ export default function PengurusDashboardPage() {
             </button>
 
             <Link
+              href="/pengurus/latihan"
+              className="px-4 py-2.5 rounded-xl bg-secondary text-on-secondary hover:opacity-90 text-xs font-headline font-bold transition-all flex items-center gap-1.5 shadow-xs"
+            >
+              <span className="material-symbols-outlined text-base" style={{ fontVariationSettings: "'FILL' 1" }}>church</span>
+              <span>Latihan Misa Besar</span>
+            </Link>
+
+            <Link
               href="/pengurus/presensi?scan=true"
               className="px-4 py-2.5 rounded-xl bg-primary-fixed text-on-primary-fixed hover:bg-primary-fixed-dim text-xs font-semibold transition-colors flex items-center gap-1.5 shadow-xs"
             >

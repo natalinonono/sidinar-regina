@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useEffect, useState, useMemo } from 'react'
+import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { MassSchedule, BookingWithDetails, Profile, Announcement } from '@/types/database'
 import { ScheduleCard } from '@/components/ScheduleCard'
@@ -259,6 +260,13 @@ export default function AnggotaDashboardPage() {
           </div>
 
           <div className="flex flex-wrap items-center gap-2.5">
+            <Link
+              href="/anggota/misa-besar"
+              className="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-secondary text-on-secondary hover:opacity-90 transition-all text-xs font-bold shadow-xs"
+            >
+              <span className="material-symbols-outlined text-[17px]" style={{ fontVariationSettings: "'FILL' 1" }}>church</span>
+              <span>Misa Besar &amp; QR Latihan</span>
+            </Link>
             <button
               onClick={() => setShowEditProfileModal(true)}
               className="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-primary text-on-primary hover:bg-primary-container transition-all text-xs font-semibold shadow-xs"
