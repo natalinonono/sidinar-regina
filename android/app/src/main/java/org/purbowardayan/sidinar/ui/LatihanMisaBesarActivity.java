@@ -1,7 +1,5 @@
 package org.purbowardayan.sidinar.ui;
 
-import android.content.Intent;
-import android.graphics.Bitmap;
 import android.os.Bundle;
 import android.text.InputType;
 import android.view.View;
@@ -16,21 +14,18 @@ import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import com.google.android.material.chip.Chip;
-import com.google.zxing.BarcodeFormat;
-import com.google.zxing.integration.android.IntentIntegrator;
-import com.google.zxing.integration.android.IntentResult;
-import com.journeyapps.barcodescanner.BarcodeEncoder;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 import okhttp3.ResponseBody;
 import org.json.JSONObject;
-import org.purbowardayan.sidinar.R;
 import org.purbowardayan.sidinar.adapter.MisaBesarAbsensiAdapter;
 import org.purbowardayan.sidinar.auth.SessionManager;
 import org.purbowardayan.sidinar.databinding.ActivityLatihanMisaBesarBinding;
@@ -46,7 +41,6 @@ public class LatihanMisaBesarActivity extends AppCompatActivity implements MisaB
     private ActivityLatihanMisaBesarBinding binding;
     private SessionManager sessionManager;
     private MisaBesarAbsensiAdapter adapter;
-    private boolean isPengurusMode = false;
 
     private final List<MisaBesarResponse.MisaBesarEvent> events = new ArrayList<>();
     private final List<MisaBesarResponse.MisaBesarAbsensi> absensiList = new ArrayList<>();
@@ -54,9 +48,11 @@ public class LatihanMisaBesarActivity extends AppCompatActivity implements MisaB
 
     private String selectedEventId = null;
     private String selectedLatihanId = null;
-    private String selectedSessionFilterId = null;
+    private String selectedSessionId = null;
+    private boolean showingDicoretList = false;
 
     private static final String[] POSITIONS = new String[]{
+            "Petugas Altar / Cadangan",
             "Pembawa Salib Prosesi",
             "Pembawa Lilin I (Kanan)",
             "Pembawa Lilin II (Kiri)",
@@ -64,8 +60,7 @@ public class LatihanMisaBesarActivity extends AppCompatActivity implements MisaB
             "Petugas Lavabo & Bel / Genta",
             "Pembawa Pedupaan / Wiruk",
             "Pembawa Wadah Dupa (Navikula)",
-            "Pemimpin Barisan & Sakristan",
-            "Petugas Altar / Cadangan"
+            "Pemimpin Barisan & Sakristan"
     };
 
     @Override
@@ -75,13 +70,11 @@ public class LatihanMisaBesarActivity extends AppCompatActivity implements MisaB
         setContentView(binding.getRoot());
 
         sessionManager = new SessionManager(this);
-        if (!sessionManager.isLoggedIn()) {
+        if (!sessionManager.isLoggedIn() || !sessionManager.isPengurus()) {
+            Toast.makeText(this, "Akses ditolak: Menu ini khusus untuk Pengurus.", Toast.LENGTH_SHORT).show();
             finish();
             return;
         }
-
-        isPengurusMode = getIntent().getBooleanExtra("is_pengurus", sessionManager.isPengurus())
-                && sessionManager.isPengurus();
 
         setupUI();
         setupListeners();
@@ -89,42 +82,10 @@ public class LatihanMisaBesarActivity extends AppCompatActivity implements MisaB
     }
 
     private void setupUI() {
-        adapter = new MisaBesarAbsensiAdapter(isPengurusMode, this);
+        adapter = new MisaBesarAbsensiAdapter(this);
         binding.rvMbPetugas.setLayoutManager(new LinearLayoutManager(this));
         binding.rvMbPetugas.setAdapter(adapter);
-
-        if (isPengurusMode) {
-            binding.tvMbHeaderTitle.setText("Absensi Latihan Misa Besar");
-            binding.tvMbHeaderSub.setText("Mode Pengurus • Malam Natal, Natal, Palma, Trihari Suci, Paskah");
-            binding.cardMbAnggotaQr.setVisibility(View.GONE);
-            binding.layoutMbPengurusControls.setVisibility(View.VISIBLE);
-            binding.tvMbListTitle.setText("Daftar Petugas & Absensi Latihan");
-        } else {
-            binding.tvMbHeaderTitle.setText("Misa Besar & QR Latihan");
-            binding.tvMbHeaderSub.setText("Jadwal Petugas Hari Raya & Kartu QR Anggota");
-            binding.cardMbAnggotaQr.setVisibility(View.VISIBLE);
-            binding.layoutMbPengurusControls.setVisibility(View.GONE);
-            binding.tvMbListTitle.setText("Penugasan & Status Latihan Saya");
-            renderAnggotaQr();
-        }
-    }
-
-    private void renderAnggotaQr() {
-        Profile p = sessionManager.getProfile();
-        String uid = sessionManager.getUserId();
-        if (p != null && p.getNamaLengkap() != null) {
-            binding.tvMbMyName.setText(p.getNamaLengkap());
-        }
-        if (uid != null && uid.length() >= 8) {
-            binding.tvMbMyShortId.setText("ID: " + uid.substring(0, 8).toUpperCase(Locale.ROOT));
-            try {
-                BarcodeEncoder encoder = new BarcodeEncoder();
-                Bitmap bmp = encoder.encodeBitmap("SIDINAR:USER:" + uid, BarcodeFormat.QR_CODE, 420, 420);
-                binding.ivMbMyQr.setImageBitmap(bmp);
-            } catch (Exception e) {
-                binding.ivMbMyQr.setImageResource(R.drawable.ic_qr_code);
-            }
-        }
+        binding.layoutMbPengurusControls.setVisibility(View.VISIBLE);
     }
 
     private void setupListeners() {
@@ -132,12 +93,17 @@ public class LatihanMisaBesarActivity extends AppCompatActivity implements MisaB
         binding.swipeRefreshMb.setOnRefreshListener(this::loadMisaBesarData);
 
         binding.btnMbInitPresets.setOnClickListener(v -> showSetupPresetsDialog());
+        binding.btnMbDeleteEvent.setOnClickListener(v -> confirmDeleteActiveEvent());
         binding.btnMbSelectLatihan.setOnClickListener(v -> showSelectLatihanDialog());
         binding.btnMbAddLatihan.setOnClickListener(v -> showCreateLatihanDialog());
         binding.btnMbAddPetugas.setOnClickListener(v -> showAddPetugasDialog());
-        binding.btnMbAllHadir.setOnClickListener(v -> performAllHadir());
-        binding.btnMbScanQr.setOnClickListener(v -> launchQrScanner());
+        binding.btnMbAllHadir.setOnClickListener(v -> performBulkAbsensi("all_hadir"));
+        binding.btnMbRemainingAlpa.setOnClickListener(v -> performBulkAbsensi("remaining_alpa"));
         binding.btnMbTogglePaskahCount.setOnClickListener(v -> togglePaskahCount());
+        binding.btnMbToggleDicoretView.setOnClickListener(v -> {
+            showingDicoretList = !showingDicoretList;
+            renderSelectedEvent();
+        });
     }
 
     private void loadMisaBesarData() {
@@ -155,7 +121,6 @@ public class LatihanMisaBesarActivity extends AppCompatActivity implements MisaB
                     MisaBesarResponse data = response.body();
                     if (data.isNeedsMigration()) {
                         binding.cardMbMigrationNotice.setVisibility(View.VISIBLE);
-                        binding.btnMbInitPresets.setVisibility(View.GONE);
                         return;
                     }
                     binding.cardMbMigrationNotice.setVisibility(View.GONE);
@@ -169,10 +134,6 @@ public class LatihanMisaBesarActivity extends AppCompatActivity implements MisaB
                     activeMembers.clear();
                     if (data.getActiveMembers() != null) activeMembers.addAll(data.getActiveMembers());
 
-                    if (isPengurusMode) {
-                        binding.btnMbInitPresets.setVisibility(events.size() < 7 ? View.VISIBLE : View.GONE);
-                    }
-
                     if (!events.isEmpty()) {
                         boolean stillExists = false;
                         for (MisaBesarResponse.MisaBesarEvent ev : events) {
@@ -185,11 +146,12 @@ public class LatihanMisaBesarActivity extends AppCompatActivity implements MisaB
                             selectedEventId = events.get(0).getId();
                             selectedLatihanId = null;
                             List<MisaBesarResponse.MisaBesarSession> firstSess = events.get(0).getSessions();
-                            selectedSessionFilterId = (firstSess != null && !firstSess.isEmpty()) ? firstSess.get(0).getId() : null;
+                            selectedSessionId = (firstSess != null && !firstSess.isEmpty()) ? firstSess.get(0).getId() : null;
+                            showingDicoretList = false;
                         }
                     } else {
                         selectedEventId = null;
-                        selectedSessionFilterId = null;
+                        selectedSessionId = null;
                     }
 
                     renderEventChips();
@@ -218,7 +180,7 @@ public class LatihanMisaBesarActivity extends AppCompatActivity implements MisaB
     private MisaBesarResponse.MisaBesarSession getSelectedSession(MisaBesarResponse.MisaBesarEvent ev) {
         if (ev == null || ev.getSessions() == null || ev.getSessions().isEmpty()) return null;
         for (MisaBesarResponse.MisaBesarSession s : ev.getSessions()) {
-            if (s.getId().equals(selectedSessionFilterId)) return s;
+            if (s.getId().equals(selectedSessionId)) return s;
         }
         return ev.getSessions().get(0);
     }
@@ -260,7 +222,8 @@ public class LatihanMisaBesarActivity extends AppCompatActivity implements MisaB
                 selectedEventId = ev.getId();
                 selectedLatihanId = null;
                 List<MisaBesarResponse.MisaBesarSession> sList = ev.getSessions();
-                selectedSessionFilterId = (sList != null && !sList.isEmpty()) ? sList.get(0).getId() : null;
+                selectedSessionId = (sList != null && !sList.isEmpty()) ? sList.get(0).getId() : null;
+                showingDicoretList = false;
                 renderSelectedEvent();
             });
             binding.chipGroupMbEvents.addView(chip);
@@ -270,59 +233,64 @@ public class LatihanMisaBesarActivity extends AppCompatActivity implements MisaB
     private void renderSelectedEvent() {
         MisaBesarResponse.MisaBesarEvent ev = getSelectedEvent();
         if (ev == null) {
-            adapter.updateData(new ArrayList<>(), new HashMap<>());
+            binding.layoutMbPengurusControls.setVisibility(View.GONE);
+            binding.btnMbToggleDicoretView.setVisibility(View.GONE);
+            adapter.updateData(new ArrayList<>(), new HashMap<>(), new HashMap<>());
             binding.tvMbEmpty.setVisibility(View.VISIBLE);
-            binding.tvMbEmpty.setText(isPengurusMode
-                    ? "Belum ada paket Misa Besar. Tekan tombol 'Setup 7 Misa' di kanan atas."
-                    : "Belum ada rangkaian Misa Besar yang dipublikasikan.");
+            binding.tvMbEmpty.setText("Belum ada tugas Misa Besar. Tekan '+ Tugas Misa' di kanan atas untuk memilih Natal / Paskah.");
             return;
         }
 
+        binding.layoutMbPengurusControls.setVisibility(View.VISIBLE);
         MisaBesarResponse.MisaBesarSession activeSess = getSelectedSession(ev);
         if (activeSess != null) {
-            selectedSessionFilterId = activeSess.getId();
+            selectedSessionId = activeSess.getId();
         }
 
         MisaBesarResponse.MisaBesarLatihan lat = getSelectedLatihan(ev, activeSess);
+        selectedLatihanId = lat != null ? lat.getId() : null;
+
+        String sessTitle = activeSess != null ? (" — " + activeSess.getNamaSesi()) : "";
+        binding.tvMbActiveEventInfo.setText(ev.getNamaPerayaan() + " " + ev.getTahun() + sessTitle);
+
         if (lat != null) {
-            selectedLatihanId = lat.getId();
+            binding.tvMbActiveLatihanInfo.setText("Latihan: " + lat.getJudulLatihan()
+                    + " • " + lat.getTanggalLatihan() + " (" + lat.getJamMulai() + " WIB)");
         } else {
-            selectedLatihanId = null;
+            binding.tvMbActiveLatihanInfo.setText("Belum ada latihan untuk sesi ini. Tekan '+ Latihan'.");
         }
 
-        if (isPengurusMode) {
-            String sessTitle = activeSess != null ? (" — " + activeSess.getNamaSesi()) : "";
-            binding.tvMbActiveEventInfo.setText(ev.getNamaPerayaan() + " " + ev.getTahun() + sessTitle);
+        binding.btnMbTogglePaskahCount.setVisibility("paskah".equals(ev.getKodePerayaan()) ? View.VISIBLE : View.GONE);
+        binding.btnMbTogglePaskahCount.setText(ev.getJumlahSesi() == 2 ? "Ubah 3 Misa" : "Ubah 2 Misa");
 
-            if (lat != null) {
-                binding.tvMbActiveLatihanInfo.setText("Latihan: " + lat.getJudulLatihan()
-                        + " • " + lat.getTanggalLatihan() + " (" + lat.getJamMulai() + " WIB)");
-            } else {
-                binding.tvMbActiveLatihanInfo.setText("Belum ada latihan untuk sesi ini. Tekan '+ Latihan'.");
-            }
-
-            binding.btnMbTogglePaskahCount.setVisibility("paskah".equals(ev.getKodePerayaan()) ? View.VISIBLE : View.GONE);
-            binding.btnMbTogglePaskahCount.setText(ev.getJumlahSesi() == 2 ? "Ubah ke 3 Misa" : "Ubah ke 2 Misa");
-
-            // Render separated Per-Misa / Per-Ibadat tabs
-            binding.chipGroupMbSessions.removeAllViews();
-            if (ev.getSessions() != null) {
-                for (MisaBesarResponse.MisaBesarSession sess : ev.getSessions()) {
-                    Chip sc = new Chip(this);
-                    sc.setText(sess.getNamaSesi());
-                    sc.setCheckable(true);
-                    sc.setChecked(activeSess != null && sess.getId().equals(activeSess.getId()));
-                    sc.setOnClickListener(v -> {
-                        selectedSessionFilterId = sess.getId();
-                        selectedLatihanId = null;
-                        renderSelectedEvent();
-                    });
-                    binding.chipGroupMbSessions.addView(sc);
-                }
+        // Separated Per-Misa / Per-Ibadat tabs
+        binding.chipGroupMbSessions.removeAllViews();
+        if (ev.getSessions() != null) {
+            for (MisaBesarResponse.MisaBesarSession sess : ev.getSessions()) {
+                Chip sc = new Chip(this);
+                sc.setText(sess.getNamaSesi());
+                sc.setCheckable(true);
+                sc.setChecked(activeSess != null && sess.getId().equals(activeSess.getId()));
+                sc.setOnClickListener(v -> {
+                    selectedSessionId = sess.getId();
+                    selectedLatihanId = null;
+                    showingDicoretList = false;
+                    renderSelectedEvent();
+                });
+                binding.chipGroupMbSessions.addView(sc);
             }
         }
 
-        // Map absensi by petugas_id for the active latihan
+        // Hitung Alpa total per petugas_id
+        Map<String, Integer> alpaCounts = new HashMap<>();
+        for (MisaBesarResponse.MisaBesarAbsensi a : absensiList) {
+            if ("alpa".equalsIgnoreCase(a.getStatusKehadiran())) {
+                Integer cur = alpaCounts.get(a.getPetugasId());
+                alpaCounts.put(a.getPetugasId(), (cur != null ? cur : 0) + 1);
+            }
+        }
+
+        // Map absensi untuk latihan aktif
         Map<String, MisaBesarResponse.MisaBesarAbsensi> absMap = new HashMap<>();
         if (lat != null) {
             for (MisaBesarResponse.MisaBesarAbsensi a : absensiList) {
@@ -332,64 +300,104 @@ public class LatihanMisaBesarActivity extends AppCompatActivity implements MisaB
             }
         }
 
-        List<MisaBesarResponse.MisaBesarPetugas> filteredPetugas = new ArrayList<>();
-        String myUid = sessionManager.getUserId();
+        List<MisaBesarResponse.MisaBesarPetugas> activeList = new ArrayList<>();
+        List<MisaBesarResponse.MisaBesarPetugas> dicoretList = new ArrayList<>();
 
         if (ev.getPetugas() != null) {
             for (MisaBesarResponse.MisaBesarPetugas p : ev.getPetugas()) {
-                if (!isPengurusMode) {
-                    if (myUid != null && myUid.equals(p.getUserId())) {
-                        filteredPetugas.add(p);
-                    }
+                if (activeSess != null && !activeSess.getId().equals(p.getSessionId())) {
+                    continue;
+                }
+                if (p.isDicoret()) {
+                    dicoretList.add(p);
                 } else {
-                    if (activeSess != null && !activeSess.getId().equals(p.getSessionId())) {
-                        continue;
-                    }
-                    filteredPetugas.add(p);
+                    activeList.add(p);
                 }
             }
         }
 
-        if (isPengurusMode) {
-            int hadir = 0, telat = 0, izin = 0, alpa = 0, belum = 0;
-            for (MisaBesarResponse.MisaBesarPetugas p : filteredPetugas) {
-                MisaBesarResponse.MisaBesarAbsensi rec = absMap.get(p.getId());
-                if (rec == null) belum++;
-                else if ("hadir".equalsIgnoreCase(rec.getStatusKehadiran())) hadir++;
+        int hadir = 0, telat = 0, izin = 0, alpa = 0;
+        for (MisaBesarResponse.MisaBesarPetugas p : activeList) {
+            MisaBesarResponse.MisaBesarAbsensi rec = absMap.get(p.getId());
+            if (rec != null) {
+                if ("hadir".equalsIgnoreCase(rec.getStatusKehadiran())) hadir++;
                 else if ("terlambat".equalsIgnoreCase(rec.getStatusKehadiran())) telat++;
                 else if ("izin".equalsIgnoreCase(rec.getStatusKehadiran())) izin++;
                 else if ("alpa".equalsIgnoreCase(rec.getStatusKehadiran())) alpa++;
             }
-            binding.tvMbStatsStrip.setText("Total: " + filteredPetugas.size()
-                    + " | Hadir: " + hadir
-                    + " | Telat: " + telat
-                    + " | Izin: " + izin
-                    + " | Alpa: " + alpa
-                    + " | Belum: " + belum);
         }
 
-        adapter.updateData(filteredPetugas, absMap);
-        binding.tvMbEmpty.setVisibility(filteredPetugas.isEmpty() ? View.VISIBLE : View.GONE);
-        if (filteredPetugas.isEmpty()) {
-            binding.tvMbEmpty.setText(isPengurusMode
-                    ? "Belum ada petugas di sesi ini. Tekan '+ Petugas' untuk menambahkan."
-                    : "Anda tidak memiliki jadwal tugas pada perayaan " + ev.getNamaPerayaan() + ".");
+        binding.tvMbStatsStrip.setText("Aktif: " + activeList.size()
+                + " | Hadir: " + hadir
+                + " | Telat: " + telat
+                + " | Izin: " + izin
+                + " | Alpa: " + alpa
+                + " | Dicoret: " + dicoretList.size());
+
+        if (dicoretList.isEmpty()) {
+            showingDicoretList = false;
+            binding.btnMbToggleDicoretView.setVisibility(View.GONE);
+        } else {
+            binding.btnMbToggleDicoretView.setVisibility(View.VISIBLE);
+            binding.btnMbToggleDicoretView.setText(showingDicoretList
+                    ? "Lihat Aktif (" + activeList.size() + ")"
+                    : "Dicoret (" + dicoretList.size() + ")");
+        }
+
+        List<MisaBesarResponse.MisaBesarPetugas> listToDisplay = showingDicoretList ? dicoretList : activeList;
+        binding.tvMbListTitle.setText(showingDicoretList
+                ? "Daftar Petugas Dicoret (3x Alpa)"
+                : "Daftar Petugas & Presensi (" + activeList.size() + ")");
+
+        adapter.updateData(listToDisplay, absMap, alpaCounts);
+        binding.tvMbEmpty.setVisibility(listToDisplay.isEmpty() ? View.VISIBLE : View.GONE);
+        if (listToDisplay.isEmpty()) {
+            binding.tvMbEmpty.setText("Belum ada petugas terpilih di sesi ini. Tekan '+ Pilih Nama' untuk memilih anggota.");
         }
     }
 
     private void showSetupPresetsDialog() {
-        String[] options = new String[]{"Paskah 3 Misa (Default)", "Paskah 2 Misa"};
+        String[] options = new String[]{
+                "Paket Natal (Malam Natal 2 & Natal 2 Misa)",
+                "Paket Paskah - 3 Misa (Palma s/d Paskah)",
+                "Paket Paskah - 2 Misa (Palma s/d Paskah)",
+                "Semua 7 Perayaan Misa Besar (Natal & Paskah)"
+        };
         new AlertDialog.Builder(this)
-                .setTitle("Buat Otomatis 7 Perayaan Misa Besar")
+                .setTitle("Pilih / Tambah Tugas Misa Besar")
                 .setItems(options, (dialog, which) -> {
-                    int paskahCount = (which == 1) ? 2 : 3;
                     Map<String, Object> body = new HashMap<>();
                     body.put("action", "init_all_presets");
                     body.put("tahun", Calendar.getInstance().get(Calendar.YEAR));
-                    body.put("paskah_jumlah_sesi", paskahCount);
+                    if (which == 0) {
+                        body.put("paket", "natal");
+                    } else if (which == 1) {
+                        body.put("paket", "paskah");
+                        body.put("paskah_jumlah_sesi", 3);
+                    } else if (which == 2) {
+                        body.put("paket", "paskah");
+                        body.put("paskah_jumlah_sesi", 2);
+                    } else {
+                        body.put("paket", "semua");
+                        body.put("paskah_jumlah_sesi", 3);
+                    }
 
                     ApiClient.getBackendApi().setupMisaBesar(sessionManager.getAuthHeader(), body)
-                            .enqueue(simpleReloadCallback("7 Perayaan Misa Besar berhasil disiapkan!"));
+                            .enqueue(simpleReloadCallback("Tugas Misa Besar berhasil ditambahkan!"));
+                })
+                .setNegativeButton("Batal", null)
+                .show();
+    }
+
+    private void confirmDeleteActiveEvent() {
+        MisaBesarResponse.MisaBesarEvent ev = getSelectedEvent();
+        if (ev == null) return;
+        new AlertDialog.Builder(this)
+                .setTitle("Hapus Tugas " + ev.getNamaPerayaan() + "?")
+                .setMessage("Seluruh sesi misa, daftar petugas, dan catatan latihan pada perayaan ini akan dihapus.")
+                .setPositiveButton("Hapus", (d, w) -> {
+                    ApiClient.getBackendApi().deleteMisaBesarEvent(sessionManager.getAuthHeader(), ev.getId())
+                            .enqueue(simpleReloadCallback("Perayaan " + ev.getNamaPerayaan() + " dihapus."));
                 })
                 .setNegativeButton("Batal", null)
                 .show();
@@ -508,153 +516,102 @@ public class LatihanMisaBesarActivity extends AppCompatActivity implements MisaB
 
     private void showAddPetugasDialog() {
         MisaBesarResponse.MisaBesarEvent ev = getSelectedEvent();
-        if (ev == null || ev.getSessions() == null || ev.getSessions().isEmpty()) {
-            Toast.makeText(this, "Pilih perayaan terlebih dahulu.", Toast.LENGTH_SHORT).show();
+        MisaBesarResponse.MisaBesarSession activeSess = getSelectedSession(ev);
+        if (ev == null || activeSess == null) {
+            Toast.makeText(this, "Pilih perayaan dan sesi terlebih dahulu.", Toast.LENGTH_SHORT).show();
             return;
         }
         if (activeMembers.isEmpty()) {
             Toast.makeText(this, "Tidak ada daftar anggota aktif.", Toast.LENGTH_SHORT).show();
             return;
         }
-        MisaBesarResponse.MisaBesarSession activeSess = getSelectedSession(ev);
 
-        LinearLayout container = new LinearLayout(this);
-        container.setOrientation(LinearLayout.VERTICAL);
-        container.setPadding(48, 24, 48, 12);
-
-        Spinner spSession = new Spinner(this);
-        List<String> sessNames = new ArrayList<>();
-        int defaultSessIdx = 0;
-        for (int i = 0; i < ev.getSessions().size(); i++) {
-            MisaBesarResponse.MisaBesarSession s = ev.getSessions().get(i);
-            sessNames.add(s.getNamaSesi() + " (" + s.getJamMulai() + ")");
-            if (activeSess != null && s.getId().equals(activeSess.getId())) {
-                defaultSessIdx = i;
+        Set<String> alreadyAssignedIds = new HashSet<>();
+        if (ev.getPetugas() != null) {
+            for (MisaBesarResponse.MisaBesarPetugas p : ev.getPetugas()) {
+                if (activeSess.getId().equals(p.getSessionId()) && !p.isDicoret()) {
+                    alreadyAssignedIds.add(p.getUserId());
+                }
             }
         }
-        spSession.setAdapter(new ArrayAdapter<>(this, android.R.layout.simple_spinner_dropdown_item, sessNames));
-        spSession.setSelection(defaultSessIdx);
-        container.addView(spSession);
 
-        Spinner spMember = new Spinner(this);
-        List<String> memberNames = new ArrayList<>();
+        List<Profile> candidateMembers = new ArrayList<>();
         for (Profile m : activeMembers) {
-            memberNames.add(m.getNamaLengkap() + " (" + m.getJenjang() + ")");
+            if (!alreadyAssignedIds.contains(m.getId())) {
+                candidateMembers.add(m);
+            }
         }
-        spMember.setAdapter(new ArrayAdapter<>(this, android.R.layout.simple_spinner_dropdown_item, memberNames));
-        container.addView(spMember);
 
-        Spinner spPosisi = new Spinner(this);
-        spPosisi.setAdapter(new ArrayAdapter<>(this, android.R.layout.simple_spinner_dropdown_item, POSITIONS));
-        container.addView(spPosisi);
+        if (candidateMembers.isEmpty()) {
+            Toast.makeText(this, "Semua anggota aktif sudah masuk daftar petugas " + activeSess.getNamaSesi(), Toast.LENGTH_SHORT).show();
+            return;
+        }
 
+        String[] labels = new String[candidateMembers.size()];
+        boolean[] checked = new boolean[candidateMembers.size()];
+        for (int i = 0; i < candidateMembers.size(); i++) {
+            Profile m = candidateMembers.get(i);
+            labels[i] = m.getNamaLengkap() + " (" + m.getJenjang() + " • " + m.getAsalWilayahTeks() + ")";
+            checked[i] = false;
+        }
+
+        // Tinggal klik nama anggota langsung tercentang!
         new AlertDialog.Builder(this)
-                .setTitle("Tambah Petugas " + ev.getNamaPerayaan())
-                .setView(container)
-                .setPositiveButton("Tambahkan", (d, w) -> {
-                    String sessionId = ev.getSessions().get(spSession.getSelectedItemPosition()).getId();
-                    String userId = activeMembers.get(spMember.getSelectedItemPosition()).getId();
-                    String posisi = POSITIONS[spPosisi.getSelectedItemPosition()];
+                .setTitle("Klik Nama Petugas • " + activeSess.getNamaSesi())
+                .setMultiChoiceItems(labels, checked, (dialog, which, isChecked) -> checked[which] = isChecked)
+                .setPositiveButton("Simpan Terpilih", (d, w) -> {
+                    List<Map<String, Object>> membersPayload = new ArrayList<>();
+                    for (int i = 0; i < candidateMembers.size(); i++) {
+                        if (checked[i]) {
+                            Map<String, Object> item = new HashMap<>();
+                            item.put("user_id", candidateMembers.get(i).getId());
+                            item.put("posisi_tugas", POSITIONS[0]);
+                            membersPayload.add(item);
+                        }
+                    }
+
+                    if (membersPayload.isEmpty()) {
+                        Toast.makeText(this, "Tidak ada nama yang dipilih.", Toast.LENGTH_SHORT).show();
+                        return;
+                    }
 
                     Map<String, Object> body = new HashMap<>();
-                    body.put("session_id", sessionId);
-                    body.put("user_id", userId);
-                    body.put("posisi_tugas", posisi);
+                    body.put("session_id", activeSess.getId());
+                    body.put("members", membersPayload);
 
                     ApiClient.getBackendApi().addMisaBesarPetugas(sessionManager.getAuthHeader(), body)
-                            .enqueue(simpleReloadCallback("Petugas berhasil ditambahkan!"));
+                            .enqueue(simpleReloadCallback(membersPayload.size() + " petugas ditambahkan ke " + activeSess.getNamaSesi()));
                 })
                 .setNegativeButton("Batal", null)
                 .show();
     }
 
-    private void performAllHadir() {
+    private void performBulkAbsensi(String bulkAction) {
         if (selectedLatihanId == null) {
             Toast.makeText(this, "Buat atau pilih sesi latihan terlebih dahulu.", Toast.LENGTH_SHORT).show();
             return;
         }
         MisaBesarResponse.MisaBesarSession activeSess = getSelectedSession(getSelectedEvent());
         String sessLabel = activeSess != null ? activeSess.getNamaSesi() : "sesi ini";
+        String title = "all_hadir".equals(bulkAction) ? "Tandai Semua Hadir?" : "Tandai Sisanya Alpa?";
+        String msg = "all_hadir".equals(bulkAction)
+                ? "Semua petugas aktif di " + sessLabel + " akan dicatat sebagai HADIR."
+                : "Petugas di " + sessLabel + " yang belum absen akan dicatat ALPA (3x Alpa otomatis dicoret).";
+
         new AlertDialog.Builder(this)
-                .setTitle("Tandai Semua Hadir?")
-                .setMessage("Semua petugas di " + sessLabel + " akan dicatat sebagai HADIR.")
-                .setPositiveButton("Ya, Tandai Hadir", (d, w) -> {
+                .setTitle(title)
+                .setMessage(msg)
+                .setPositiveButton("Ya, Lanjutkan", (d, w) -> {
                     Map<String, Object> body = new HashMap<>();
                     body.put("latihan_id", selectedLatihanId);
-                    body.put("bulk_action", "all_hadir");
+                    body.put("bulk_action", bulkAction);
                     if (activeSess != null) {
                         body.put("session_id", activeSess.getId());
                     }
-                    ApiClient.getBackendApi().submitMisaBesarAbsensi(sessionManager.getAuthHeader(), body)
-                            .enqueue(simpleReloadCallback("Semua petugas " + sessLabel + " berhasil dicatat hadir!"));
+                    sendAbsensiRequest(body);
                 })
                 .setNegativeButton("Batal", null)
                 .show();
-    }
-
-    private void launchQrScanner() {
-        if (selectedLatihanId == null) {
-            Toast.makeText(this, "Buat atau pilih sesi latihan terlebih dahulu sebelum scan QR.", Toast.LENGTH_LONG).show();
-            return;
-        }
-        IntentIntegrator integrator = new IntentIntegrator(this);
-        integrator.setPrompt("Sorot QR Kartu Latihan pada HP misdinar");
-        integrator.setBeepEnabled(true);
-        integrator.setOrientationLocked(false);
-        integrator.initiateScan();
-    }
-
-    @Override
-    protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
-        super.onActivityResult(requestCode, resultCode, data);
-        IntentResult result = IntentIntegrator.parseActivityResult(requestCode, resultCode, data);
-        if (result != null && result.getContents() != null && selectedLatihanId != null) {
-            Map<String, Object> body = new HashMap<>();
-            body.put("latihan_id", selectedLatihanId);
-            if (selectedSessionFilterId != null) {
-                body.put("session_id", selectedSessionFilterId);
-            }
-            body.put("qr_data", result.getContents().trim());
-
-            Toast.makeText(this, "Memproses QR Latihan...", Toast.LENGTH_SHORT).show();
-            ApiClient.getBackendApi().submitMisaBesarAbsensi(sessionManager.getAuthHeader(), body)
-                    .enqueue(new Callback<ResponseBody>() {
-                        @Override
-                        public void onResponse(@NonNull Call<ResponseBody> call, @NonNull Response<ResponseBody> response) {
-                            if (response.isSuccessful() && response.body() != null) {
-                                try {
-                                    JSONObject json = new JSONObject(response.body().string());
-                                    String msg = json.optString("message", "Absensi latihan tercatat!");
-                                    new AlertDialog.Builder(LatihanMisaBesarActivity.this)
-                                            .setTitle("✅ Absensi Latihan Berhasil")
-                                            .setMessage(msg)
-                                            .setPositiveButton("OK", null)
-                                            .show();
-                                    loadMisaBesarData();
-                                } catch (Exception e) {
-                                    loadMisaBesarData();
-                                }
-                            } else {
-                                String err = "QR Code tidak terdaftar di sesi latihan ini.";
-                                try {
-                                    if (response.errorBody() != null) {
-                                        err = new JSONObject(response.errorBody().string()).optString("error", err);
-                                    }
-                                } catch (Exception ignored) {}
-                                new AlertDialog.Builder(LatihanMisaBesarActivity.this)
-                                        .setTitle("⚠️ Verifikasi Gagal")
-                                        .setMessage(err)
-                                        .setPositiveButton("Tutup", null)
-                                        .show();
-                            }
-                        }
-
-                        @Override
-                        public void onFailure(@NonNull Call<ResponseBody> call, @NonNull Throwable t) {
-                            Toast.makeText(LatihanMisaBesarActivity.this, "Koneksi gagal: " + t.getMessage(), Toast.LENGTH_SHORT).show();
-                        }
-                    });
-        }
     }
 
     @Override
@@ -686,20 +643,68 @@ public class LatihanMisaBesarActivity extends AppCompatActivity implements MisaB
         body.put("petugas_id", petugasId);
         body.put("status_kehadiran", status);
         body.put("catatan", catatan);
+        sendAbsensiRequest(body);
+    }
 
+    private void sendAbsensiRequest(Map<String, Object> body) {
         ApiClient.getBackendApi().submitMisaBesarAbsensi(sessionManager.getAuthHeader(), body)
-                .enqueue(simpleReloadCallback(null));
+                .enqueue(new Callback<ResponseBody>() {
+                    @Override
+                    public void onResponse(@NonNull Call<ResponseBody> call, @NonNull Response<ResponseBody> response) {
+                        if (response.isSuccessful() && response.body() != null) {
+                            try {
+                                JSONObject json = new JSONObject(response.body().string());
+                                boolean autoDicoret = json.optBoolean("auto_dicoret", false);
+                                String msg = json.optString("message", "Absensi disimpan.");
+                                if (autoDicoret) {
+                                    new AlertDialog.Builder(LatihanMisaBesarActivity.this)
+                                            .setTitle("⚠️ Otomatis Dicoret (3x Alpa)")
+                                            .setMessage(msg)
+                                            .setPositiveButton("Mengerti", null)
+                                            .show();
+                                } else {
+                                    Toast.makeText(LatihanMisaBesarActivity.this, msg, Toast.LENGTH_SHORT).show();
+                                }
+                            } catch (Exception ignored) {}
+                            loadMisaBesarData();
+                        } else {
+                            Toast.makeText(LatihanMisaBesarActivity.this, "Gagal menyimpan absensi.", Toast.LENGTH_SHORT).show();
+                        }
+                    }
+
+                    @Override
+                    public void onFailure(@NonNull Call<ResponseBody> call, @NonNull Throwable t) {
+                        Toast.makeText(LatihanMisaBesarActivity.this, "Gangguan koneksi: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+                    }
+                });
     }
 
     @Override
     public void onDeletePetugas(MisaBesarResponse.MisaBesarPetugas petugas) {
         String nama = petugas.getProfile() != null ? petugas.getProfile().getNamaLengkap() : "petugas ini";
         new AlertDialog.Builder(this)
-                .setTitle("Hapus Petugas")
-                .setMessage("Hapus " + nama + " dari daftar petugas Misa Besar sesi ini?")
+                .setTitle("Hapus Permanen Petugas")
+                .setMessage("Hapus permanen " + nama + " dari daftar petugas sesi ini?")
                 .setPositiveButton("Hapus", (d, w) -> {
                     ApiClient.getBackendApi().deleteMisaBesarPetugas(sessionManager.getAuthHeader(), petugas.getId())
                             .enqueue(simpleReloadCallback("Petugas berhasil dihapus."));
+                })
+                .setNegativeButton("Batal", null)
+                .show();
+    }
+
+    @Override
+    public void onRestorePetugas(MisaBesarResponse.MisaBesarPetugas petugas) {
+        String nama = petugas.getProfile() != null ? petugas.getProfile().getNamaLengkap() : "petugas ini";
+        new AlertDialog.Builder(this)
+                .setTitle("Pulihkan Petugas")
+                .setMessage("Masukkan kembali " + nama + " ke daftar petugas aktif?")
+                .setPositiveButton("Pulihkan", (d, w) -> {
+                    Map<String, Object> body = new HashMap<>();
+                    body.put("id", petugas.getId());
+                    body.put("status_petugas", "aktif");
+                    ApiClient.getBackendApi().updateMisaBesarPetugas(sessionManager.getAuthHeader(), body)
+                            .enqueue(simpleReloadCallback(nama + " berhasil dipulihkan!"));
                 })
                 .setNegativeButton("Batal", null)
                 .show();
@@ -732,4 +737,3 @@ public class LatihanMisaBesarActivity extends AppCompatActivity implements MisaB
         };
     }
 }
-

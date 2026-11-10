@@ -31,6 +31,9 @@ export async function POST(request: Request) {
       session_id: string
       user_id: string
       posisi_tugas: string
+      status_petugas: 'aktif'
+      alasan_coret: string
+      dicoret_at: null
       catatan: string
     }> = []
 
@@ -42,6 +45,9 @@ export async function POST(request: Request) {
             session_id: sessionData.id,
             user_id: m.user_id,
             posisi_tugas: (m.posisi_tugas || posisi_tugas || 'Petugas Altar / Cadangan').trim(),
+            status_petugas: 'aktif',
+            alasan_coret: '',
+            dicoret_at: null,
             catatan: (m.catatan || '').trim(),
           })
         }
@@ -52,6 +58,9 @@ export async function POST(request: Request) {
         session_id: sessionData.id,
         user_id,
         posisi_tugas: (posisi_tugas || 'Petugas Altar / Cadangan').trim(),
+        status_petugas: 'aktif',
+        alasan_coret: '',
+        dicoret_at: null,
         catatan: (catatan || '').trim(),
       })
     } else {
@@ -89,18 +98,28 @@ export async function PATCH(request: Request) {
     if (auth.errorResponse) return auth.errorResponse
 
     const body = await request.json()
-    const { id, posisi_tugas, catatan } = body
+    const { id, posisi_tugas, catatan, status_petugas, alasan_coret } = body
 
     if (!id) {
       return NextResponse.json({ error: 'ID petugas wajib disertakan.' }, { status: 400 })
     }
 
+    const updatePayload: Record<string, any> = {}
+    if (posisi_tugas) updatePayload.posisi_tugas = posisi_tugas.trim()
+    if (catatan !== undefined) updatePayload.catatan = String(catatan).trim()
+    if (status_petugas === 'aktif') {
+      updatePayload.status_petugas = 'aktif'
+      updatePayload.alasan_coret = ''
+      updatePayload.dicoret_at = null
+    } else if (status_petugas === 'dicoret') {
+      updatePayload.status_petugas = 'dicoret'
+      updatePayload.alasan_coret = String(alasan_coret || 'Dicoret oleh pengurus').trim()
+      updatePayload.dicoret_at = new Date().toISOString()
+    }
+
     const { data: updated, error } = await (auth.adminSupabase as any)
       .from('misa_besar_petugas')
-      .update({
-        ...(posisi_tugas ? { posisi_tugas: posisi_tugas.trim() } : {}),
-        ...(catatan !== undefined ? { catatan: String(catatan).trim() } : {}),
-      })
+      .update(updatePayload)
       .eq('id', id)
       .select()
       .single()
@@ -111,7 +130,10 @@ export async function PATCH(request: Request) {
 
     return NextResponse.json({
       success: true,
-      message: 'Posisi tugas petugas berhasil diperbarui.',
+      message:
+        status_petugas === 'aktif'
+          ? 'Petugas berhasil dipulihkan ke daftar aktif.'
+          : 'Data petugas berhasil diperbarui.',
       petugas: updated,
     })
   } catch (err: any) {

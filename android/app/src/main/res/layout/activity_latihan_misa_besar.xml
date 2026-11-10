@@ -48,7 +48,7 @@
                         android:id="@+id/tvMbHeaderTitle"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Latihan Petugas Misa Besar"
+                        android:text="Absensi Latihan Misa Besar"
                         android:textColor="@color/primary"
                         android:textSize="17sp"
                         android:textStyle="bold" />
@@ -57,7 +57,7 @@
                         android:id="@+id/tvMbHeaderSub"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Natal, Pekan Suci &amp; Paskah SPMR"
+                        android:text="Khusus Pengurus • 3x Alpa Otomatis Dicoret"
                         android:textColor="@color/on_surface_variant"
                         android:textSize="11sp" />
                 </LinearLayout>
@@ -67,10 +67,9 @@
                     style="@style/Widget.Material3.Button.TonalButton"
                     android:layout_width="wrap_content"
                     android:layout_height="36dp"
-                    android:text="Setup 7 Misa"
+                    android:text="+ Tugas Misa"
                     android:textSize="11sp"
                     android:textStyle="bold"
-                    android:visibility="gone"
                     app:cornerRadius="10dp" />
             </LinearLayout>
 
@@ -103,7 +102,7 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Database Modul Misa Besar Belum Aktif"
+                        android:text="Database Modul Misa Besar Belum Diupdate"
                         android:textColor="@color/amber_800"
                         android:textSize="14sp"
                         android:textStyle="bold" />
@@ -112,80 +111,13 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="4dp"
-                        android:text="Jalankan skrip migrasi 20261110000000_misa_besar_latihan.sql di Supabase SQL Editor (atau salin langsung dari menu Pengurus Web)."
+                        android:text="Jalankan skrip migrasi terbaru di Supabase SQL Editor (atau salin langsung dari menu Pengurus Web)."
                         android:textColor="@color/on_surface_variant"
                         android:textSize="12sp" />
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
-            <!-- ANGGOTA PERSONAL QR KARTU LATIHAN -->
-            <com.google.android.material.card.MaterialCardView
-                android:id="@+id/cardMbAnggotaQr"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginHorizontal="16dp"
-                android:layout_marginTop="12dp"
-                android:visibility="gone"
-                app:cardBackgroundColor="@color/primary"
-                app:cardCornerRadius="22dp"
-                app:cardElevation="2dp">
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:gravity="center_horizontal"
-                    android:orientation="vertical"
-                    android:padding="18dp">
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="KARTU QR ABSEN LATIHAN"
-                        android:textColor="@color/primary_fixed"
-                        android:textSize="10sp"
-                        android:textStyle="bold" />
-
-                    <TextView
-                        android:id="@+id/tvMbMyName"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="4dp"
-                        android:text="Nama Anggota"
-                        android:textColor="@color/on_primary"
-                        android:textSize="16sp"
-                        android:textStyle="bold" />
-
-                    <ImageView
-                        android:id="@+id/ivMbMyQr"
-                        android:layout_width="170dp"
-                        android:layout_height="170dp"
-                        android:layout_marginTop="12dp"
-                        android:background="@color/surface"
-                        android:padding="8dp"
-                        android:contentDescription="QR Code Absen Latihan" />
-
-                    <TextView
-                        android:id="@+id/tvMbMyShortId"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="8dp"
-                        android:text="ID: -"
-                        android:textColor="@color/primary_fixed"
-                        android:textSize="12sp"
-                        android:textStyle="bold" />
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="4dp"
-                        android:gravity="center"
-                        android:text="Tunjukkan QR Code ini kepada Pengurus saat hadir latihan Misa Besar."
-                        android:textColor="@color/primary_fixed_dim"
-                        android:textSize="11sp" />
-                </LinearLayout>
-            </com.google.android.material.card.MaterialCardView>
-
-            <!-- 7 PERAYAAN SELECTOR CHIPS -->
+            <!-- PERAYAAN SELECTOR CHIPS (Natal / Paskah) -->
             <HorizontalScrollView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -210,7 +142,6 @@
                 android:orientation="vertical"
                 android:visibility="gone">
 
-                <!-- Latihan Selector & Scan Row -->
                 <com.google.android.material.card.MaterialCardView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
@@ -225,25 +156,49 @@
                         android:orientation="vertical"
                         android:padding="14dp">
 
-                        <TextView
-                            android:id="@+id/tvMbActiveEventInfo"
-                            android:layout_width="wrap_content"
+                        <LinearLayout
+                            android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:text="Perayaan"
-                            android:textColor="@color/primary"
-                            android:textSize="14sp"
-                            android:textStyle="bold" />
+                            android:gravity="center_vertical"
+                            android:orientation="horizontal">
 
-                        <TextView
-                            android:id="@+id/tvMbActiveLatihanInfo"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="2dp"
-                            android:text="Pilih atau buat sesi latihan"
-                            android:textColor="@color/on_surface_variant"
-                            android:textSize="11sp" />
+                            <LinearLayout
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:orientation="vertical">
 
-                        <!-- Row: Pilih Latihan & Buat Latihan -->
+                                <TextView
+                                    android:id="@+id/tvMbActiveEventInfo"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="Perayaan"
+                                    android:textColor="@color/primary"
+                                    android:textSize="14sp"
+                                    android:textStyle="bold" />
+
+                                <TextView
+                                    android:id="@+id/tvMbActiveLatihanInfo"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:layout_marginTop="2dp"
+                                    android:text="Pilih atau buat sesi latihan"
+                                    android:textColor="@color/on_surface_variant"
+                                    android:textSize="11sp" />
+                            </LinearLayout>
+
+                            <com.google.android.material.button.MaterialButton
+                                android:id="@+id/btnMbDeleteEvent"
+                                style="@style/Widget.Material3.Button.IconButton"
+                                android:layout_width="36dp"
+                                android:layout_height="36dp"
+                                app:icon="@drawable/ic_delete"
+                                app:iconTint="@color/error"
+                                app:iconSize="18dp"
+                                android:contentDescription="Hapus Perayaan" />
+                        </LinearLayout>
+
+                        <!-- Row 1: Pilih Latihan, + Latihan, + Pilih Nama -->
                         <LinearLayout
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
@@ -276,17 +231,18 @@
 
                             <com.google.android.material.button.MaterialButton
                                 android:id="@+id/btnMbAddPetugas"
-                                style="@style/Widget.Material3.Button.TonalButton"
                                 android:layout_width="wrap_content"
                                 android:layout_height="38dp"
                                 android:layout_marginStart="4dp"
-                                android:text="+ Petugas"
+                                android:backgroundTint="@color/secondary"
+                                android:text="+ Pilih Nama"
+                                android:textColor="@color/on_secondary"
                                 android:textSize="11sp"
                                 android:textStyle="bold"
                                 app:cornerRadius="10dp" />
                         </LinearLayout>
 
-                        <!-- Row: Scan QR & Paskah 2/3 Misa & Semua Hadir -->
+                        <!-- Row 2: Semua Hadir, Sisanya Alpa, Toggle Paskah 2/3 Misa -->
                         <LinearLayout
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
@@ -294,27 +250,12 @@
                             android:orientation="horizontal">
 
                             <com.google.android.material.button.MaterialButton
-                                android:id="@+id/btnMbScanQr"
-                                android:layout_width="0dp"
-                                android:layout_height="38dp"
-                                android:layout_weight="1"
-                                android:layout_marginEnd="4dp"
-                                android:backgroundTint="@color/secondary"
-                                android:text="Pindai QR Latihan"
-                                android:textColor="@color/on_secondary"
-                                android:textSize="11sp"
-                                android:textStyle="bold"
-                                app:cornerRadius="10dp"
-                                app:icon="@drawable/ic_qr_code"
-                                app:iconSize="16dp"
-                                app:iconTint="@color/on_secondary" />
-
-                            <com.google.android.material.button.MaterialButton
                                 android:id="@+id/btnMbAllHadir"
                                 style="@style/Widget.Material3.Button.TonalButton"
-                                android:layout_width="wrap_content"
-                                android:layout_height="38dp"
-                                android:layout_marginStart="4dp"
+                                android:layout_width="0dp"
+                                android:layout_height="36dp"
+                                android:layout_weight="1"
+                                android:layout_marginEnd="4dp"
                                 android:backgroundTint="@color/emerald_100"
                                 android:text="Semua Hadir"
                                 android:textColor="@color/emerald_800"
@@ -323,11 +264,25 @@
                                 app:cornerRadius="10dp" />
 
                             <com.google.android.material.button.MaterialButton
+                                android:id="@+id/btnMbRemainingAlpa"
+                                style="@style/Widget.Material3.Button.TonalButton"
+                                android:layout_width="0dp"
+                                android:layout_height="36dp"
+                                android:layout_weight="1"
+                                android:layout_marginStart="4dp"
+                                android:backgroundTint="@color/error_container"
+                                android:text="Sisanya Alpa"
+                                android:textColor="@color/on_error_container"
+                                android:textSize="11sp"
+                                android:textStyle="bold"
+                                app:cornerRadius="10dp" />
+
+                            <com.google.android.material.button.MaterialButton
                                 android:id="@+id/btnMbTogglePaskahCount"
                                 style="@style/Widget.Material3.Button.TonalButton"
                                 android:layout_width="wrap_content"
-                                android:layout_height="38dp"
-                                android:layout_marginStart="4dp"
+                                android:layout_height="36dp"
+                                android:layout_marginStart="6dp"
                                 android:text="2/3 Misa"
                                 android:textSize="11sp"
                                 android:textStyle="bold"
@@ -343,7 +298,7 @@
                             android:layout_marginTop="10dp"
                             android:background="@drawable/bg_card_low"
                             android:padding="10dp"
-                            android:text="Total: 0 | Hadir: 0 | Telat: 0 | Izin: 0 | Alpa: 0 | Belum: 0"
+                            android:text="Aktif: 0 | Hadir: 0 | Telat: 0 | Izin: 0 | Alpa: 0 | Dicoret: 0"
                             android:textColor="@color/primary"
                             android:textSize="11sp"
                             android:textStyle="bold" />
@@ -365,17 +320,37 @@
                 </HorizontalScrollView>
             </LinearLayout>
 
-            <!-- Daftar Petugas / Penugasan -->
-            <TextView
-                android:id="@+id/tvMbListTitle"
-                android:layout_width="wrap_content"
+            <!-- Toggle Aktif vs Dicoret Header -->
+            <LinearLayout
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginHorizontal="16dp"
-                android:layout_marginTop="14dp"
-                android:text="Daftar Petugas &amp; Absensi Latihan"
-                android:textColor="@color/primary"
-                android:textSize="14sp"
-                android:textStyle="bold" />
+                android:layout_marginTop="12dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:id="@+id/tvMbListTitle"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Daftar Petugas &amp; Presensi Latihan"
+                    android:textColor="@color/primary"
+                    android:textSize="14sp"
+                    android:textStyle="bold" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnMbToggleDicoretView"
+                    style="@style/Widget.Material3.Button.OutlinedButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="34dp"
+                    android:text="Dicoret (0)"
+                    android:textColor="@color/error"
+                    android:textSize="10sp"
+                    android:textStyle="bold"
+                    android:visibility="gone"
+                    app:cornerRadius="8dp" />
+            </LinearLayout>
 
             <TextView
                 android:id="@+id/tvMbEmpty"
@@ -400,4 +375,3 @@
         </LinearLayout>
     </androidx.core.widget.NestedScrollView>
 </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
-

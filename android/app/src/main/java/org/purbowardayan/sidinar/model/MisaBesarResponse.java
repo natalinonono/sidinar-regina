@@ -106,6 +106,12 @@ public class MisaBesarResponse {
         private String userId;
         @SerializedName("posisi_tugas")
         private String posisiTugas;
+        @SerializedName("status_petugas")
+        private String statusPetugas;
+        @SerializedName("alasan_coret")
+        private String alasanCoret;
+        @SerializedName("dicoret_at")
+        private String dicoretAt;
         @SerializedName("catatan")
         private String catatan;
         @SerializedName("profile")
@@ -118,6 +124,10 @@ public class MisaBesarResponse {
         public String getSessionId() { return sessionId; }
         public String getUserId() { return userId; }
         public String getPosisiTugas() { return posisiTugas; }
+        public String getStatusPetugas() { return statusPetugas != null ? statusPetugas : "aktif"; }
+        public boolean isDicoret() { return "dicoret".equalsIgnoreCase(statusPetugas); }
+        public String getAlasanCoret() { return alasanCoret; }
+        public String getDicoretAt() { return dicoretAt; }
         public String getCatatan() { return catatan; }
         public Profile getProfile() { return profile; }
         public MisaBesarSession getSession() { return session; }

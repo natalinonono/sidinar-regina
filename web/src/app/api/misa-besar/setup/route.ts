@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server'
 import { requirePengurusUser } from '@/lib/supabase/authGuard'
 import {
   MISA_BESAR_PRESETS,
+  NATAL_CODES,
+  PASKAH_CODES,
   getPresetByKode,
   buildLatihanSessionsList,
 } from '@/lib/utils/misaBesar'
@@ -12,18 +14,23 @@ export async function POST(request: Request) {
     if (auth.errorResponse) return auth.errorResponse
 
     const body = await request.json()
-    const { action = 'init_all_presets', tahun = new Date().getFullYear() } = body
+    const { action = 'init_all_presets', tahun = new Date().getFullYear(), paket = 'semua' } = body
     const admin = auth.adminSupabase
 
     if (action === 'init_all_presets') {
       const paskahJumlah = body.paskah_jumlah_sesi === 2 ? 2 : 3
       let createdCount = 0
 
-      for (const preset of MISA_BESAR_PRESETS) {
+      const targetPresets = MISA_BESAR_PRESETS.filter((p) => {
+        if (paket === 'natal') return NATAL_CODES.includes(p.kode_perayaan)
+        if (paket === 'paskah') return PASKAH_CODES.includes(p.kode_perayaan)
+        return true
+      })
+
+      for (const preset of targetPresets) {
         const targetCount =
           preset.kode_perayaan === 'paskah' ? paskahJumlah : preset.jumlah_sesi
 
-        // Cek apakah event tahun ini sudah ada
         const { data: existingEvent } = await (admin as any)
           .from('misa_besar_events')
           .select('id')
@@ -72,12 +79,19 @@ export async function POST(request: Request) {
         createdCount++
       }
 
+      const paketLabel =
+        paket === 'natal'
+          ? 'Paket Natal (Malam Natal & Natal)'
+          : paket === 'paskah'
+          ? 'Paket Paskah & Pekan Suci'
+          : 'Paket 7 Perayaan Misa Besar'
+
       return NextResponse.json({
         success: true,
         message:
           createdCount > 0
-            ? `Berhasil menyiapkan ${createdCount} paket Perayaan Misa Besar Tahun ${tahun} beserta seluruh sesi Misa/Ibadatnya!`
-            : `Seluruh 7 paket Perayaan Misa Besar Tahun ${tahun} sudah tersedia.`,
+            ? `Berhasil menyiapkan ${createdCount} perayaan dari ${paketLabel} Tahun ${tahun}!`
+            : `Seluruh perayaan pada ${paketLabel} Tahun ${tahun} sudah tersedia.`,
         created_count: createdCount,
       })
     }
@@ -172,7 +186,6 @@ export async function POST(request: Request) {
         ? preset.default_sessions(targetCount)
         : buildLatihanSessionsList(ev.jenis_sesi, targetCount)
 
-      // Add missing sessions if scaling up
       for (const tpl of desiredTemplates) {
         const exists = currentSessions.find((s: any) => s.urutan === tpl.urutan)
         if (!exists) {
@@ -186,7 +199,6 @@ export async function POST(request: Request) {
         }
       }
 
-      // Delete extra sessions if scaling down
       const extraIds = currentSessions
         .filter((s: any) => s.urutan > targetCount)
         .map((s: any) => s.id)
@@ -251,6 +263,39 @@ export async function DELETE(request: Request) {
 
     const { searchParams } = new URL(request.url)
     const eventId = searchParams.get('event_id')
+    const sessionId = searchParams.get('session_id')
+
+    if (sessionId) {
+      const { data: sess } = await (auth.adminSupabase as any)
+        .from('misa_besar_sessions')
+        .select('id, event_id')
+        .eq('id', sessionId)
+        .maybeSingle()
+
+      if (!sess) {
+        return NextResponse.json({ error: 'Sesi tidak ditemukan.' }, { status: 404 })
+      }
+
+      await (auth.adminSupabase as any)
+        .from('misa_besar_sessions')
+        .delete()
+        .eq('id', sessionId)
+
+      const { count } = await (auth.adminSupabase as any)
+        .from('misa_besar_sessions')
+        .select('*', { count: 'exact', head: true })
+        .eq('event_id', sess.event_id)
+
+      await (auth.adminSupabase as any)
+        .from('misa_besar_events')
+        .update({ jumlah_sesi: Math.max(1, count || 1) })
+        .eq('id', sess.event_id)
+
+      return NextResponse.json({
+        success: true,
+        message: 'Sesi Misa/Ibadat berhasil dihapus.',
+      })
+    }
 
     if (!eventId) {
       return NextResponse.json({ error: 'event_id wajib disertakan.' }, { status: 400 })
@@ -267,10 +312,9 @@ export async function DELETE(request: Request) {
 
     return NextResponse.json({
       success: true,
-      message: 'Perayaan Misa Besar berhasil dihapus.',
+      message: 'Perayaan Misa Besar beserta sesi dan daftar petugasnya berhasil dihapus.',
     })
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 500 })
   }
 }
-

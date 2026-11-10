@@ -22,6 +22,8 @@ interface AssignPetugasModalProps {
   onSuccess: () => void
 }
 
+const JENJANG_FILTERS = ['Semua', 'SD', 'SMP', 'SMA/K', 'Mahasiswa', 'Umum']
+
 export function AssignPetugasModal({
   isOpen,
   onClose,
@@ -32,6 +34,7 @@ export function AssignPetugasModal({
   onSuccess,
 }: AssignPetugasModalProps) {
   const [search, setSearch] = useState('')
+  const [jenjangFilter, setJenjangFilter] = useState('Semua')
   const [selectedMap, setSelectedMap] = useState<Record<string, string>>({})
   const [defaultPosisi, setDefaultPosisi] = useState<string>(
     LITURGICAL_POSITIONS[LITURGICAL_POSITIONS.length - 1].name
@@ -39,16 +42,21 @@ export function AssignPetugasModal({
   const [saving, setSaving] = useState(false)
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
 
-  const alreadyAssignedIds = useMemo(() => {
-    if (!session) return new Set<string>()
-    return new Set(
-      existingPetugas.filter((p) => p.session_id === session.id).map((p) => p.user_id)
-    )
+  const sessionExistingMap = useMemo(() => {
+    const map: Record<string, MisaBesarPetugas> = {}
+    if (!session) return map
+    for (const p of existingPetugas) {
+      if (p.session_id === session.id) {
+        map[p.user_id] = p
+      }
+    }
+    return map
   }, [existingPetugas, session])
 
   const filteredMembers = useMemo(() => {
     const q = search.toLowerCase().trim()
     return activeMembers.filter((m) => {
+      if (jenjangFilter !== 'Semua' && m.jenjang !== jenjangFilter) return false
       if (!q) return true
       return (
         m.nama_lengkap.toLowerCase().includes(q) ||
@@ -57,7 +65,7 @@ export function AssignPetugasModal({
         m.asal_wilayah_teks.toLowerCase().includes(q)
       )
     })
-  }, [activeMembers, search])
+  }, [activeMembers, search, jenjangFilter])
 
   if (!isOpen || !session) return null
 
@@ -84,7 +92,7 @@ export function AssignPetugasModal({
 
   const handleSave = async () => {
     if (selectedCount === 0) {
-      setErrorMsg('Pilih minimal 1 misdinar untuk ditambahkan.')
+      setErrorMsg('Klik minimal 1 nama anggota untuk dipilih menjadi petugas.')
       return
     }
 
@@ -114,6 +122,7 @@ export function AssignPetugasModal({
 
       setSelectedMap({})
       setSearch('')
+      setJenjangFilter('Semua')
       setSaving(false)
       onSuccess()
       onClose()
@@ -130,10 +139,10 @@ export function AssignPetugasModal({
         <div className="p-5 bg-gradient-to-r from-primary to-primary-container text-on-primary flex items-center justify-between">
           <div>
             <span className="text-[10px] uppercase tracking-widest font-bold text-on-primary/75">
-              {eventName}
+              {eventName} &bull; Pilih Nama Terpilih
             </span>
             <h3 className="font-headline font-bold text-base sm:text-lg">
-              Tambah Petugas &bull; {session.nama_sesi}
+              Klik Anggota untuk Bertugas &bull; {session.nama_sesi}
             </h3>
           </div>
           <button
@@ -146,7 +155,7 @@ export function AssignPetugasModal({
         </div>
 
         {/* Body */}
-        <div className="p-4 sm:p-5 flex flex-col gap-3.5 overflow-hidden flex-1">
+        <div className="p-4 sm:p-5 flex flex-col gap-3 overflow-hidden flex-1">
           {errorMsg && (
             <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-xs font-medium">
               {errorMsg}
@@ -157,7 +166,7 @@ export function AssignPetugasModal({
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="block text-[11px] font-bold text-on-surface-variant mb-1">
-                Cari Anggota Aktif
+                Cari Nama Anggota
               </label>
               <div className="relative">
                 <span className="material-symbols-outlined text-base text-on-surface-variant absolute left-3 top-1/2 -translate-y-1/2">
@@ -167,7 +176,7 @@ export function AssignPetugasModal({
                   type="text"
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  placeholder="Ketik nama, jenjang, wilayah..."
+                  placeholder="Ketik nama atau wilayah..."
                   className="w-full pl-9 pr-3 py-2 rounded-xl bg-surface-container-low border border-surface-container text-xs focus:outline-none focus:ring-1 focus:ring-primary"
                 />
               </div>
@@ -175,7 +184,7 @@ export function AssignPetugasModal({
 
             <div>
               <label className="block text-[11px] font-bold text-on-surface-variant mb-1">
-                Posisi Tugas Awal (Default)
+                Posisi Tugas Otomatis
               </label>
               <select
                 value={defaultPosisi}
@@ -191,40 +200,89 @@ export function AssignPetugasModal({
             </div>
           </div>
 
-          {/* Scrollable Members List */}
-          <div className="flex-1 overflow-y-auto border border-surface-container rounded-2xl divide-y divide-surface-container bg-surface-container-low/40 min-h-[240px]">
+          {/* Filter Jenjang Chips */}
+          <div className="flex flex-wrap gap-1.5">
+            {JENJANG_FILTERS.map((j) => (
+              <button
+                key={j}
+                type="button"
+                onClick={() => setJenjangFilter(j)}
+                className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-colors ${
+                  jenjangFilter === j
+                    ? 'bg-primary text-on-primary'
+                    : 'bg-surface-container-low text-on-surface-variant hover:bg-surface-container'
+                }`}
+              >
+                {j}
+              </button>
+            ))}
+          </div>
+
+          {/* Clickable 1-Tap Members List */}
+          <div className="flex-1 overflow-y-auto border border-surface-container rounded-2xl divide-y divide-surface-container bg-surface-container-low/30 min-h-[240px]">
             {filteredMembers.length === 0 ? (
               <div className="p-8 text-center text-xs text-on-surface-variant">
                 Tidak ada anggota aktif yang cocok dengan pencarian.
               </div>
             ) : (
               filteredMembers.map((member) => {
-                const isAlready = alreadyAssignedIds.has(member.id)
+                const existing = sessionExistingMap[member.id]
+                const isActiveAlready = existing && existing.status_petugas !== 'dicoret'
+                const wasDicoret = existing && existing.status_petugas === 'dicoret'
                 const isSelected = selectedMap[member.id] !== undefined
 
                 return (
                   <div
                     key={member.id}
-                    className={`p-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 transition-colors ${
-                      isSelected ? 'bg-primary-fixed/35' : 'hover:bg-surface-container-low'
+                    onClick={() => {
+                      if (!isActiveAlready) toggleMember(member.id)
+                    }}
+                    role="button"
+                    tabIndex={0}
+                    onKeyDown={(e) => {
+                      if ((e.key === 'Enter' || e.key === ' ') && !isActiveAlready) {
+                        e.preventDefault()
+                        toggleMember(member.id)
+                      }
+                    }}
+                    className={`p-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 transition-colors select-none ${
+                      isActiveAlready
+                        ? 'opacity-65 bg-surface-container-low/50 cursor-default'
+                        : isSelected
+                        ? 'bg-primary-fixed/50 cursor-pointer'
+                        : 'hover:bg-surface-container-low cursor-pointer'
                     }`}
                   >
-                    <label className="flex items-center gap-3 cursor-pointer flex-1">
-                      <input
-                        type="checkbox"
-                        checked={isSelected}
-                        disabled={isAlready}
-                        onChange={() => toggleMember(member.id)}
-                        className="w-4 h-4 rounded accent-primary cursor-pointer"
-                      />
+                    <div className="flex items-center gap-3 flex-1">
+                      <div
+                        className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 transition-all ${
+                          isActiveAlready
+                            ? 'bg-emerald-500 text-white'
+                            : isSelected
+                            ? 'bg-primary text-on-primary scale-105'
+                            : 'border-2 border-outline/40 bg-white'
+                        }`}
+                      >
+                        {(isActiveAlready || isSelected) && (
+                          <span className="material-symbols-outlined text-sm font-bold">
+                            check
+                          </span>
+                        )}
+                      </div>
+
                       <div className="flex flex-col">
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs font-bold text-on-surface">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="text-xs sm:text-sm font-bold text-on-surface">
                             {member.nama_lengkap}
                           </span>
-                          {isAlready && (
+                          {isActiveAlready && (
                             <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-bold">
-                              Sudah Terdaftar
+                              Sudah Bertugas
+                            </span>
+                          )}
+                          {wasDicoret && (
+                            <span className="px-2 py-0.5 rounded-full bg-rose-100 text-rose-800 text-[10px] font-bold">
+                              Pernah Dicoret (3x Alpa)
                             </span>
                           )}
                         </div>
@@ -232,11 +290,12 @@ export function AssignPetugasModal({
                           {member.nama_panggilan} &bull; {member.jenjang} &bull; {member.asal_wilayah_teks}
                         </span>
                       </div>
-                    </label>
+                    </div>
 
-                    {isSelected && (
+                    {isSelected && !isActiveAlready && (
                       <select
                         value={selectedMap[member.id]}
+                        onClick={(e) => e.stopPropagation()}
                         onChange={(e) => updateMemberPosition(member.id, e.target.value)}
                         className="px-2.5 py-1.5 rounded-xl bg-white border border-primary/30 text-[11px] font-semibold text-primary focus:outline-none"
                       >
@@ -256,8 +315,8 @@ export function AssignPetugasModal({
 
         {/* Footer */}
         <div className="p-4 bg-surface-container-low border-t border-surface-container flex items-center justify-between gap-3">
-          <span className="text-xs font-semibold text-on-surface-variant">
-            {selectedCount} anggota dipilih
+          <span className="text-xs font-bold text-primary">
+            {selectedCount} nama terpilih
           </span>
           <div className="flex items-center gap-2">
             <button
@@ -271,10 +330,10 @@ export function AssignPetugasModal({
               onClick={handleSave}
               disabled={saving || selectedCount === 0}
               type="button"
-              className="px-4 py-2 rounded-xl bg-primary hover:bg-primary-container text-on-primary text-xs font-bold flex items-center gap-1.5 disabled:opacity-50 transition-all shadow-xs"
+              className="px-5 py-2.5 rounded-xl bg-primary hover:bg-primary-container text-on-primary text-xs font-bold flex items-center gap-1.5 disabled:opacity-50 transition-all shadow-xs"
             >
-              <span className="material-symbols-outlined text-base">person_add</span>
-              <span>{saving ? 'Menyimpan...' : `Tambahkan (${selectedCount})`}</span>
+              <span className="material-symbols-outlined text-base">check_circle</span>
+              <span>{saving ? 'Menyimpan...' : `Simpan Petugas (${selectedCount})`}</span>
             </button>
           </div>
         </div>
@@ -282,4 +341,3 @@ export function AssignPetugasModal({
     </div>
   )
 }
-

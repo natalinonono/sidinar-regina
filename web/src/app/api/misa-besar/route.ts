@@ -1,12 +1,13 @@
 import { NextResponse } from 'next/server'
-import { requireAuthenticatedUser } from '@/lib/supabase/authGuard'
+import { requirePengurusUser } from '@/lib/supabase/authGuard'
 import { isTableMissingError, MISA_BESAR_MIGRATION_SQL } from '@/lib/utils/misaBesar'
 
 export const dynamic = 'force-dynamic'
 
 export async function GET(request: Request) {
   try {
-    const auth = await requireAuthenticatedUser()
+    // Hanya Pengurus aktif yang dapat mengakses data latihan & petugas Misa Besar
+    const auth = await requirePengurusUser()
     if (auth.errorResponse) return auth.errorResponse
 
     const { searchParams } = new URL(request.url)
@@ -30,7 +31,7 @@ export async function GET(request: Request) {
           success: false,
           needs_migration: true,
           migration_sql: MISA_BESAR_MIGRATION_SQL,
-          is_pengurus: auth.isPengurus,
+          is_pengurus: true,
           tahun,
           events: [],
           absensi: [],
@@ -62,43 +63,40 @@ export async function GET(request: Request) {
           .order('jam_mulai', { ascending: true }),
         (admin as any)
           .from('misa_besar_petugas')
-          .select('*, profile:profiles(id, nama_lengkap, nama_panggilan, jenjang, asal_wilayah_teks, no_telepon, email, role, status)')
+          .select(
+            'id, event_id, session_id, user_id, posisi_tugas, status_petugas, alasan_coret, dicoret_at, catatan, created_at, profile:profiles(id, nama_lengkap, nama_panggilan, jenjang, asal_wilayah_teks, no_telepon, email, role, status)'
+          )
           .in('event_id', eventIds)
           .order('created_at', { ascending: true }),
       ])
+
+      if (petugasRes.error && isTableMissingError(petugasRes.error)) {
+        return NextResponse.json({
+          success: false,
+          needs_migration: true,
+          migration_sql: MISA_BESAR_MIGRATION_SQL,
+          is_pengurus: true,
+          tahun,
+          events: [],
+          absensi: [],
+        })
+      }
 
       sessions = sessionsRes.data || []
       latihan = latihanRes.data || []
       petugas = petugasRes.data || []
 
-      // Privacy masking if caller is not Pengurus
-      if (!auth.isPengurus) {
-        petugas = petugas.map((p: any) => {
-          if (p.profile && p.user_id !== auth.user!.id) {
-            const { no_telepon, email, ...safeProfile } = p.profile
-            return { ...p, profile: safeProfile }
-          }
-          return p
-        })
-      }
-
       const latihanIds = latihan.map((l: any) => l.id)
       if (latihanIds.length > 0) {
-        let absQuery = (admin as any)
+        const { data: absData } = await (admin as any)
           .from('misa_besar_absensi')
           .select('*')
           .in('latihan_id', latihanIds)
-
-        if (!auth.isPengurus) {
-          absQuery = absQuery.eq('user_id', auth.user!.id)
-        }
-
-        const { data: absData } = await absQuery
         absensi = absData || []
       }
     }
 
-    // Nest sessions, latihan, and petugas neatly under their respective events
+    // Nest sessions, latihan, and petugas cleanly under their respective events
     const enrichedEvents = events.map((ev: any) => {
       const evSessions = sessions.filter((s) => s.event_id === ev.id)
       const evLatihan = latihan.filter((l) => l.event_id === ev.id)
@@ -106,6 +104,7 @@ export async function GET(request: Request) {
         .filter((p) => p.event_id === ev.id)
         .map((p) => ({
           ...p,
+          status_petugas: p.status_petugas || 'aktif',
           session: evSessions.find((s) => s.id === p.session_id) || null,
         }))
 
@@ -117,26 +116,22 @@ export async function GET(request: Request) {
       }
     })
 
-    // Include active members list only for pengurus
-    let activeMembers: any[] | undefined = undefined
-    if (auth.isPengurus) {
-      const { data: membersData } = await (admin as any)
-        .from('profiles')
-        .select('id, nama_lengkap, nama_panggilan, jenjang, asal_wilayah_teks, no_telepon')
-        .eq('status', 'aktif')
-        .order('nama_lengkap', { ascending: true })
-      activeMembers = membersData || []
-    }
+    // Include active members list for pengurus selection ("tinggal klik tok")
+    const { data: membersData } = await (admin as any)
+      .from('profiles')
+      .select('id, nama_lengkap, nama_panggilan, jenjang, asal_wilayah_teks, no_telepon')
+      .eq('status', 'aktif')
+      .order('nama_lengkap', { ascending: true })
 
     return NextResponse.json(
       {
         success: true,
         needs_migration: false,
-        is_pengurus: auth.isPengurus,
+        is_pengurus: true,
         tahun,
         events: enrichedEvents,
         absensi,
-        active_members: activeMembers,
+        active_members: membersData || [],
       },
       {
         headers: {
@@ -151,4 +146,3 @@ export async function GET(request: Request) {
     )
   }
 }
-

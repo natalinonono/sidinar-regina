@@ -104,8 +104,20 @@ public interface BackendApi {
             @Body Map<String, Object> body
     );
 
+    @DELETE("api/misa-besar/setup")
+    Call<ResponseBody> deleteMisaBesarEvent(
+            @Header("Authorization") String auth,
+            @Query("event_id") String eventId
+    );
+
     @POST("api/misa-besar/petugas")
     Call<ResponseBody> addMisaBesarPetugas(
+            @Header("Authorization") String auth,
+            @Body Map<String, Object> body
+    );
+
+    @PATCH("api/misa-besar/petugas")
+    Call<ResponseBody> updateMisaBesarPetugas(
             @Header("Authorization") String auth,
             @Body Map<String, Object> body
     );

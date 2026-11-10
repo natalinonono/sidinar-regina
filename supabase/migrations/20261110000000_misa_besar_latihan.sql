@@ -1,9 +1,10 @@
 -- ==============================================================================
--- SIDINAR REGINA - FITUR ABSENSI LATIHAN PETUGAS MISA BESAR
+-- SIDINAR REGINA - FITUR ABSENSI LATIHAN PETUGAS MISA BESAR (KHUSUS PENGURUS)
 -- File: 20261110000000_misa_besar_latihan.sql
 -- Perayaan: Malam Natal (2 Misa), Natal (2 Misa), Minggu Palma (3 Misa),
 --           Kamis Putih (2 Misa), Jumat Agung (3 Ibadat), Malam Paskah (2 Misa),
 --           Paskah (2/3 Misa)
+-- Aturan: 3x tidak hadir latihan tanpa keterangan (Alpa) -> otomatis dicoret
 -- ==============================================================================
 
 -- 1. TABEL MASTER PERAYAAN MISA BESAR
@@ -28,7 +29,7 @@ CREATE TABLE IF NOT EXISTS public.misa_besar_sessions (
     id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
     event_id UUID REFERENCES public.misa_besar_events(id) ON DELETE CASCADE NOT NULL,
     urutan INT NOT NULL CHECK (urutan >= 1),
-    nama_sesi TEXT NOT NULL, -- Contoh: 'Misa 1 (Sore)', 'Ibadat 2 (Sore)'
+    nama_sesi TEXT NOT NULL,
     tanggal_misa DATE,
     jam_mulai TEXT NOT NULL DEFAULT '17:00',
     kuota_petugas INT NOT NULL DEFAULT 16,
@@ -43,6 +44,9 @@ CREATE TABLE IF NOT EXISTS public.misa_besar_petugas (
     session_id UUID REFERENCES public.misa_besar_sessions(id) ON DELETE CASCADE NOT NULL,
     user_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE NOT NULL,
     posisi_tugas TEXT NOT NULL DEFAULT 'Petugas Altar / Cadangan',
+    status_petugas TEXT NOT NULL DEFAULT 'aktif' CHECK (status_petugas IN ('aktif', 'dicoret')),
+    alasan_coret TEXT DEFAULT '',
+    dicoret_at TIMESTAMPTZ,
     catatan TEXT DEFAULT '',
     created_at TIMESTAMPTZ DEFAULT NOW(),
     UNIQUE(session_id, user_id)
@@ -52,7 +56,7 @@ CREATE TABLE IF NOT EXISTS public.misa_besar_petugas (
 CREATE TABLE IF NOT EXISTS public.misa_besar_latihan (
     id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
     event_id UUID REFERENCES public.misa_besar_events(id) ON DELETE CASCADE NOT NULL,
-    session_id UUID REFERENCES public.misa_besar_sessions(id) ON DELETE SET NULL, -- NULL = Latihan Gabungan seluruh sesi perayaan
+    session_id UUID REFERENCES public.misa_besar_sessions(id) ON DELETE SET NULL,
     judul_latihan TEXT NOT NULL,
     tanggal_latihan DATE NOT NULL DEFAULT CURRENT_DATE,
     jam_mulai TEXT NOT NULL DEFAULT '16:00',
@@ -85,36 +89,19 @@ CREATE INDEX IF NOT EXISTS idx_mb_latihan_event ON public.misa_besar_latihan(eve
 CREATE INDEX IF NOT EXISTS idx_mb_absensi_latihan ON public.misa_besar_absensi(latihan_id);
 CREATE INDEX IF NOT EXISTS idx_mb_absensi_user ON public.misa_besar_absensi(user_id);
 
--- 7. ROW LEVEL SECURITY (RLS)
+-- 7. ROW LEVEL SECURITY (RLS): KHUSUS PENGURUS AKTIF
 ALTER TABLE public.misa_besar_events ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.misa_besar_sessions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.misa_besar_petugas ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.misa_besar_latihan ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.misa_besar_absensi ENABLE ROW LEVEL SECURITY;
 
--- Policy SELECT:
 DROP POLICY IF EXISTS "Pengguna terautentikasi dapat melihat daftar perayaan misa besar" ON public.misa_besar_events;
-CREATE POLICY "Pengguna terautentikasi dapat melihat daftar perayaan misa besar"
-ON public.misa_besar_events FOR SELECT TO authenticated USING (true);
-
 DROP POLICY IF EXISTS "Pengguna terautentikasi dapat melihat sesi misa besar" ON public.misa_besar_sessions;
-CREATE POLICY "Pengguna terautentikasi dapat melihat sesi misa besar"
-ON public.misa_besar_sessions FOR SELECT TO authenticated USING (true);
-
 DROP POLICY IF EXISTS "Pengguna terautentikasi dapat melihat jadwal latihan misa besar" ON public.misa_besar_latihan;
-CREATE POLICY "Pengguna terautentikasi dapat melihat jadwal latihan misa besar"
-ON public.misa_besar_latihan FOR SELECT TO authenticated USING (true);
-
 DROP POLICY IF EXISTS "Pengguna terautentikasi dapat melihat daftar petugas misa besar" ON public.misa_besar_petugas;
-CREATE POLICY "Pengguna terautentikasi dapat melihat daftar petugas misa besar"
-ON public.misa_besar_petugas FOR SELECT TO authenticated USING (true);
-
 DROP POLICY IF EXISTS "Anggota dapat melihat absensi latihannya sendiri atau pengurus melihat semua" ON public.misa_besar_absensi;
-CREATE POLICY "Anggota dapat melihat absensi latihannya sendiri atau pengurus melihat semua"
-ON public.misa_besar_absensi FOR SELECT TO authenticated
-USING (user_id = auth.uid() OR public.is_pengurus());
 
--- Policy INSERT / UPDATE / DELETE: HANYA PENGURUS AKTIF
 DROP POLICY IF EXISTS "Hanya pengurus yang dapat mengelola perayaan misa besar" ON public.misa_besar_events;
 CREATE POLICY "Hanya pengurus yang dapat mengelola perayaan misa besar"
 ON public.misa_besar_events FOR ALL TO authenticated
@@ -141,23 +128,8 @@ ON public.misa_besar_absensi FOR ALL TO authenticated
 USING (public.is_pengurus()) WITH CHECK (public.is_pengurus());
 
 -- 8. AKTIFKAN SUPABASE REALTIME (IDEMPOTENT)
-DO $$ BEGIN
-    ALTER PUBLICATION supabase_realtime ADD TABLE public.misa_besar_events;
-EXCEPTION WHEN duplicate_object THEN null; END $$;
-
-DO $$ BEGIN
-    ALTER PUBLICATION supabase_realtime ADD TABLE public.misa_besar_sessions;
-EXCEPTION WHEN duplicate_object THEN null; END $$;
-
-DO $$ BEGIN
-    ALTER PUBLICATION supabase_realtime ADD TABLE public.misa_besar_petugas;
-EXCEPTION WHEN duplicate_object THEN null; END $$;
-
-DO $$ BEGIN
-    ALTER PUBLICATION supabase_realtime ADD TABLE public.misa_besar_latihan;
-EXCEPTION WHEN duplicate_object THEN null; END $$;
-
-DO $$ BEGIN
-    ALTER PUBLICATION supabase_realtime ADD TABLE public.misa_besar_absensi;
-EXCEPTION WHEN duplicate_object THEN null; END $$;
-
+DO $$ BEGIN ALTER PUBLICATION supabase_realtime ADD TABLE public.misa_besar_events; EXCEPTION WHEN duplicate_object THEN null; END $$;
+DO $$ BEGIN ALTER PUBLICATION supabase_realtime ADD TABLE public.misa_besar_sessions; EXCEPTION WHEN duplicate_object THEN null; END $$;
+DO $$ BEGIN ALTER PUBLICATION supabase_realtime ADD TABLE public.misa_besar_petugas; EXCEPTION WHEN duplicate_object THEN null; END $$;
+DO $$ BEGIN ALTER PUBLICATION supabase_realtime ADD TABLE public.misa_besar_latihan; EXCEPTION WHEN duplicate_object THEN null; END $$;
+DO $$ BEGIN ALTER PUBLICATION supabase_realtime ADD TABLE public.misa_besar_absensi; EXCEPTION WHEN duplicate_object THEN null; END $$;

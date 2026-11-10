@@ -47,6 +47,9 @@ export interface MisaBesarPetugas {
   session_id: string
   user_id: string
   posisi_tugas: string
+  status_petugas?: 'aktif' | 'dicoret'
+  alasan_coret?: string
+  dicoret_at?: string | null
   catatan: string
   created_at: string
   profile?: Partial<Profile> | null

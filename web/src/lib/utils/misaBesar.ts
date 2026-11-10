@@ -125,6 +125,15 @@ export const MISA_BESAR_PRESETS: MisaBesarPreset[] = [
   },
 ]
 
+export const NATAL_CODES: KodePerayaanMisaBesar[] = ['malam_natal', 'natal']
+export const PASKAH_CODES: KodePerayaanMisaBesar[] = [
+  'minggu_palma',
+  'kamis_putih',
+  'jumat_agung',
+  'malam_paskah',
+  'paskah',
+]
+
 export function getPresetByKode(kode: string): MisaBesarPreset | undefined {
   return MISA_BESAR_PRESETS.find((p) => p.kode_perayaan === kode)
 }
@@ -135,9 +144,12 @@ export function isTableMissingError(error: any): boolean {
   const code = String(error.code || '').toUpperCase()
   return (
     code === '42P01' ||
+    code === '42703' ||
     code === 'PGRST205' ||
+    code === 'PGRST204' ||
     msg.includes('does not exist') ||
     msg.includes('could not find the table') ||
+    msg.includes('could not find the') ||
     msg.includes('schema cache')
   )
 }
@@ -195,10 +207,18 @@ CREATE TABLE IF NOT EXISTS public.misa_besar_petugas (
     session_id UUID REFERENCES public.misa_besar_sessions(id) ON DELETE CASCADE NOT NULL,
     user_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE NOT NULL,
     posisi_tugas TEXT NOT NULL DEFAULT 'Petugas Altar / Cadangan',
+    status_petugas TEXT NOT NULL DEFAULT 'aktif' CHECK (status_petugas IN ('aktif', 'dicoret')),
+    alasan_coret TEXT DEFAULT '',
+    dicoret_at TIMESTAMPTZ,
     catatan TEXT DEFAULT '',
     created_at TIMESTAMPTZ DEFAULT NOW(),
     UNIQUE(session_id, user_id)
 );
+
+ALTER TABLE public.misa_besar_petugas
+    ADD COLUMN IF NOT EXISTS status_petugas TEXT NOT NULL DEFAULT 'aktif' CHECK (status_petugas IN ('aktif', 'dicoret')),
+    ADD COLUMN IF NOT EXISTS alasan_coret TEXT DEFAULT '',
+    ADD COLUMN IF NOT EXISTS dicoret_at TIMESTAMPTZ;
 
 CREATE TABLE IF NOT EXISTS public.misa_besar_latihan (
     id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
@@ -234,15 +254,10 @@ ALTER TABLE public.misa_besar_latihan ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.misa_besar_absensi ENABLE ROW LEVEL SECURITY;
 
 DROP POLICY IF EXISTS "Pengguna terautentikasi dapat melihat daftar perayaan misa besar" ON public.misa_besar_events;
-CREATE POLICY "Pengguna terautentikasi dapat melihat daftar perayaan misa besar" ON public.misa_besar_events FOR SELECT TO authenticated USING (true);
 DROP POLICY IF EXISTS "Pengguna terautentikasi dapat melihat sesi misa besar" ON public.misa_besar_sessions;
-CREATE POLICY "Pengguna terautentikasi dapat melihat sesi misa besar" ON public.misa_besar_sessions FOR SELECT TO authenticated USING (true);
 DROP POLICY IF EXISTS "Pengguna terautentikasi dapat melihat jadwal latihan misa besar" ON public.misa_besar_latihan;
-CREATE POLICY "Pengguna terautentikasi dapat melihat jadwal latihan misa besar" ON public.misa_besar_latihan FOR SELECT TO authenticated USING (true);
 DROP POLICY IF EXISTS "Pengguna terautentikasi dapat melihat daftar petugas misa besar" ON public.misa_besar_petugas;
-CREATE POLICY "Pengguna terautentikasi dapat melihat daftar petugas misa besar" ON public.misa_besar_petugas FOR SELECT TO authenticated USING (true);
 DROP POLICY IF EXISTS "Anggota dapat melihat absensi latihannya sendiri atau pengurus melihat semua" ON public.misa_besar_absensi;
-CREATE POLICY "Anggota dapat melihat absensi latihannya sendiri atau pengurus melihat semua" ON public.misa_besar_absensi FOR SELECT TO authenticated USING (user_id = auth.uid() OR public.is_pengurus());
 
 DROP POLICY IF EXISTS "Hanya pengurus yang dapat mengelola perayaan misa besar" ON public.misa_besar_events;
 CREATE POLICY "Hanya pengurus yang dapat mengelola perayaan misa besar" ON public.misa_besar_events FOR ALL TO authenticated USING (public.is_pengurus()) WITH CHECK (public.is_pengurus());

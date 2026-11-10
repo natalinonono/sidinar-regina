@@ -9,12 +9,11 @@ import {
   MisaBesarSession,
   LatihanAttendanceStatus,
 } from '@/types/misaBesar'
-import { MISA_BESAR_PRESETS } from '@/lib/utils/misaBesar'
+import { MISA_BESAR_PRESETS, NATAL_CODES, PASKAH_CODES } from '@/lib/utils/misaBesar'
 import { LITURGICAL_POSITIONS } from '@/lib/utils/positions'
 import { AssignPetugasModal } from '@/components/misa-besar/AssignPetugasModal'
 import { LatihanModal } from '@/components/misa-besar/LatihanModal'
 import { SqlMigrationNotice } from '@/components/misa-besar/SqlMigrationNotice'
-import ScannerModal from '@/components/ScannerModal'
 
 const STATUS_BADGE_MAP: Record<
   LatihanAttendanceStatus,
@@ -67,12 +66,14 @@ export default function PengurusLatihanMisaBesarPage() {
   const [selectedLatihanId, setSelectedLatihanId] = useState<string | null>(null)
   const [rekapScope, setRekapScope] = useState<'session' | 'event'>('session')
   const [searchTerm, setSearchTerm] = useState('')
+  const [showDicoretList, setShowDicoretList] = useState(true)
 
   // Setup & Action States
   const [paskahPresetCount, setPaskahPresetCount] = useState<2 | 3>(3)
+  const [showAddEventModal, setShowAddEventModal] = useState(false)
   const [busyAction, setBusyAction] = useState<string | null>(null)
   const [feedbackBanner, setFeedbackBanner] = useState<{
-    type: 'success' | 'error'
+    type: 'success' | 'error' | 'warning'
     text: string
   } | null>(null)
 
@@ -80,7 +81,6 @@ export default function PengurusLatihanMisaBesarPage() {
   const [assignSession, setAssignSession] = useState<MisaBesarSession | null>(null)
   const [showLatihanModal, setShowLatihanModal] = useState(false)
   const [editingLatihan, setEditingLatihan] = useState<MisaBesarLatihan | null>(null)
-  const [showQrScanner, setShowQrScanner] = useState(false)
   const [editingSession, setEditingSession] = useState<MisaBesarSession | null>(null)
   const [sessionForm, setSessionForm] = useState({
     nama_sesi: '',
@@ -89,9 +89,9 @@ export default function PengurusLatihanMisaBesarPage() {
     kuota_petugas: 16,
   })
 
-  const showToast = (type: 'success' | 'error', text: string) => {
+  const showToast = (type: 'success' | 'error' | 'warning', text: string) => {
     setFeedbackBanner({ type, text })
-    setTimeout(() => setFeedbackBanner(null), 5000)
+    setTimeout(() => setFeedbackBanner(null), 6500)
   }
 
   const loadData = useCallback(async () => {
@@ -172,20 +172,17 @@ export default function PengurusLatihanMisaBesarPage() {
     return eventSessions.find((s) => s.id === selectedSessionId) || eventSessions[0] || null
   }, [eventSessions, selectedSessionId])
 
-  // Latihan yang berlaku untuk sesi Misa/Ibadat terpilih (khusus sesi ini, atau gabungan)
   const visibleLatihan = useMemo(() => {
     if (!selectedSession) return eventLatihan
     return [...eventLatihan]
       .filter((l) => !l.session_id || l.session_id === selectedSession.id)
       .sort((a, b) => {
-        // Prioritaskan latihan spesifik sesi ini di urutan depan
         const aSpec = a.session_id === selectedSession.id ? 0 : 1
         const bSpec = b.session_id === selectedSession.id ? 0 : 1
         return aSpec - bSpec
       })
   }, [eventLatihan, selectedSession])
 
-  // Auto-select first relevant latihan when switching event or session
   useEffect(() => {
     if (visibleLatihan.length === 0) {
       setSelectedLatihanId(null)
@@ -198,25 +195,45 @@ export default function PengurusLatihanMisaBesarPage() {
     return visibleLatihan.find((l) => l.id === selectedLatihanId) || visibleLatihan[0] || null
   }, [visibleLatihan, selectedLatihanId])
 
-  // Petugas KHUSUS untuk Misa/Ibadat yang sedang dipilih
-  const sessionPetugas = useMemo(() => {
+  // Hitung total Alpa sepanjang seluruh pertemuan latihan per petugas_id
+  const alpaCountMap = useMemo(() => {
+    const map: Record<string, number> = {}
+    for (const a of absensiList) {
+      if (a.status_kehadiran === 'alpa') {
+        map[a.petugas_id] = (map[a.petugas_id] || 0) + 1
+      }
+    }
+    return map
+  }, [absensiList])
+
+  // Petugas KHUSUS sesi terpilih, dipisah antara Aktif dan Dicoret (3x Alpa)
+  const sessionAllPetugas = useMemo(() => {
     if (!selectedSession) return []
     return eventPetugas.filter((p) => p.session_id === selectedSession.id)
   }, [eventPetugas, selectedSession])
 
-  const visiblePetugasForLatihan = useMemo(() => {
-    if (!searchTerm.trim()) return sessionPetugas
+  const activeSessionPetugas = useMemo(
+    () => sessionAllPetugas.filter((p) => p.status_petugas !== 'dicoret'),
+    [sessionAllPetugas]
+  )
+
+  const dicoretSessionPetugas = useMemo(
+    () => sessionAllPetugas.filter((p) => p.status_petugas === 'dicoret'),
+    [sessionAllPetugas]
+  )
+
+  const visibleActivePetugas = useMemo(() => {
+    if (!searchTerm.trim()) return activeSessionPetugas
     const q = searchTerm.toLowerCase()
-    return sessionPetugas.filter(
+    return activeSessionPetugas.filter(
       (p) =>
         p.profile?.nama_lengkap?.toLowerCase().includes(q) ||
         p.profile?.nama_panggilan?.toLowerCase().includes(q) ||
         p.posisi_tugas.toLowerCase().includes(q) ||
         p.profile?.asal_wilayah_teks?.toLowerCase().includes(q)
     )
-  }, [sessionPetugas, searchTerm])
+  }, [activeSessionPetugas, searchTerm])
 
-  // Map absensi by petugas_id for the currently selected latihan
   const absensiMapForSelectedLatihan = useMemo(() => {
     const map: Record<string, MisaBesarAbsensi> = {}
     if (!selectedLatihan) return map
@@ -228,14 +245,13 @@ export default function PengurusLatihanMisaBesarPage() {
     return map
   }, [absensiList, selectedLatihan])
 
-  // Summary stats khusus untuk Misa/Ibadat terpilih
   const latihanStats = useMemo(() => {
     let hadir = 0
     let terlambat = 0
     let izin = 0
     let alpa = 0
     let belum = 0
-    for (const p of sessionPetugas) {
+    for (const p of activeSessionPetugas) {
       const rec = absensiMapForSelectedLatihan[p.id]
       if (!rec) belum++
       else if (rec.status_kehadiran === 'hadir') hadir++
@@ -243,31 +259,97 @@ export default function PengurusLatihanMisaBesarPage() {
       else if (rec.status_kehadiran === 'izin') izin++
       else if (rec.status_kehadiran === 'alpa') alpa++
     }
-    return { total: sessionPetugas.length, hadir, terlambat, izin, alpa, belum }
-  }, [sessionPetugas, absensiMapForSelectedLatihan])
+    return {
+      total: activeSessionPetugas.length,
+      dicoret: dicoretSessionPetugas.length,
+      hadir,
+      terlambat,
+      izin,
+      alpa,
+      belum,
+    }
+  }, [activeSessionPetugas, dicoretSessionPetugas, absensiMapForSelectedLatihan])
 
-  // Handlers
-  const handleInitAllPresets = async () => {
-    setBusyAction('init_presets')
+  // Handlers Setup Perayaan (Pilih / Tambah / Hapus)
+  const handleInitPresetPaket = async (paket: 'semua' | 'natal' | 'paskah') => {
+    setBusyAction(`init_${paket}`)
     try {
       const res = await fetch('/api/misa-besar/setup', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           action: 'init_all_presets',
+          paket,
           tahun,
           paskah_jumlah_sesi: paskahPresetCount,
         }),
       })
       const data = await res.json()
       if (!res.ok) {
-        showToast('error', data.error || 'Gagal membuat paket Misa Besar.')
+        showToast('error', data.error || 'Gagal menyiapkan perayaan Misa Besar.')
+      } else {
+        showToast('success', data.message)
+        setShowAddEventModal(false)
+        await loadData()
+      }
+    } catch (err: any) {
+      showToast('error', err.message || 'Gagal memproses.')
+    } finally {
+      setBusyAction(null)
+    }
+  }
+
+  const handleAddSinglePreset = async (kodePerayaan: string) => {
+    setBusyAction(`single_${kodePerayaan}`)
+    try {
+      const res = await fetch('/api/misa-besar/setup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'create_single_preset',
+          kode_perayaan: kodePerayaan,
+          jumlah_sesi: kodePerayaan === 'paskah' ? paskahPresetCount : undefined,
+          tahun,
+        }),
+      })
+      const data = await res.json()
+      if (!res.ok) {
+        showToast('error', data.error || 'Gagal menambahkan perayaan.')
+      } else {
+        showToast('success', data.message)
+        if (data.event?.id) setSelectedEventId(data.event.id)
+        setShowAddEventModal(false)
+        await loadData()
+      }
+    } catch (err: any) {
+      showToast('error', err.message)
+    } finally {
+      setBusyAction(null)
+    }
+  }
+
+  const handleDeleteEvent = async (ev: MisaBesarEvent) => {
+    if (
+      !window.confirm(
+        `Hapus tugas perayaan "${ev.nama_perayaan} ${ev.tahun}" beserta seluruh sesi, daftar petugas, dan catatan latihannya?`
+      )
+    ) {
+      return
+    }
+    setBusyAction(`del_ev_${ev.id}`)
+    try {
+      const res = await fetch(`/api/misa-besar/setup?event_id=${ev.id}`, {
+        method: 'DELETE',
+      })
+      const data = await res.json()
+      if (!res.ok) {
+        showToast('error', data.error || 'Gagal menghapus perayaan.')
       } else {
         showToast('success', data.message)
         await loadData()
       }
     } catch (err: any) {
-      showToast('error', err.message || 'Gagal memproses.')
+      showToast('error', err.message)
     } finally {
       setBusyAction(null)
     }
@@ -331,6 +413,9 @@ export default function PengurusLatihanMisaBesarPage() {
       if (!res.ok) {
         showToast('error', data.error || 'Gagal menyimpan absensi.')
       } else {
+        if (data.auto_dicoret) {
+          showToast('warning', data.message)
+        }
         await loadData()
       }
     } catch (err: any) {
@@ -344,8 +429,8 @@ export default function PengurusLatihanMisaBesarPage() {
     if (!selectedLatihan || !selectedSession) return
     const label =
       bulkAction === 'all_hadir'
-        ? `Tandai SELURUH petugas di ${selectedSession.nama_sesi} sebagai HADIR?`
-        : `Tandai seluruh petugas yang BELUM ABSEN di ${selectedSession.nama_sesi} sebagai ALPA?`
+        ? `Tandai SELURUH petugas aktif di ${selectedSession.nama_sesi} sebagai HADIR?`
+        : `Tandai petugas aktif yang BELUM ABSEN di ${selectedSession.nama_sesi} sebagai ALPA? (Petugas dengan 3x Alpa akan otomatis dicoret dari daftar petugas misa)`
     if (!window.confirm(label)) return
 
     setBusyAction(bulkAction)
@@ -363,7 +448,7 @@ export default function PengurusLatihanMisaBesarPage() {
       if (!res.ok) {
         showToast('error', data.error || 'Gagal menjalankan aksi massal.')
       } else {
-        showToast('success', data.message)
+        showToast(data.auto_dicoret ? 'warning' : 'success', data.message)
         await loadData()
       }
     } catch (err: any) {
@@ -381,26 +466,34 @@ export default function PengurusLatihanMisaBesarPage() {
       `Sesi: *${selectedSession.nama_sesi}* (${selectedSession.jam_mulai} WIB)`,
       `Latihan: *${selectedLatihan.judul_latihan}*`,
       `Tanggal: ${selectedLatihan.tanggal_latihan} (${selectedLatihan.jam_mulai} WIB)`,
-      `Lokasi: ${selectedLatihan.lokasi}`,
       ``,
       `Ringkasan: Hadir ${latihanStats.hadir} | Terlambat ${latihanStats.terlambat} | Izin ${latihanStats.izin} | Alpa ${latihanStats.alpa} | Belum ${latihanStats.belum}`,
       ``,
-      `*Daftar Petugas ${selectedSession.nama_sesi}* (${sessionPetugas.length} petugas):`,
+      `*Petugas Aktif ${selectedSession.nama_sesi}* (${activeSessionPetugas.length}):`,
     ]
 
-    if (sessionPetugas.length === 0) {
-      lines.push(`  - Belum ada petugas`)
+    if (activeSessionPetugas.length === 0) {
+      lines.push(`  - Belum ada petugas aktif`)
     } else {
-      sessionPetugas.forEach((p, idx) => {
+      activeSessionPetugas.forEach((p, idx) => {
         const rec = absensiMapForSelectedLatihan[p.id]
         const st = rec ? rec.status_kehadiran.toUpperCase() : 'BELUM ABSEN'
+        const alpaCnt = alpaCountMap[p.id] || 0
         const icon =
           st === 'HADIR' ? '✅' : st === 'TERLAMBAT' ? '⏰' : st === 'IZIN' ? '📝' : st === 'ALPA' ? '❌' : '⬜'
         lines.push(
           `  ${idx + 1}. ${p.profile?.nama_lengkap || 'Misdinar'} (${p.posisi_tugas}) - ${icon} ${st}${
-            rec?.catatan && st === 'IZIN' ? ` (${rec.catatan})` : ''
+            alpaCnt > 0 ? ` [Alpa ${alpaCnt}/3]` : ''
           }`
         )
+      })
+    }
+
+    if (dicoretSessionPetugas.length > 0) {
+      lines.push(``)
+      lines.push(`*Dicoret karena 3x Alpa:*`)
+      dicoretSessionPetugas.forEach((p) => {
+        lines.push(`  - ~${p.profile?.nama_lengkap || 'Misdinar'}~ (Dicoret 3x Alpa)`)
       })
     }
 
@@ -423,14 +516,30 @@ export default function PengurusLatihanMisaBesarPage() {
     } catch {}
   }
 
+  const handleRestorePetugas = async (petugasId: string, nama: string) => {
+    if (!window.confirm(`Pulihkan ${nama} kembali ke daftar petugas aktif?`)) return
+    try {
+      const res = await fetch('/api/misa-besar/petugas', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: petugasId, status_petugas: 'aktif' }),
+      })
+      const data = await res.json()
+      if (res.ok) {
+        showToast('success', data.message || `${nama} dipulihkan ke daftar petugas aktif.`)
+        await loadData()
+      }
+    } catch {}
+  }
+
   const handleRemovePetugas = async (petugasId: string, nama: string) => {
-    if (!window.confirm(`Hapus ${nama} dari daftar petugas sesi ini?`)) return
+    if (!window.confirm(`Hapus permanen ${nama} dari daftar petugas sesi ini?`)) return
     try {
       const res = await fetch(`/api/misa-besar/petugas?id=${petugasId}`, {
         method: 'DELETE',
       })
       if (res.ok) {
-        showToast('success', `${nama} dihapus dari sesi.`)
+        showToast('success', `${nama} dihapus dari daftar petugas.`)
         await loadData()
       }
     } catch {}
@@ -476,24 +585,26 @@ export default function PengurusLatihanMisaBesarPage() {
 
   const handleExportCsv = () => {
     if (!selectedEvent) return
+    const targetList = rekapScope === 'session' ? sessionAllPetugas : eventPetugas
+    const latColsSrc = rekapScope === 'session' ? visibleLatihan : eventLatihan
+
     const headers = [
       'Sesi Misa/Ibadat',
       'Nama Lengkap',
       'Jenjang',
       'Wilayah',
       'Posisi Tugas',
-      ...eventLatihan.map((l) => `${l.judul_latihan} (${l.tanggal_latihan})`),
-      'Total Hadir/Terlambat',
+      'Status Petugas',
+      'Total Alpa',
+      ...latColsSrc.map((l) => `${l.judul_latihan} (${l.tanggal_latihan})`),
     ]
 
-    const rows = eventPetugas.map((p) => {
+    const rows = targetList.map((p) => {
       const sessName = p.session?.nama_sesi || '-'
-      let countPresent = 0
-      const latCols = eventLatihan.map((l) => {
+      const alpaTotal = alpaCountMap[p.id] || 0
+      const latCols = latColsSrc.map((l) => {
         const rec = absensiList.find((a) => a.latihan_id === l.id && a.petugas_id === p.id)
-        if (!rec) return 'Belum Absen'
-        if (rec.status_kehadiran === 'hadir' || rec.status_kehadiran === 'terlambat') countPresent++
-        return rec.status_kehadiran.toUpperCase()
+        return rec ? rec.status_kehadiran.toUpperCase() : 'Belum Absen'
       })
       return [
         sessName,
@@ -501,8 +612,9 @@ export default function PengurusLatihanMisaBesarPage() {
         p.profile?.jenjang || '-',
         p.profile?.asal_wilayah_teks || '-',
         p.posisi_tugas,
+        p.status_petugas === 'dicoret' ? 'DICORET (3x ALPA)' : 'AKTIF',
+        String(alpaTotal),
         ...latCols,
-        `${countPresent}/${eventLatihan.length}`,
       ]
     })
 
@@ -542,14 +654,14 @@ export default function PengurusLatihanMisaBesarPage() {
               church
             </span>
             <span className="text-xs uppercase font-bold text-secondary tracking-wider">
-              Hari Raya &amp; Pekan Suci Paroki SPMR
+              Panel Khusus Pengurus Sakristi Paroki SPMR
             </span>
           </div>
           <h1 className="font-headline font-bold text-2xl text-primary tracking-tight">
             Absensi Latihan Petugas Misa Besar
           </h1>
           <p className="text-xs text-on-surface-variant">
-            Kelola petugas &amp; kehadiran latihan Malam Natal (2 Misa), Natal (2 Misa), Minggu Palma (3 Misa), Kamis Putih (2 Misa), Jumat Agung (3 Ibadat), Malam Paskah (2 Misa), dan Paskah (2/3 Misa).
+            Pilih perayaan Natal / Paskah, klik nama petugas terpilih per sesi misa/ibadat, dan catat presensi latihan. <strong>Aturan: 3x Alpa otomatis dicoret dari daftar petugas misa.</strong>
           </p>
         </div>
 
@@ -566,19 +678,14 @@ export default function PengurusLatihanMisaBesarPage() {
             ))}
           </select>
 
-          {!needsMigration && events.length < MISA_BESAR_PRESETS.length && (
+          {!needsMigration && (
             <button
-              onClick={handleInitAllPresets}
-              disabled={busyAction === 'init_presets'}
+              onClick={() => setShowAddEventModal(true)}
               type="button"
-              className="px-4 py-2.5 rounded-xl bg-secondary text-on-secondary hover:opacity-90 text-xs font-headline font-bold flex items-center gap-1.5 shadow-sm transition-all disabled:opacity-50"
+              className="px-4 py-2.5 rounded-xl bg-primary text-on-primary hover:bg-primary-container text-xs font-headline font-bold flex items-center gap-1.5 shadow-sm transition-all"
             >
-              <span className="material-symbols-outlined text-base">auto_awesome</span>
-              <span>
-                {busyAction === 'init_presets'
-                  ? 'Menyiapkan...'
-                  : 'Lengkapi 7 Perayaan Misa Besar'}
-              </span>
+              <span className="material-symbols-outlined text-base">add_circle</span>
+              <span>Pilih / Tambah Tugas Misa</span>
             </button>
           )}
         </div>
@@ -590,37 +697,43 @@ export default function PengurusLatihanMisaBesarPage() {
           className={`p-3.5 rounded-2xl border text-xs font-semibold flex items-center gap-2 shadow-xs animate-fade-in ${
             feedbackBanner.type === 'success'
               ? 'bg-emerald-50 border-emerald-200 text-emerald-900'
+              : feedbackBanner.type === 'warning'
+              ? 'bg-amber-50 border-amber-300 text-amber-950'
               : 'bg-rose-50 border-rose-200 text-rose-900'
           }`}
         >
           <span className="material-symbols-outlined text-lg">
-            {feedbackBanner.type === 'success' ? 'check_circle' : 'error'}
+            {feedbackBanner.type === 'success'
+              ? 'check_circle'
+              : feedbackBanner.type === 'warning'
+              ? 'warning'
+              : 'error'}
           </span>
           <span>{feedbackBanner.text}</span>
         </div>
       )}
 
-      {/* SQL Setup Assistant if migration has not been run yet */}
+      {/* SQL Setup Assistant */}
       {needsMigration ? (
         <SqlMigrationNotice migrationSql={migrationSql} onRetry={loadData} />
       ) : events.length === 0 ? (
-        /* Empty State: 1-Click Preset Generator for all 7 Misa Besar */
+        /* Empty State: Pilih Natal, Paskah, atau Semua 7 Perayaan */
         <div className="rounded-3xl bg-surface-container-lowest border border-surface-container p-6 sm:p-10 text-center flex flex-col items-center gap-5 shadow-sm">
           <div className="w-16 h-16 rounded-2xl bg-secondary-fixed text-on-secondary-fixed flex items-center justify-center">
             <span className="material-symbols-outlined text-4xl">celebration</span>
           </div>
           <div className="max-w-xl flex flex-col gap-1.5">
             <h2 className="font-headline font-bold text-xl text-primary">
-              Siapkan 7 Paket Perayaan Misa Besar Tahun {tahun}
+              Pilih Tugas Misa Besar Tahun {tahun}
             </h2>
             <p className="text-xs text-on-surface-variant leading-relaxed">
-              Sekali klik untuk membuat otomatis jadwal sesi untuk <strong>Malam Natal (2 Misa)</strong>, <strong>Natal (2 Misa)</strong>, <strong>Minggu Palma (3 Misa)</strong>, <strong>Kamis Putih (2 Misa)</strong>, <strong>Jumat Agung (3 Ibadat)</strong>, <strong>Malam Paskah (2 Misa)</strong>, dan <strong>Paskah (2 / 3 Misa)</strong>.
+              Pilih rangkaian perayaan yang akan dikelola pengurus: <strong>Paket Natal</strong> (Malam Natal 2 Misa, Natal 2 Misa), <strong>Paket Paskah</strong> (Minggu Palma 3 Misa, Kamis Putih 2 Misa, Jumat Agung 3 Ibadat, Malam Paskah 2 Misa, Paskah 2/3 Misa), atau buat semua sekaligus.
             </p>
           </div>
 
           <div className="flex flex-wrap items-center justify-center gap-2 bg-surface-container-low p-2 rounded-2xl border border-surface-container">
             <span className="text-xs font-bold text-on-surface-variant px-2">
-              Jumlah Misa Hari Raya Paskah:
+              Opsi Misa Hari Raya Paskah:
             </span>
             {[2, 3].map((cnt) => (
               <button
@@ -638,28 +751,45 @@ export default function PengurusLatihanMisaBesarPage() {
             ))}
           </div>
 
-          <button
-            onClick={handleInitAllPresets}
-            disabled={busyAction === 'init_presets'}
-            type="button"
-            className="px-6 py-3 rounded-2xl bg-primary hover:bg-primary-container text-on-primary text-sm font-headline font-bold flex items-center gap-2 shadow-md transition-all disabled:opacity-50"
-          >
-            <span className="material-symbols-outlined text-xl">auto_awesome</span>
-            <span>
-              {busyAction === 'init_presets'
-                ? 'Membuat Paket Misa Besar...'
-                : `Buat Otomatis 7 Perayaan Misa Besar ${tahun}`}
-            </span>
-          </button>
+          <div className="flex flex-wrap items-center justify-center gap-3">
+            <button
+              onClick={() => handleInitPresetPaket('natal')}
+              disabled={busyAction !== null}
+              type="button"
+              className="px-5 py-3 rounded-2xl bg-amber-600 hover:bg-amber-700 text-white text-xs sm:text-sm font-headline font-bold flex items-center gap-2 shadow-sm disabled:opacity-50"
+            >
+              <span className="material-symbols-outlined text-lg">star</span>
+              <span>+ Paket Natal (2 Perayaan)</span>
+            </button>
+            <button
+              onClick={() => handleInitPresetPaket('paskah')}
+              disabled={busyAction !== null}
+              type="button"
+              className="px-5 py-3 rounded-2xl bg-rose-700 hover:bg-rose-800 text-white text-xs sm:text-sm font-headline font-bold flex items-center gap-2 shadow-sm disabled:opacity-50"
+            >
+              <span className="material-symbols-outlined text-lg">church</span>
+              <span>+ Paket Paskah (5 Perayaan)</span>
+            </button>
+            <button
+              onClick={() => handleInitPresetPaket('semua')}
+              disabled={busyAction !== null}
+              type="button"
+              className="px-5 py-3 rounded-2xl bg-primary hover:bg-primary-container text-on-primary text-xs sm:text-sm font-headline font-bold flex items-center gap-2 shadow-sm disabled:opacity-50"
+            >
+              <span className="material-symbols-outlined text-lg">auto_awesome</span>
+              <span>+ Semua 7 Perayaan</span>
+            </button>
+          </div>
         </div>
       ) : (
         <>
-          {/* 7 Perayaan Event Cards dengan Tombol Langsung Per Misa / Ibadat */}
+          {/* Perayaan Event Cards dengan Pemisah Per Misa & Tombol Hapus Perayaan */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7 gap-2.5">
             {events.map((ev) => {
               const isSelected = ev.id === selectedEvent?.id
               const isRed = ev.warna_liturgi === 'Merah'
               const sessionsList = ev.sessions || []
+              const activeCnt = (ev.petugas || []).filter((p) => p.status_petugas !== 'dicoret').length
 
               return (
                 <div
@@ -676,7 +806,7 @@ export default function PengurusLatihanMisaBesarPage() {
                       if (sessionsList[0]) setSelectedSessionId(sessionsList[0].id)
                     }
                   }}
-                  className={`text-left p-3 rounded-2xl border transition-all flex flex-col gap-2 cursor-pointer ${
+                  className={`text-left p-3 rounded-2xl border transition-all flex flex-col gap-2 cursor-pointer relative ${
                     isSelected
                       ? 'bg-primary text-on-primary border-primary shadow-md'
                       : 'bg-surface-container-lowest text-on-surface border-surface-container hover:border-primary/40 hover:bg-surface-container-low'
@@ -694,14 +824,36 @@ export default function PengurusLatihanMisaBesarPage() {
                     >
                       {ev.jumlah_sesi} {ev.jenis_sesi}
                     </span>
-                    <span className="text-[10px] opacity-75 font-mono">
-                      {ev.petugas?.length || 0} ptg
-                    </span>
+
+                    <button
+                      type="button"
+                      title={`Hapus perayaan ${ev.nama_perayaan}`}
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        handleDeleteEvent(ev)
+                      }}
+                      className={`p-1 rounded-lg transition-colors ${
+                        isSelected
+                          ? 'text-white/75 hover:bg-white/20 hover:text-white'
+                          : 'text-rose-500 hover:bg-rose-50'
+                      }`}
+                    >
+                      <span className="material-symbols-outlined text-sm">delete</span>
+                    </button>
                   </div>
 
-                  <span className="font-headline font-bold text-xs sm:text-sm leading-tight">
-                    {ev.nama_perayaan}
-                  </span>
+                  <div>
+                    <span className="font-headline font-bold text-xs sm:text-sm leading-tight block">
+                      {ev.nama_perayaan}
+                    </span>
+                    <span
+                      className={`text-[10px] ${
+                        isSelected ? 'text-on-primary/80' : 'text-on-surface-variant'
+                      }`}
+                    >
+                      {activeCnt} petugas aktif
+                    </span>
+                  </div>
 
                   {/* Mini Tombol Langsung per Misa / Ibadat */}
                   <div className="flex flex-wrap gap-1 pt-0.5">
@@ -777,7 +929,10 @@ export default function PengurusLatihanMisaBesarPage() {
                           ? `${selectedSession.tanggal_misa} • `
                           : 'Tanggal belum diatur • '}
                         Pukul {selectedSession.jam_mulai} WIB &bull;{' '}
-                        {sessionPetugas.length}/{selectedSession.kuota_petugas} Petugas Terdaftar
+                        {activeSessionPetugas.length}/{selectedSession.kuota_petugas} Petugas Aktif
+                        {dicoretSessionPetugas.length > 0
+                          ? ` • ${dicoretSessionPetugas.length} Dicoret (3x Alpa)`
+                          : ''}
                       </p>
                     </div>
                   </div>
@@ -806,7 +961,7 @@ export default function PengurusLatihanMisaBesarPage() {
                       }`}
                     >
                       <span className="material-symbols-outlined text-sm">group_add</span>
-                      <span>Petugas ({sessionPetugas.length})</span>
+                      <span>Pilih Petugas ({activeSessionPetugas.length})</span>
                     </button>
                     <button
                       type="button"
@@ -831,7 +986,9 @@ export default function PengurusLatihanMisaBesarPage() {
                     </span>
                     {eventSessions.map((sess) => {
                       const isSessActive = sess.id === selectedSession.id
-                      const cnt = eventPetugas.filter((p) => p.session_id === sess.id).length
+                      const cnt = eventPetugas.filter(
+                        (p) => p.session_id === sess.id && p.status_petugas !== 'dicoret'
+                      ).length
                       return (
                         <button
                           key={sess.id}
@@ -858,7 +1015,7 @@ export default function PengurusLatihanMisaBesarPage() {
                     })}
                   </div>
 
-                  {/* Khusus Paskah (atau perayaan lain): opsi 2 / 3 Misa */}
+                  {/* Jumlah Sesi (Paskah 2 / 3 Misa) */}
                   <div className="flex items-center gap-1.5">
                     <span className="text-[11px] text-on-surface-variant font-medium">
                       Jumlah {selectedEvent.jenis_sesi}:
@@ -900,7 +1057,7 @@ export default function PengurusLatihanMisaBesarPage() {
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                       <span className="text-xs font-bold text-primary flex items-center gap-1.5">
                         <span className="material-symbols-outlined text-base">event_note</span>
-                        Jadwal Latihan &bull; {selectedSession.nama_sesi} ({visibleLatihan.length} sesi):
+                        Jadwal Latihan &bull; {selectedSession.nama_sesi} ({visibleLatihan.length} pertemuan):
                       </span>
                       <button
                         type="button"
@@ -924,7 +1081,7 @@ export default function PengurusLatihanMisaBesarPage() {
                           Belum ada jadwal latihan untuk {selectedEvent.nama_perayaan} - {selectedSession.nama_sesi}.
                         </p>
                         <p className="text-[11px] text-on-surface-variant">
-                          Klik tombol <strong>+ Latihan {selectedSession.nama_sesi}</strong> di atas untuk membuat jadwal latihan &amp; mulai absensi.
+                          Klik tombol <strong>+ Latihan {selectedSession.nama_sesi}</strong> di atas untuk membuat pertemuan latihan &amp; mencatat kehadiran.
                         </p>
                       </div>
                     ) : (
@@ -984,7 +1141,7 @@ export default function PengurusLatihanMisaBesarPage() {
                       <div className="grid grid-cols-3 sm:grid-cols-6 gap-2.5">
                         <div className="p-3 rounded-2xl bg-surface-container-lowest border border-surface-container">
                           <span className="text-[10px] font-bold uppercase text-on-surface-variant">
-                            Petugas {selectedEvent.jenis_sesi} {selectedSession.urutan}
+                            Petugas Aktif
                           </span>
                           <p className="text-xl font-headline font-bold text-primary">
                             {latihanStats.total}
@@ -1047,13 +1204,11 @@ export default function PengurusLatihanMisaBesarPage() {
                         <div className="flex flex-wrap items-center gap-2">
                           <button
                             type="button"
-                            onClick={() => setShowQrScanner(true)}
+                            onClick={() => setAssignSession(selectedSession)}
                             className="px-3.5 py-2 rounded-xl bg-primary text-on-primary hover:bg-primary-container text-xs font-bold flex items-center gap-1.5 shadow-xs"
                           >
-                            <span className="material-symbols-outlined text-base">
-                              qr_code_scanner
-                            </span>
-                            <span>Scan QR Latihan</span>
+                            <span className="material-symbols-outlined text-base">person_add</span>
+                            <span>Pilih Nama Petugas</span>
                           </button>
                           <button
                             type="button"
@@ -1084,7 +1239,7 @@ export default function PengurusLatihanMisaBesarPage() {
                         </div>
                       </div>
 
-                      {/* Daftar Petugas & Absensi KHUSUS Sesi Terpilih */}
+                      {/* Daftar Petugas & 1-Klik Status Kehadiran */}
                       <div className="rounded-2xl bg-surface-container-lowest border border-surface-container overflow-hidden shadow-xs">
                         <div className="px-4 py-3 bg-surface-container-low border-b border-surface-container flex items-center justify-between gap-2">
                           <div className="flex items-center gap-2">
@@ -1092,51 +1247,45 @@ export default function PengurusLatihanMisaBesarPage() {
                               {selectedSession.nama_sesi}
                             </span>
                             <span className="text-[11px] text-on-surface-variant font-medium">
-                              {selectedSession.tanggal_misa ? `${selectedSession.tanggal_misa} • ` : ''}
-                              {selectedSession.jam_mulai} WIB &bull; {visiblePetugasForLatihan.length} Petugas
+                              Klik status kehadiran di kanan untuk mencatat absensi (3x Alpa = Dicoret otomatis)
                             </span>
                           </div>
-                          <button
-                            type="button"
-                            onClick={() => setAssignSession(selectedSession)}
-                            className="text-[11px] font-bold text-primary hover:underline flex items-center gap-0.5"
-                          >
-                            <span className="material-symbols-outlined text-sm">person_add</span>
-                            <span>Tambah Petugas {selectedSession.nama_sesi}</span>
-                          </button>
                         </div>
 
-                        {sessionPetugas.length === 0 ? (
+                        {activeSessionPetugas.length === 0 ? (
                           <div className="p-8 text-center flex flex-col items-center gap-3">
                             <span className="material-symbols-outlined text-4xl text-on-surface-variant/50">
                               group_add
                             </span>
                             <p className="text-xs font-semibold text-on-surface">
-                              Belum ada petugas yang didaftarkan untuk {selectedEvent.nama_perayaan} - {selectedSession.nama_sesi}.
+                              Belum ada petugas aktif di {selectedEvent.nama_perayaan} - {selectedSession.nama_sesi}.
                             </p>
                             <button
                               type="button"
                               onClick={() => setAssignSession(selectedSession)}
                               className="px-4 py-2 rounded-xl bg-primary text-on-primary text-xs font-bold"
                             >
-                              + Tambah Petugas ke {selectedSession.nama_sesi}
+                              + Pilih Nama Petugas {selectedSession.nama_sesi}
                             </button>
                           </div>
-                        ) : visiblePetugasForLatihan.length === 0 ? (
+                        ) : visibleActivePetugas.length === 0 ? (
                           <div className="p-6 text-center text-xs text-on-surface-variant">
                             Tidak ada petugas di {selectedSession.nama_sesi} yang cocok dengan kata pencarian.
                           </div>
                         ) : (
                           <div className="divide-y divide-surface-container">
-                            {visiblePetugasForLatihan.map((p) => {
+                            {visibleActivePetugas.map((p) => {
                               const absRec = absensiMapForSelectedLatihan[p.id]
                               const curStatus = absRec?.status_kehadiran
+                              const totalAlpa = alpaCountMap[p.id] || 0
                               const waNum = formatWaPhone(p.profile?.no_telepon)
 
                               return (
                                 <div
                                   key={p.id}
-                                  className="p-3.5 sm:px-4 flex flex-col md:flex-row md:items-center justify-between gap-3 hover:bg-surface-container-low/40 transition-colors"
+                                  className={`p-3.5 sm:px-4 flex flex-col md:flex-row md:items-center justify-between gap-3 transition-colors ${
+                                    totalAlpa >= 2 ? 'bg-amber-50/40' : 'hover:bg-surface-container-low/40'
+                                  }`}
                                 >
                                   <div className="flex items-start gap-3">
                                     <div className="w-9 h-9 rounded-full bg-primary-fixed text-on-primary-fixed font-bold text-xs flex items-center justify-center shrink-0">
@@ -1158,6 +1307,19 @@ export default function PengurusLatihanMisaBesarPage() {
                                               {STATUS_BADGE_MAP[curStatus].icon}
                                             </span>
                                             {STATUS_BADGE_MAP[curStatus].label}
+                                          </span>
+                                        )}
+                                        {totalAlpa > 0 && (
+                                          <span
+                                            className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                                              totalAlpa >= 2
+                                                ? 'bg-rose-100 text-rose-800 border border-rose-300 animate-pulse'
+                                                : 'bg-amber-100 text-amber-800'
+                                            }`}
+                                          >
+                                            {totalAlpa >= 2
+                                              ? `⚠️ Alpa ${totalAlpa}/3 (1x lagi dicoret!)`
+                                              : `Alpa ${totalAlpa}/3`}
                                           </span>
                                         )}
                                       </div>
@@ -1245,91 +1407,101 @@ export default function PengurusLatihanMisaBesarPage() {
                 </div>
               )}
 
-              {/* TAB 2: KELOLA PETUGAS SESI INI */}
+              {/* TAB 2: PILIH & KELOLA PETUGAS SESI INI */}
               {activeTab === 'petugas' && (
                 <div className="rounded-2xl bg-surface-container-lowest border border-surface-container overflow-hidden flex flex-col shadow-xs">
                   <div className="p-4 bg-surface-container-low border-b border-surface-container flex flex-wrap items-center justify-between gap-2">
                     <div>
                       <div className="flex items-center gap-2">
                         <span className="font-headline font-bold text-sm text-primary">
-                          Daftar Petugas &bull; {selectedEvent.nama_perayaan} - {selectedSession.nama_sesi}
+                          Daftar Petugas Terpilih &bull; {selectedEvent.nama_perayaan} - {selectedSession.nama_sesi}
                         </span>
                         <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-primary-fixed text-on-primary-fixed">
-                          {sessionPetugas.length}/{selectedSession.kuota_petugas} petugas
+                          {activeSessionPetugas.length}/{selectedSession.kuota_petugas} petugas
                         </span>
                       </div>
                       <span className="text-[11px] text-on-surface-variant">
-                        {selectedSession.tanggal_misa || 'Tanggal belum diatur'} &bull; Pukul {selectedSession.jam_mulai} WIB
+                        Tinggal klik nama anggota aktif untuk menambahkan ke daftar petugas {selectedSession.nama_sesi}.
                       </span>
                     </div>
 
                     <button
                       type="button"
                       onClick={() => setAssignSession(selectedSession)}
-                      className="px-3.5 py-2 rounded-xl bg-primary text-on-primary hover:bg-primary-container text-xs font-bold flex items-center gap-1.5 shadow-xs"
+                      className="px-4 py-2 rounded-xl bg-primary text-on-primary hover:bg-primary-container text-xs font-bold flex items-center gap-1.5 shadow-xs"
                     >
                       <span className="material-symbols-outlined text-sm">person_add</span>
-                      <span>+ Tambah Petugas {selectedSession.nama_sesi}</span>
+                      <span>+ Klik Pilih Nama Petugas</span>
                     </button>
                   </div>
 
                   <div className="divide-y divide-surface-container">
-                    {sessionPetugas.length === 0 ? (
+                    {activeSessionPetugas.length === 0 ? (
                       <div className="p-8 text-center text-xs text-on-surface-variant">
-                        Belum ada petugas ditugaskan di {selectedSession.nama_sesi}. Klik tombol <strong>+ Tambah Petugas</strong> di atas.
+                        Belum ada petugas terpilih di {selectedSession.nama_sesi}. Klik tombol <strong>+ Klik Pilih Nama Petugas</strong> di atas.
                       </div>
                     ) : (
-                      sessionPetugas.map((p, idx) => (
-                        <div
-                          key={p.id}
-                          className="p-3.5 flex flex-wrap items-center justify-between gap-2 hover:bg-surface-container-low/40"
-                        >
-                          <div className="flex items-center gap-3">
-                            <span className="text-[11px] font-mono text-on-surface-variant w-6">
-                              {idx + 1}.
-                            </span>
-                            <div>
-                              <p className="text-xs sm:text-sm font-bold text-on-surface">
-                                {p.profile?.nama_lengkap}
-                              </p>
-                              <p className="text-[10px] text-on-surface-variant">
-                                {p.profile?.jenjang} &bull; {p.profile?.asal_wilayah_teks}
-                              </p>
+                      activeSessionPetugas.map((p, idx) => {
+                        const alpaCnt = alpaCountMap[p.id] || 0
+                        return (
+                          <div
+                            key={p.id}
+                            className="p-3.5 flex flex-wrap items-center justify-between gap-2 hover:bg-surface-container-low/40"
+                          >
+                            <div className="flex items-center gap-3">
+                              <span className="text-[11px] font-mono text-on-surface-variant w-6">
+                                {idx + 1}.
+                              </span>
+                              <div>
+                                <div className="flex items-center gap-2">
+                                  <p className="text-xs sm:text-sm font-bold text-on-surface">
+                                    {p.profile?.nama_lengkap}
+                                  </p>
+                                  {alpaCnt > 0 && (
+                                    <span className="px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 text-[10px] font-bold">
+                                      Alpa {alpaCnt}/3
+                                    </span>
+                                  )}
+                                </div>
+                                <p className="text-[10px] text-on-surface-variant">
+                                  {p.profile?.jenjang} &bull; {p.profile?.asal_wilayah_teks}
+                                </p>
+                              </div>
+                            </div>
+
+                            <div className="flex items-center gap-1.5">
+                              <select
+                                value={p.posisi_tugas}
+                                onChange={(e) =>
+                                  handleUpdatePetugasPosition(p.id, e.target.value)
+                                }
+                                className="px-2.5 py-1.5 rounded-lg bg-surface-container-low border border-surface-container text-[11px] font-semibold text-primary"
+                              >
+                                {LITURGICAL_POSITIONS.map((pos) => (
+                                  <option key={pos.id} value={pos.name}>
+                                    {pos.name}
+                                  </option>
+                                ))}
+                              </select>
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  handleRemovePetugas(
+                                    p.id,
+                                    p.profile?.nama_lengkap || 'Petugas'
+                                  )
+                                }
+                                className="p-1.5 rounded-lg text-rose-600 hover:bg-rose-50"
+                                title="Hapus dari daftar petugas"
+                              >
+                                <span className="material-symbols-outlined text-base">
+                                  delete
+                                </span>
+                              </button>
                             </div>
                           </div>
-
-                          <div className="flex items-center gap-1.5">
-                            <select
-                              value={p.posisi_tugas}
-                              onChange={(e) =>
-                                handleUpdatePetugasPosition(p.id, e.target.value)
-                              }
-                              className="px-2.5 py-1.5 rounded-lg bg-surface-container-low border border-surface-container text-[11px] font-semibold text-primary"
-                            >
-                              {LITURGICAL_POSITIONS.map((pos) => (
-                                <option key={pos.id} value={pos.name}>
-                                  {pos.name}
-                                </option>
-                              ))}
-                            </select>
-                            <button
-                              type="button"
-                              onClick={() =>
-                                handleRemovePetugas(
-                                  p.id,
-                                  p.profile?.nama_lengkap || 'Petugas'
-                                )
-                              }
-                              className="p-1.5 rounded-lg text-rose-600 hover:bg-rose-50"
-                              title="Hapus dari sesi"
-                            >
-                              <span className="material-symbols-outlined text-base">
-                                delete
-                              </span>
-                            </button>
-                          </div>
-                        </div>
-                      ))
+                        )
+                      })
                     )}
                   </div>
                 </div>
@@ -1347,7 +1519,7 @@ export default function PengurusLatihanMisaBesarPage() {
                           : `${selectedEvent.nama_perayaan} (Semua ${selectedEvent.jumlah_sesi} ${selectedEvent.jenis_sesi})`}
                       </h3>
                       <p className="text-[11px] text-on-surface-variant">
-                        Memantau kedisiplinan latihan petugas secara terpisah per misa atau keseluruhan perayaan.
+                        Rekap presensi &amp; pantauan aturan 3x Alpa otomatis dicoret.
                       </p>
                     </div>
                     <div className="flex flex-wrap items-center gap-2">
@@ -1387,7 +1559,7 @@ export default function PengurusLatihanMisaBesarPage() {
                     </div>
                   </div>
 
-                  {(rekapScope === 'session' ? sessionPetugas : eventPetugas).length === 0 ? (
+                  {(rekapScope === 'session' ? sessionAllPetugas : eventPetugas).length === 0 ? (
                     <div className="p-8 text-center text-xs text-on-surface-variant">
                       Belum ada data petugas untuk direkapitulasi.
                     </div>
@@ -1406,14 +1578,14 @@ export default function PengurusLatihanMisaBesarPage() {
                                 </div>
                               </th>
                             ))}
-                            <th className="py-3 px-4 font-bold text-center">Kesiapan</th>
+                            <th className="py-3 px-4 font-bold text-center">Status / Alpa</th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-surface-container">
-                          {(rekapScope === 'session' ? sessionPetugas : eventPetugas).map((p) => {
+                          {(rekapScope === 'session' ? sessionAllPetugas : eventPetugas).map((p) => {
                             const latColsSrc = rekapScope === 'session' ? visibleLatihan : eventLatihan
-                            let relevantSessions = 0
-                            let attended = 0
+                            const alpaTotal = alpaCountMap[p.id] || 0
+                            const isDicoret = p.status_petugas === 'dicoret'
 
                             const cols = latColsSrc.map((l) => {
                               const applicable = !l.session_id || l.session_id === p.session_id
@@ -1424,17 +1596,9 @@ export default function PengurusLatihanMisaBesarPage() {
                                   </td>
                                 )
                               }
-                              relevantSessions++
                               const rec = absensiList.find(
                                 (a) => a.latihan_id === l.id && a.petugas_id === p.id
                               )
-                              if (
-                                rec &&
-                                (rec.status_kehadiran === 'hadir' ||
-                                  rec.status_kehadiran === 'terlambat')
-                              ) {
-                                attended++
-                              }
                               return (
                                 <td key={l.id} className="py-3 px-3 text-center">
                                   {rec ? (
@@ -1452,15 +1616,21 @@ export default function PengurusLatihanMisaBesarPage() {
                               )
                             })
 
-                            const pct =
-                              relevantSessions > 0
-                                ? Math.round((attended / relevantSessions) * 100)
-                                : 0
-
                             return (
-                              <tr key={p.id} className="hover:bg-surface-container-low/40">
+                              <tr
+                                key={p.id}
+                                className={
+                                  isDicoret
+                                    ? 'bg-rose-50/60 text-rose-900/75'
+                                    : 'hover:bg-surface-container-low/40'
+                                }
+                              >
                                 <td className="py-3 px-4">
-                                  <div className="font-bold text-on-surface">
+                                  <div
+                                    className={`font-bold ${
+                                      isDicoret ? 'line-through text-rose-800' : 'text-on-surface'
+                                    }`}
+                                  >
                                     {p.profile?.nama_lengkap}
                                   </div>
                                   <div className="text-[10px] text-on-surface-variant">
@@ -1477,19 +1647,23 @@ export default function PengurusLatihanMisaBesarPage() {
                                 </td>
                                 {cols}
                                 <td className="py-3 px-4 text-center">
-                                  <span
-                                    className={`px-2.5 py-1 rounded-full text-[10px] font-bold ${
-                                      relevantSessions === 0
-                                        ? 'bg-surface-container text-on-surface-variant'
-                                        : pct >= 75
-                                        ? 'bg-emerald-100 text-emerald-800'
-                                        : pct >= 40
-                                        ? 'bg-amber-100 text-amber-800'
-                                        : 'bg-rose-100 text-rose-800'
-                                    }`}
-                                  >
-                                    {attended}/{relevantSessions} ({pct}%)
-                                  </span>
+                                  {isDicoret ? (
+                                    <span className="px-2.5 py-1 rounded-full bg-rose-600 text-white text-[10px] font-bold">
+                                      DICORET ({alpaTotal}x Alpa)
+                                    </span>
+                                  ) : (
+                                    <span
+                                      className={`px-2.5 py-1 rounded-full text-[10px] font-bold ${
+                                        alpaTotal >= 2
+                                          ? 'bg-rose-100 text-rose-800'
+                                          : alpaTotal === 1
+                                          ? 'bg-amber-100 text-amber-800'
+                                          : 'bg-emerald-100 text-emerald-800'
+                                      }`}
+                                    >
+                                      Aktif &bull; {alpaTotal}/3 Alpa
+                                    </span>
+                                  )}
                                 </td>
                               </tr>
                             )
@@ -1500,12 +1674,247 @@ export default function PengurusLatihanMisaBesarPage() {
                   )}
                 </div>
               )}
+
+              {/* PANEL DAFTAR PETUGAS DICORET (3x ALPA) */}
+              {dicoretSessionPetugas.length > 0 && (
+                <div className="rounded-2xl bg-rose-50/70 border border-rose-200 overflow-hidden shadow-xs">
+                  <button
+                    type="button"
+                    onClick={() => setShowDicoretList((v) => !v)}
+                    className="w-full px-4 py-3 flex items-center justify-between text-left bg-rose-100/70 border-b border-rose-200"
+                  >
+                    <div className="flex items-center gap-2">
+                      <span className="material-symbols-outlined text-rose-700 text-lg">
+                        person_remove
+                      </span>
+                      <span className="font-headline font-bold text-xs sm:text-sm text-rose-950">
+                        Daftar Petugas Dicoret dari {selectedSession.nama_sesi} ({dicoretSessionPetugas.length} orang) &bull; Tidak Ikut Latihan 3x (Alpa)
+                      </span>
+                    </div>
+                    <span className="material-symbols-outlined text-rose-800 text-lg">
+                      {showDicoretList ? 'expand_less' : 'expand_more'}
+                    </span>
+                  </button>
+
+                  {showDicoretList && (
+                    <div className="divide-y divide-rose-200/80">
+                      {dicoretSessionPetugas.map((p) => {
+                        const alpaCnt = alpaCountMap[p.id] || 3
+                        return (
+                          <div
+                            key={p.id}
+                            className="p-3.5 sm:px-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5"
+                          >
+                            <div className="flex flex-col gap-0.5">
+                              <div className="flex flex-wrap items-center gap-2">
+                                <span className="text-xs sm:text-sm font-bold text-rose-900 line-through">
+                                  {p.profile?.nama_lengkap}
+                                </span>
+                                <span className="px-2 py-0.5 rounded-full bg-rose-600 text-white text-[10px] font-bold">
+                                  DICORET ({alpaCnt}x Alpa)
+                                </span>
+                                <span className="text-[11px] text-rose-800">
+                                  {p.posisi_tugas}
+                                </span>
+                              </div>
+                              <span className="text-[11px] text-rose-800/80">
+                                {p.alasan_coret || 'Tidak mengikuti latihan 3 kali tanpa keterangan (Alpa)'}
+                              </span>
+                            </div>
+
+                            <div className="flex items-center gap-2">
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  handleRestorePetugas(
+                                    p.id,
+                                    p.profile?.nama_lengkap || 'Petugas'
+                                  )
+                                }
+                                className="px-3 py-1.5 rounded-lg bg-white border border-rose-300 text-rose-900 hover:bg-rose-100 text-[11px] font-bold"
+                              >
+                                Pulihkan
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  handleRemovePetugas(
+                                    p.id,
+                                    p.profile?.nama_lengkap || 'Petugas'
+                                  )
+                                }
+                                className="px-3 py-1.5 rounded-lg bg-rose-700 hover:bg-rose-800 text-white text-[11px] font-bold"
+                              >
+                                Hapus Permanen
+                              </button>
+                            </div>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           )}
         </>
       )}
 
-      {/* Modal Tambah Petugas */}
+      {/* Modal Pilih / Tambah Tugas Misa Besar (Natal / Paskah / Satuan) */}
+      {showAddEventModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/55 backdrop-blur-sm animate-fade-in">
+          <div className="w-full max-w-xl rounded-3xl bg-surface-container-lowest border border-surface-container shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+            <div className="p-5 bg-primary text-on-primary flex items-center justify-between">
+              <div>
+                <h3 className="font-headline font-bold text-base">
+                  Pilih / Tambah Tugas Misa Besar ({tahun})
+                </h3>
+                <p className="text-[11px] text-on-primary/80">
+                  Tambahkan paket Natal, Paskah, atau pilih perayaan secara satuan.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowAddEventModal(false)}
+                className="w-8 h-8 rounded-full bg-white/15 hover:bg-white/25 flex items-center justify-center"
+              >
+                <span className="material-symbols-outlined text-lg">close</span>
+              </button>
+            </div>
+
+            <div className="p-5 overflow-y-auto flex flex-col gap-4">
+              {/* Paket Cepat */}
+              <div className="flex flex-col gap-2">
+                <span className="text-[11px] font-bold uppercase tracking-wider text-on-surface-variant">
+                  Paket Cepat:
+                </span>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    disabled={busyAction !== null}
+                    onClick={() => handleInitPresetPaket('natal')}
+                    className="p-3 rounded-xl bg-amber-50 border border-amber-200 hover:bg-amber-100 text-left flex flex-col gap-0.5"
+                  >
+                    <span className="text-xs font-bold text-amber-900">
+                      + Paket Natal (Malam Natal &amp; Natal)
+                    </span>
+                    <span className="text-[10px] text-amber-800/80">
+                      Malam Natal 2 Misa, Natal 2 Misa
+                    </span>
+                  </button>
+                  <button
+                    type="button"
+                    disabled={busyAction !== null}
+                    onClick={() => handleInitPresetPaket('paskah')}
+                    className="p-3 rounded-xl bg-rose-50 border border-rose-200 hover:bg-rose-100 text-left flex flex-col gap-0.5"
+                  >
+                    <span className="text-xs font-bold text-rose-900">
+                      + Paket Paskah &amp; Pekan Suci
+                    </span>
+                    <span className="text-[10px] text-rose-800/80">
+                      Palma 3 Misa, Kamis Putih 2, Jumat Agung 3, Paskah {paskahPresetCount} Misa
+                    </span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Pilihan Perayaan Satuan */}
+              <div className="flex flex-col gap-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-on-surface-variant">
+                    Atau Tambah Perayaan Satuan:
+                  </span>
+                  <div className="flex items-center gap-1 text-[10px]">
+                    <span>Paskah:</span>
+                    {[2, 3].map((c) => (
+                      <button
+                        key={c}
+                        type="button"
+                        onClick={() => setPaskahPresetCount(c as 2 | 3)}
+                        className={`px-2 py-0.5 rounded font-bold ${
+                          paskahPresetCount === c
+                            ? 'bg-primary text-on-primary'
+                            : 'bg-surface-container text-on-surface-variant'
+                        }`}
+                      >
+                        {c} Misa
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="divide-y divide-surface-container border border-surface-container rounded-2xl overflow-hidden">
+                  {MISA_BESAR_PRESETS.map((preset) => {
+                    const exists = events.find((e) => e.kode_perayaan === preset.kode_perayaan)
+                    const isNatal = NATAL_CODES.includes(preset.kode_perayaan)
+                    return (
+                      <div
+                        key={preset.kode_perayaan}
+                        className="p-3 flex items-center justify-between gap-2 bg-surface-container-low/30"
+                      >
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs font-bold text-on-surface">
+                              {preset.nama_perayaan}
+                            </span>
+                            <span
+                              className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                                isNatal
+                                  ? 'bg-amber-100 text-amber-800'
+                                  : PASKAH_CODES.includes(preset.kode_perayaan)
+                                  ? 'bg-rose-100 text-rose-800'
+                                  : ''
+                              }`}
+                            >
+                              {preset.kode_perayaan === 'paskah'
+                                ? `${paskahPresetCount} Misa`
+                                : `${preset.jumlah_sesi} ${preset.jenis_sesi}`}
+                            </span>
+                          </div>
+                          <p className="text-[10px] text-on-surface-variant">
+                            {preset.keterangan}
+                          </p>
+                        </div>
+
+                        {exists ? (
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteEvent(exists)}
+                            className="px-3 py-1.5 rounded-lg bg-rose-50 border border-rose-200 text-rose-700 hover:bg-rose-100 text-[11px] font-bold"
+                          >
+                            Hapus
+                          </button>
+                        ) : (
+                          <button
+                            type="button"
+                            disabled={busyAction !== null}
+                            onClick={() => handleAddSinglePreset(preset.kode_perayaan)}
+                            className="px-3 py-1.5 rounded-lg bg-primary text-on-primary hover:bg-primary-container text-[11px] font-bold"
+                          >
+                            + Tambah
+                          </button>
+                        )}
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+            </div>
+
+            <div className="p-3 bg-surface-container-low border-t border-surface-container flex justify-end">
+              <button
+                type="button"
+                onClick={() => setShowAddEventModal(false)}
+                className="px-4 py-2 rounded-xl bg-surface-container text-xs font-bold"
+              >
+                Tutup
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Klik Pilih Nama Petugas ("Tinggal Klik Tok") */}
       <AssignPetugasModal
         isOpen={Boolean(assignSession)}
         onClose={() => setAssignSession(null)}
@@ -1514,7 +1923,7 @@ export default function PengurusLatihanMisaBesarPage() {
         activeMembers={activeMembers}
         existingPetugas={eventPetugas}
         onSuccess={() => {
-          showToast('success', 'Daftar petugas Misa Besar berhasil ditambahkan.')
+          showToast('success', 'Petugas terpilih berhasil ditambahkan ke daftar misa.')
           loadData()
         }}
       />
@@ -1622,28 +2031,6 @@ export default function PengurusLatihanMisaBesarPage() {
           </div>
         </div>
       )}
-
-      {/* Camera QR Scanner Modal khusus Latihan Misa Besar */}
-      <ScannerModal
-        isOpen={showQrScanner}
-        onClose={() => setShowQrScanner(false)}
-        endpoint="/api/misa-besar/absensi"
-        extraPayload={
-          selectedLatihan
-            ? { latihan_id: selectedLatihan.id, session_id: selectedSession?.id }
-            : undefined
-        }
-        modalTitle={`Scan QR • ${selectedSession?.nama_sesi || 'Latihan'}`}
-        modalSubtitle={
-          selectedLatihan
-            ? `${selectedEvent?.nama_perayaan} (${selectedSession?.nama_sesi || ''}) • ${selectedLatihan.judul_latihan}`
-            : 'Sorot QR Kartu Anggota misdinar'
-        }
-        manualPlaceholder="Ketik 8 huruf ID Anggota / SIDINAR:USER:..."
-        manualHint="Minta anggota membuka menu 'Misa Besar' lalu tunjukkan QR Kartu Latihan mereka."
-        onSuccessCheckin={() => loadData()}
-      />
     </div>
   )
 }
-

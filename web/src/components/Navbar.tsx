@@ -176,17 +176,6 @@ export const Navbar: React.FC<NavbarProps> = ({ profile, realtimeConnected = tru
                   Jadwal Misa
                 </Link>
                 <Link
-                  href="/anggota/misa-besar"
-                  className={`px-3 py-2 rounded-lg text-xs font-semibold transition-colors flex items-center gap-1.5 ${
-                    pathname.startsWith('/anggota/misa-besar')
-                      ? 'bg-primary text-on-primary shadow-xs'
-                      : 'text-on-surface-variant hover:bg-surface-container hover:text-primary'
-                  }`}
-                >
-                  <span className="material-symbols-outlined text-[16px]">church</span>
-                  Misa Besar
-                </Link>
-                <Link
                   href="/anggota/riwayat"
                   className={`px-3 py-2 rounded-lg text-xs font-semibold transition-colors flex items-center gap-1.5 ${
                     pathname.startsWith('/anggota/riwayat')
@@ -367,14 +356,6 @@ export const Navbar: React.FC<NavbarProps> = ({ profile, realtimeConnected = tru
                 >
                   <span className="material-symbols-outlined text-sm">event_available</span>
                   Jadwal Misa
-                </Link>
-                <Link
-                  href="/anggota/misa-besar"
-                  onClick={() => setMobileMenuOpen(false)}
-                  className="px-3 py-2 rounded-lg text-xs font-semibold hover:bg-surface-container flex items-center gap-2"
-                >
-                  <span className="material-symbols-outlined text-sm">church</span>
-                  Misa Besar &amp; QR Latihan
                 </Link>
                 <Link
                   href="/anggota/riwayat"

@@ -81,7 +81,7 @@
             android:textSize="11sp"
             android:visibility="gone" />
 
-        <!-- 1-Tap Absensi Row (Pengurus Only) -->
+        <!-- 1-Tap Absensi Row (Pengurus Aktif) -->
         <LinearLayout
             android:id="@+id/layoutMbPengurusActions"
             android:layout_width="match_parent"
@@ -164,6 +164,40 @@
                 android:contentDescription="Hapus Petugas" />
         </LinearLayout>
 
+        <!-- Dicoret Actions (Restore / Delete Permanently) -->
+        <LinearLayout
+            android:id="@+id/layoutMbDicoretActions"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:gravity="end"
+            android:orientation="horizontal"
+            android:visibility="gone">
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnMbRestorePetugas"
+                style="@style/Widget.Material3.Button.OutlinedButton"
+                android:layout_width="wrap_content"
+                android:layout_height="34dp"
+                android:layout_marginEnd="6dp"
+                android:text="Pulihkan Petugas"
+                android:textColor="@color/primary"
+                android:textSize="10sp"
+                android:textStyle="bold"
+                app:cornerRadius="8dp" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnMbDeleteDicoret"
+                style="@style/Widget.Material3.Button.TonalButton"
+                android:layout_width="wrap_content"
+                android:layout_height="34dp"
+                android:backgroundTint="@color/error_container"
+                android:text="Hapus Permanen"
+                android:textColor="@color/on_error_container"
+                android:textSize="10sp"
+                android:textStyle="bold"
+                app:cornerRadius="8dp" />
+        </LinearLayout>
+
     </LinearLayout>
 </com.google.android.material.card.MaterialCardView>
-

@@ -2,21 +2,68 @@ import { NextResponse } from 'next/server'
 import { requirePengurusUser } from '@/lib/supabase/authGuard'
 
 const ALLOWED_STATUSES = new Set(['hadir', 'terlambat', 'izin', 'alpa'])
+const MAX_ALPA_STRIKEOUT = 3
 
-function parseLatihanTimeStatus(tanggalLatihan: string, jamMulai: string): 'hadir' | 'terlambat' {
-  try {
-    const cleanTime = jamMulai.length === 5 ? `${jamMulai}:00` : jamMulai
-    const startMs = new Date(`${tanggalLatihan}T${cleanTime}+07:00`).getTime()
-    const nowMs = Date.now()
-    // Jika tanggal sama dan sudah melewati jam mulai + toleransi 15 menit, tandai terlambat
-    const todayWIB = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Jakarta' })
-    if (tanggalLatihan === todayWIB && nowMs > startMs + 15 * 60 * 1000) {
-      return 'terlambat'
-    }
-    return 'hadir'
-  } catch {
-    return 'hadir'
+/**
+ * Evaluasi aturan 3x Alpa untuk satu atau banyak petugas_id:
+ * - Jika jumlah absensi 'alpa' >= 3 -> status_petugas otomatis diubah menjadi 'dicoret'
+ * - Jika jumlah 'alpa' turun < 3 karena koreksi absensi -> otomatis dipulihkan ke 'aktif'
+ */
+async function evaluateThreeAlpaRule(admin: any, petugasIds: string[]) {
+  if (!petugasIds || petugasIds.length === 0) {
+    return { newlyDicoretNames: [] as string[], alpaCounts: {} as Record<string, number> }
   }
+
+  const [{ data: alpaRows }, { data: petugasRows }] = await Promise.all([
+    admin
+      .from('misa_besar_absensi')
+      .select('petugas_id')
+      .in('petugas_id', petugasIds)
+      .eq('status_kehadiran', 'alpa'),
+    admin
+      .from('misa_besar_petugas')
+      .select('id, status_petugas, alasan_coret, profile:profiles(nama_lengkap)')
+      .in('id', petugasIds),
+  ])
+
+  const alpaCounts: Record<string, number> = {}
+  for (const id of petugasIds) alpaCounts[id] = 0
+  for (const row of alpaRows || []) {
+    alpaCounts[row.petugas_id] = (alpaCounts[row.petugas_id] || 0) + 1
+  }
+
+  const newlyDicoretNames: string[] = []
+  const nowIso = new Date().toISOString()
+
+  for (const p of petugasRows || []) {
+    const count = alpaCounts[p.id] || 0
+    if (count >= MAX_ALPA_STRIKEOUT && p.status_petugas !== 'dicoret') {
+      await admin
+        .from('misa_besar_petugas')
+        .update({
+          status_petugas: 'dicoret',
+          alasan_coret: `Tidak mengikuti latihan ${count} kali tanpa keterangan (Alpa)`,
+          dicoret_at: nowIso,
+        })
+        .eq('id', p.id)
+      newlyDicoretNames.push(p.profile?.nama_lengkap || 'Petugas')
+    } else if (
+      count < MAX_ALPA_STRIKEOUT &&
+      p.status_petugas === 'dicoret' &&
+      String(p.alasan_coret || '').toLowerCase().includes('alpa')
+    ) {
+      await admin
+        .from('misa_besar_petugas')
+        .update({
+          status_petugas: 'aktif',
+          alasan_coret: '',
+          dicoret_at: null,
+        })
+        .eq('id', p.id)
+    }
+  }
+
+  return { newlyDicoretNames, alpaCounts }
 }
 
 export async function POST(request: Request) {
@@ -25,17 +72,26 @@ export async function POST(request: Request) {
     if (auth.errorResponse) return auth.errorResponse
 
     const body = await request.json()
-    const { latihan_id, petugas_id, status_kehadiran, catatan = '', bulk_action, session_id, qr_data } = body
+    const {
+      latihan_id,
+      petugas_id,
+      status_kehadiran,
+      catatan = '',
+      bulk_action,
+      session_id,
+    } = body
     const admin = auth.adminSupabase
 
     if (!latihan_id) {
-      return NextResponse.json({ error: 'ID sesi latihan (latihan_id) wajib disertakan.' }, { status: 400 })
+      return NextResponse.json(
+        { error: 'ID sesi latihan (latihan_id) wajib disertakan.' },
+        { status: 400 }
+      )
     }
 
-    // Pastikan latihan valid
     const { data: latihanData, error: latErr } = await (admin as any)
       .from('misa_besar_latihan')
-      .select('*, event:misa_besar_events(nama_perayaan)')
+      .select('id, event_id, session_id, judul_latihan')
       .eq('id', latihan_id)
       .single()
 
@@ -45,129 +101,13 @@ export async function POST(request: Request) {
 
     const nowIso = new Date().toISOString()
 
-    // MODE 1: Scan QR Anggota saat Latihan
-    if (qr_data) {
-      const raw = String(qr_data).trim()
-      let targetUserId: string | null = null
-
-      if (raw.startsWith('SIDINAR:USER:')) {
-        targetUserId = raw.replace('SIDINAR:USER:', '').trim()
-      } else if (raw.startsWith('SIDINAR:')) {
-        const parts = raw.split(':')
-        const maybeId = parts[1] || ''
-        // Coba cari di bookings untuk mendapatkan user_id jika anak menunjukkan QR tiket misa
-        const { data: bData } = await (admin as any)
-          .from('bookings')
-          .select('user_id')
-          .eq('id', maybeId)
-          .maybeSingle()
-        targetUserId = bData?.user_id || maybeId
-      } else {
-        targetUserId = raw
-      }
-
-      if (!targetUserId) {
-        return NextResponse.json({ error: 'Format QR Code tidak dikenali.' }, { status: 400 })
-      }
-
-      // Cari user di profiles jika input hanya 8 karakter prefix ID
-      if (targetUserId.length >= 6 && targetUserId.length < 36) {
-        const { data: usersMatch } = await (admin as any)
-          .from('profiles')
-          .select('id')
-          .ilike('id', `${targetUserId}%`)
-          .limit(1)
-        if (usersMatch && usersMatch.length > 0) {
-          targetUserId = usersMatch[0].id
-        }
-      }
-
-      // Cari penugasan petugas di event (dibatasi ke session jika latihan khusus atau panel sesi dipilih)
-      const scopedSessionId = latihanData.session_id || session_id || null
-      let petugasQuery = (admin as any)
-        .from('misa_besar_petugas')
-        .select('*, profile:profiles(nama_lengkap, nama_panggilan), session:misa_besar_sessions(nama_sesi)')
-        .eq('event_id', latihanData.event_id)
-        .eq('user_id', targetUserId)
-
-      if (scopedSessionId) {
-        petugasQuery = petugasQuery.eq('session_id', scopedSessionId)
-      }
-
-      const { data: matchedPetugas } = await petugasQuery
-
-      if (!matchedPetugas || matchedPetugas.length === 0) {
-        // Cek apakah user memang terdaftar di tabel profiles tetapi belum dimasukkan ke roster Misa Besar
-        const { data: userProf } = await (admin as any)
-          .from('profiles')
-          .select('nama_lengkap')
-          .eq('id', targetUserId)
-          .maybeSingle()
-
-        if (userProf) {
-          return NextResponse.json(
-            {
-              error: `${userProf.nama_lengkap} belum terdaftar sebagai petugas pada ${latihanData.event?.nama_perayaan || 'perayaan ini'}${scopedSessionId ? ' (sesi misa/ibadat ini)' : ''}. Tambahkan ke Daftar Petugas sesi ini terlebih dahulu.`,
-            },
-            { status: 404 }
-          )
-        }
-
-        return NextResponse.json(
-          { error: 'QR Code anggota tidak ditemukan di sistem.' },
-          { status: 404 }
-        )
-      }
-
-      const computedStatus = parseLatihanTimeStatus(latihanData.tanggal_latihan, latihanData.jam_mulai)
-      const upsertRows = matchedPetugas.map((p: any) => ({
-        latihan_id,
-        petugas_id: p.id,
-        user_id: p.user_id,
-        status_kehadiran: computedStatus,
-        waktu_absen: nowIso,
-        catatan: 'Scan QR Latihan',
-        dicatat_oleh: auth.user!.id,
-        updated_at: nowIso,
-      }))
-
-      const { error: upsErr } = await (admin as any)
-        .from('misa_besar_absensi')
-        .upsert(upsertRows, { onConflict: 'latihan_id,petugas_id' })
-
-      if (upsErr) {
-        return NextResponse.json({ error: upsErr.message }, { status: 500 })
-      }
-
-      const first = matchedPetugas[0]
-      const sessionsText = matchedPetugas
-        .map((p: any) => `${p.session?.nama_sesi || 'Sesi'} (${p.posisi_tugas})`)
-        .join(', ')
-
-      return NextResponse.json({
-        success: true,
-        status: computedStatus,
-        message: `Absensi Latihan Berhasil! ${first.profile?.nama_lengkap || 'Petugas'} (${computedStatus === 'hadir' ? 'Hadir' : 'Terlambat'})`,
-        petugas: {
-          nama: first.profile?.nama_lengkap || 'Petugas Altar',
-          posisi: sessionsText,
-          misa: `${latihanData.event?.nama_perayaan || 'Misa Besar'} • ${latihanData.judul_latihan}`,
-          status: computedStatus,
-          waktu_checkin: new Date().toLocaleTimeString('id-ID', {
-            timeZone: 'Asia/Jakarta',
-            hour: '2-digit',
-            minute: '2-digit',
-          }),
-        },
-      })
-    }
-
-    // MODE 2: Bulk Action ('all_hadir' | 'remaining_alpa')
+    // MODE 1: Bulk Action ('all_hadir' | 'remaining_alpa') khusus petugas aktif
     if (bulk_action) {
       let petugasQuery = (admin as any)
         .from('misa_besar_petugas')
         .select('id, user_id, session_id')
         .eq('event_id', latihanData.event_id)
+        .neq('status_petugas', 'dicoret')
 
       const targetSessionId = session_id || latihanData.session_id
       if (targetSessionId) {
@@ -178,7 +118,10 @@ export async function POST(request: Request) {
       if (pErr) return NextResponse.json({ error: pErr.message }, { status: 500 })
 
       if (!targetPetugas || targetPetugas.length === 0) {
-        return NextResponse.json({ error: 'Belum ada petugas yang terdaftar pada sesi ini.' }, { status: 400 })
+        return NextResponse.json(
+          { error: 'Belum ada petugas aktif pada sesi ini.' },
+          { status: 400 }
+        )
       }
 
       if (bulk_action === 'all_hadir') {
@@ -199,8 +142,15 @@ export async function POST(request: Request) {
 
         if (upsErr) return NextResponse.json({ error: upsErr.message }, { status: 500 })
 
+        await evaluateThreeAlpaRule(
+          admin,
+          targetPetugas.map((p: any) => p.id)
+        )
+
         return NextResponse.json({
           success: true,
+          auto_dicoret: false,
+          dicoret_names: [],
           message: `Berhasil menandai ${rows.length} petugas sebagai HADIR.`,
         })
       }
@@ -217,7 +167,9 @@ export async function POST(request: Request) {
         if (remaining.length === 0) {
           return NextResponse.json({
             success: true,
-            message: 'Seluruh petugas pada sesi ini sudah tercatat absensinya.',
+            auto_dicoret: false,
+            dicoret_names: [],
+            message: 'Seluruh petugas aktif pada sesi ini sudah tercatat absensinya.',
           })
         }
 
@@ -227,7 +179,7 @@ export async function POST(request: Request) {
           user_id: p.user_id,
           status_kehadiran: 'alpa',
           waktu_absen: nowIso,
-          catatan: 'Belum hadir saat sesi latihan',
+          catatan: 'Tidak hadir tanpa keterangan (Alpa)',
           dicatat_oleh: auth.user!.id,
           updated_at: nowIso,
         }))
@@ -238,16 +190,29 @@ export async function POST(request: Request) {
 
         if (upsErr) return NextResponse.json({ error: upsErr.message }, { status: 500 })
 
+        const { newlyDicoretNames } = await evaluateThreeAlpaRule(
+          admin,
+          remaining.map((p: any) => p.id)
+        )
+
+        const baseMsg = `Berhasil menandai ${rows.length} petugas yang belum absen sebagai ALPA.`
+        const dicoretMsg =
+          newlyDicoretNames.length > 0
+            ? ` ⚠️ Otomatis dicoret karena mencapai 3x Alpa: ${newlyDicoretNames.join(', ')}.`
+            : ''
+
         return NextResponse.json({
           success: true,
-          message: `Berhasil menandai ${rows.length} petugas yang belum absen sebagai ALPA.`,
+          auto_dicoret: newlyDicoretNames.length > 0,
+          dicoret_names: newlyDicoretNames,
+          message: baseMsg + dicoretMsg,
         })
       }
 
       return NextResponse.json({ error: 'bulk_action tidak dikenali.' }, { status: 400 })
     }
 
-    // MODE 3: Single Petugas Toggle / Reset
+    // MODE 2: Single Click Status Toggle / Reset
     if (!petugas_id || !status_kehadiran) {
       return NextResponse.json(
         { error: 'petugas_id dan status_kehadiran wajib disertakan.' },
@@ -263,7 +228,14 @@ export async function POST(request: Request) {
         .eq('petugas_id', petugas_id)
 
       if (delErr) return NextResponse.json({ error: delErr.message }, { status: 500 })
-      return NextResponse.json({ success: true, message: 'Status absensi dikembalikan ke Belum Absen.' })
+
+      await evaluateThreeAlpaRule(admin, [petugas_id])
+      return NextResponse.json({
+        success: true,
+        auto_dicoret: false,
+        dicoret_names: [],
+        message: 'Status absensi dikembalikan ke Belum Absen.',
+      })
     }
 
     if (!ALLOWED_STATUSES.has(status_kehadiran)) {
@@ -302,9 +274,17 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: saveErr.message }, { status: 500 })
     }
 
+    const { newlyDicoretNames, alpaCounts } = await evaluateThreeAlpaRule(admin, [petugasData.id])
+    const isDicoretNow = newlyDicoretNames.length > 0
+
     return NextResponse.json({
       success: true,
-      message: 'Absensi latihan berhasil disimpan.',
+      auto_dicoret: isDicoretNow,
+      dicoret_names: newlyDicoretNames,
+      alpa_count: alpaCounts[petugasData.id] || 0,
+      message: isDicoretNow
+        ? `⚠️ ${newlyDicoretNames[0]} tercatat Alpa ke-${alpaCounts[petugasData.id]} dan OTOMATIS DICORET dari daftar petugas misa!`
+        : 'Absensi latihan berhasil disimpan.',
       absensi: saved,
     })
   } catch (err: any) {
@@ -314,4 +294,3 @@ export async function POST(request: Request) {
     )
   }
 }
-
