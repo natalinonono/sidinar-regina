@@ -60,19 +60,45 @@ export async function POST(request: Request) {
       )
     }
 
-    // Verifikasi hak akses: pengurus atau pemilik booking
+    // Verifikasi hak akses: pengurus aktif atau pemilik booking
     const { data: callerProfile } = await admin
       .from('profiles')
-      .select('role')
+      .select('role, status')
       .eq('id', user.id)
       .single()
 
-    const isPengurus = (callerProfile as any)?.role === 'pengurus'
+    const isPengurus = (callerProfile as any)?.role === 'pengurus' && (callerProfile as any)?.status === 'aktif'
     if (booking.user_id !== user.id && !isPengurus) {
       return NextResponse.json(
         { error: 'Akses ditolak: Hanya pengurus atau petugas bersangkutan yang dapat memindai presensi.' },
         { status: 403 }
       )
+    }
+
+    if (booking.status_kehadiran === 'hadir' || booking.status_kehadiran === 'terlambat') {
+      const existingCheckinStr = booking.waktu_checkin
+        ? new Date(booking.waktu_checkin).toLocaleTimeString('id-ID', {
+            hour: '2-digit',
+            minute: '2-digit',
+            timeZone: 'Asia/Jakarta',
+          })
+        : '-'
+      return NextResponse.json({
+        success: true,
+        already_checked_in: true,
+        status: booking.status_kehadiran,
+        message: `Presensi ${booking.profile?.nama_lengkap || 'Petugas'} sudah tercatat sebelumnya (${booking.status_kehadiran === 'hadir' ? 'Tepat Waktu' : 'Terlambat'}).`,
+        petugas: {
+          id: booking.id,
+          nama: booking.profile?.nama_lengkap || 'Petugas Altar',
+          misa: booking.schedule.judul_misa,
+          jam: booking.schedule.jam_mulai,
+          posisi: booking.posisi_tugas || 'Petugas Altar',
+          status: booking.status_kehadiran,
+          waktu_checkin: existingCheckinStr,
+        },
+        booking,
+      })
     }
 
     const now = new Date()
@@ -140,7 +166,11 @@ export async function POST(request: Request) {
         jam: booking.schedule.jam_mulai,
         posisi: booking.posisi_tugas || 'Petugas Altar',
         status: finalStatus,
-        waktu_checkin: now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }),
+        waktu_checkin: now.toLocaleTimeString('id-ID', {
+          hour: '2-digit',
+          minute: '2-digit',
+          timeZone: 'Asia/Jakarta',
+        }),
       },
       booking: updatedBooking,
     })

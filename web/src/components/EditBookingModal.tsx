@@ -1,7 +1,8 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { BookingWithDetails, MassSchedule } from '@/types/database'
+import { isMassToleranceExpired } from '@/lib/utils/time'
 
 interface EditBookingModalProps {
   booking: BookingWithDetails | null
@@ -25,14 +26,24 @@ export const EditBookingModal: React.FC<EditBookingModalProps> = ({
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [confirmCancel, setConfirmCancel] = useState(false)
 
+  useEffect(() => {
+    if (!isOpen) return
+    setSelectedScheduleId('')
+    setLoading(false)
+    setErrorMessage(null)
+    setConfirmCancel(false)
+  }, [isOpen, booking?.id])
+
   if (!isOpen || !booking || !booking.schedule) return null
 
-  // Jadwal alternatif dalam kategori yang sama atau pekan yang sama
+  // Jadwal alternatif dalam kategori yang sama dan belum melewati batas presensi
   const candidateSchedules = allSchedules.filter((s) => {
     // Sembunyikan jadwal saat ini
     if (s.id === booking.schedule_id) return false
     // Tampilkan kategori yang sama
-    return s.kategori === booking.schedule?.kategori
+    if (s.kategori !== booking.schedule?.kategori) return false
+    // Sembunyikan jadwal yang sudah selesai / melewati toleransi
+    return !isMassToleranceExpired(s.tanggal_misa, s.jam_mulai, s.kategori)
   })
 
   // Hitung sisa kuota untuk setiap opsi jadwal alternatif

@@ -9,7 +9,11 @@ const MAX_ALPA_STRIKEOUT = 3
  * - Jika jumlah absensi 'alpa' >= 3 -> status_petugas otomatis diubah menjadi 'dicoret'
  * - Jika jumlah 'alpa' turun < 3 karena koreksi absensi -> otomatis dipulihkan ke 'aktif'
  */
-async function evaluateThreeAlpaRule(admin: any, petugasIds: string[]) {
+async function evaluateThreeAlpaRule(
+  admin: any,
+  petugasIds: string[],
+  triggeredByAlpa: boolean = true
+) {
   if (!petugasIds || petugasIds.length === 0) {
     return { newlyDicoretNames: [] as string[], alpaCounts: {} as Record<string, number> }
   }
@@ -37,7 +41,7 @@ async function evaluateThreeAlpaRule(admin: any, petugasIds: string[]) {
 
   for (const p of petugasRows || []) {
     const count = alpaCounts[p.id] || 0
-    if (count >= MAX_ALPA_STRIKEOUT && p.status_petugas !== 'dicoret') {
+    if (triggeredByAlpa && count >= MAX_ALPA_STRIKEOUT && p.status_petugas !== 'dicoret') {
       await admin
         .from('misa_besar_petugas')
         .update({
@@ -144,7 +148,8 @@ export async function POST(request: Request) {
 
         await evaluateThreeAlpaRule(
           admin,
-          targetPetugas.map((p: any) => p.id)
+          targetPetugas.map((p: any) => p.id),
+          false
         )
 
         return NextResponse.json({
@@ -192,7 +197,8 @@ export async function POST(request: Request) {
 
         const { newlyDicoretNames } = await evaluateThreeAlpaRule(
           admin,
-          remaining.map((p: any) => p.id)
+          remaining.map((p: any) => p.id),
+          true
         )
 
         const baseMsg = `Berhasil menandai ${rows.length} petugas yang belum absen sebagai ALPA.`
@@ -229,7 +235,7 @@ export async function POST(request: Request) {
 
       if (delErr) return NextResponse.json({ error: delErr.message }, { status: 500 })
 
-      await evaluateThreeAlpaRule(admin, [petugas_id])
+      await evaluateThreeAlpaRule(admin, [petugas_id], false)
       return NextResponse.json({
         success: true,
         auto_dicoret: false,
@@ -274,7 +280,11 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: saveErr.message }, { status: 500 })
     }
 
-    const { newlyDicoretNames, alpaCounts } = await evaluateThreeAlpaRule(admin, [petugasData.id])
+    const { newlyDicoretNames, alpaCounts } = await evaluateThreeAlpaRule(
+      admin,
+      [petugasData.id],
+      status_kehadiran === 'alpa'
+    )
     const isDicoretNow = newlyDicoretNames.length > 0
 
     return NextResponse.json({

@@ -43,7 +43,7 @@ export function LatihanModal({
       setLokasi(editingLatihan.lokasi || 'Gereja & Sakristi SPMR Purbowardayan')
       setCatatan(editingLatihan.catatan || '')
     } else {
-      const todayStr = new Date().toISOString().split('T')[0]
+      const todayStr = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Jakarta' })
       const targetSess = defaultSessionId
         ? sessions.find((s) => s.id === defaultSessionId)
         : null
@@ -59,7 +59,8 @@ export function LatihanModal({
       setCatatan('')
     }
     setErrorMsg(null)
-  }, [isOpen, editingLatihan, eventName, defaultSessionId, sessions])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, editingLatihan?.id, eventName, defaultSessionId])
 
   if (!isOpen) return null
 

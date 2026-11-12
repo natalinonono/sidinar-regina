@@ -227,10 +227,10 @@ export default function PengurusLatihanMisaBesarPage() {
     const q = searchTerm.toLowerCase()
     return activeSessionPetugas.filter(
       (p) =>
-        p.profile?.nama_lengkap?.toLowerCase().includes(q) ||
-        p.profile?.nama_panggilan?.toLowerCase().includes(q) ||
-        p.posisi_tugas.toLowerCase().includes(q) ||
-        p.profile?.asal_wilayah_teks?.toLowerCase().includes(q)
+        (p.profile?.nama_lengkap || '').toLowerCase().includes(q) ||
+        (p.profile?.nama_panggilan || '').toLowerCase().includes(q) ||
+        (p.posisi_tugas || '').toLowerCase().includes(q) ||
+        (p.profile?.asal_wilayah_teks || '').toLowerCase().includes(q)
     )
   }, [activeSessionPetugas, searchTerm])
 

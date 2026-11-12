@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
-import { createClient, createAdminClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/server'
+import { requirePengurusUser } from '@/lib/supabase/authGuard'
 
 export const dynamic = 'force-dynamic'
 
@@ -28,28 +29,8 @@ export async function GET() {
 
 export async function DELETE(request: Request) {
   try {
-    const supabase = await createClient()
-    const {
-      data: { user },
-    } = await supabase.auth.getUser()
-
-    if (!user) {
-      return NextResponse.json({ error: 'Autentikasi diperlukan.' }, { status: 401 })
-    }
-
-    // Verifikasi role pengurus
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('role')
-      .eq('id', user.id)
-      .single()
-
-    if ((profile as any)?.role !== 'pengurus') {
-      return NextResponse.json(
-        { error: 'Akses ditolak: Hanya pengurus yang dapat menghapus jadwal misa.' },
-        { status: 403 }
-      )
-    }
+    const auth = await requirePengurusUser()
+    if (auth.errorResponse) return auth.errorResponse
 
     // Ambil id dari searchParams (?id=...) atau body JSON ({ id: ... })
     const { searchParams } = new URL(request.url)
@@ -68,7 +49,7 @@ export async function DELETE(request: Request) {
       return NextResponse.json({ error: 'ID jadwal misa wajib disertakan.' }, { status: 400 })
     }
 
-    const admin = createAdminClient()
+    const admin = (auth as any).adminSupabase
 
     // Hapus booking terkait terlebih dahulu agar referential integrity aman
     await admin.from('bookings').delete().eq('schedule_id', scheduleId)

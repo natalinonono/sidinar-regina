@@ -17,14 +17,14 @@ export default async function PengurusLayout({
     redirect('/login')
   }
 
-  // Verifikasi role pengurus langsung di level server
+  // Verifikasi role pengurus aktif langsung di level server
   const { data: profile } = await supabase
     .from('profiles')
-    .select('role')
+    .select('role, status')
     .eq('id', user.id)
     .single()
 
-  if ((profile as any)?.role !== 'pengurus') {
+  if ((profile as any)?.role !== 'pengurus' || (profile as any)?.status !== 'aktif') {
     redirect('/anggota')
   }
 

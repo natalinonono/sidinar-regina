@@ -1,15 +1,35 @@
-import { format, parseISO, startOfWeek, endOfWeek, isWithinInterval, addMinutes, subMinutes, getISOWeek, getYear } from 'date-fns'
+import { format, startOfWeek, endOfWeek, addMinutes, subMinutes, getISOWeek, getISOWeekYear } from 'date-fns'
 
 /**
- * Returns current week and year in Indonesia/WIB context (Monday - Sunday)
+ * Returns YYYY-MM-DD calendar date in Asia/Jakarta (WIB) timezone regardless of host/server timezone.
  */
-export function getCurrentLiturgicalWeek(targetDate: Date = new Date()) {
-  const weekNumber = getISOWeek(targetDate)
-  const yearNumber = getYear(targetDate)
-  
-  // Week interval Monday 00:00 to Sunday 23:59
-  const weekStart = startOfWeek(targetDate, { weekStartsOn: 1 })
-  const weekEnd = endOfWeek(targetDate, { weekStartsOn: 1 })
+export function toWibDateString(targetDate: Date = new Date()): string {
+  return targetDate.toLocaleDateString('en-CA', { timeZone: 'Asia/Jakarta' })
+}
+
+/**
+ * Returns HH:mm clock string in Asia/Jakarta (WIB) timezone.
+ */
+export function toWibClockTime(targetDate: Date = new Date()): string {
+  return targetDate.toLocaleTimeString('en-GB', {
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+    timeZone: 'Asia/Jakarta',
+  })
+}
+
+/**
+ * Computes liturgical ISO week metadata for any YYYY-MM-DD date string safely across timezones.
+ */
+export function getLiturgicalWeekForDate(dateStr: string) {
+  const [y, m, d] = dateStr.split('-').map(Number)
+  const safeLocalDate = new Date(y, m - 1, d, 12, 0, 0)
+  const weekNumber = getISOWeek(safeLocalDate)
+  const yearNumber = getISOWeekYear(safeLocalDate)
+
+  const weekStart = startOfWeek(safeLocalDate, { weekStartsOn: 1 })
+  const weekEnd = endOfWeek(safeLocalDate, { weekStartsOn: 1 })
 
   return {
     weekNumber,
@@ -18,8 +38,15 @@ export function getCurrentLiturgicalWeek(targetDate: Date = new Date()) {
     weekEnd,
     startDateStr: format(weekStart, 'yyyy-MM-dd'),
     endDateStr: format(weekEnd, 'yyyy-MM-dd'),
-    formattedRange: `${format(weekStart, 'dd MMM')} - ${format(weekEnd, 'dd MMM yyyy')}`
+    formattedRange: `${format(weekStart, 'dd MMM')} - ${format(weekEnd, 'dd MMM yyyy')}`,
   }
+}
+
+/**
+ * Returns current week and year in Indonesia/WIB context (Monday - Sunday)
+ */
+export function getCurrentLiturgicalWeek(targetDate: Date = new Date()) {
+  return getLiturgicalWeekForDate(toWibDateString(targetDate))
 }
 
 export type CheckinEvaluation = {
@@ -122,7 +149,7 @@ export function evaluateCheckinWindow(
     return {
       allowed: true,
       status: 'terlambat',
-      message: `Presensi Terlambat (Melewati batas tepat waktu ${format(ontimeDeadline, 'HH:mm')} WIB)`,
+      message: `Presensi Terlambat (Melewati batas tepat waktu ${toWibClockTime(ontimeDeadline)} WIB)`,
       windowOpenTime,
       ontimeDeadline,
       massStartTime

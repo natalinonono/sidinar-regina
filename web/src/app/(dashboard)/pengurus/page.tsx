@@ -411,7 +411,9 @@ export default function PengurusDashboardPage() {
               {schedules.map((s) => {
                 const sBookings = bookings.filter((b) => b.schedule_id === s.id)
                 const isFull = sBookings.length >= s.kuota_maksimal
-                const percent = Math.min(100, Math.round((sBookings.length / s.kuota_maksimal) * 100))
+                const percent = s.kuota_maksimal > 0
+                  ? Math.min(100, Math.round((sBookings.length / s.kuota_maksimal) * 100))
+                  : 0
 
                 return (
                   <tr key={s.id} className="hover:bg-surface-container-low/50 transition-colors">

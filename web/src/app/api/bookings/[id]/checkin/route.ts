@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { createClient, createAdminClient } from '@/lib/supabase/server'
 import { evaluateCheckinWindow, isMassToleranceExpired } from '@/lib/utils/time'
 
 export async function POST(
@@ -18,8 +18,10 @@ export async function POST(
       return NextResponse.json({ error: 'Autentikasi diperlukan.' }, { status: 401 })
     }
 
+    const adminSupabase = createAdminClient()
+
     // Fetch booking along with schedule details
-    const { data: booking, error: bookingErr } = await (supabase.from('bookings') as any)
+    const { data: booking, error: bookingErr } = await (adminSupabase.from('bookings') as any)
       .select('*, schedule:mass_schedules(*)')
       .eq('id', bookingId)
       .single()
@@ -28,22 +30,32 @@ export async function POST(
       return NextResponse.json({ error: 'Data pendaftaran tugas tidak ditemukan.' }, { status: 404 })
     }
 
-    // Check if user is owner or pengurus
-    const { data: profile } = await (supabase.from('profiles') as any)
-      .select('role')
+    // Check if user is owner or active pengurus
+    const { data: profile } = await (adminSupabase.from('profiles') as any)
+      .select('role, status')
       .eq('id', user.id)
       .single()
 
-    const isPengurus = (profile as any)?.role === 'pengurus'
+    const isPengurus = (profile as any)?.role === 'pengurus' && (profile as any)?.status === 'aktif'
     if (booking.user_id !== user.id && !isPengurus) {
       return NextResponse.json({ error: 'Anda tidak memiliki hak akses untuk presensi tugas ini.' }, { status: 403 })
+    }
+
+    if (booking.status_kehadiran === 'hadir' || booking.status_kehadiran === 'terlambat') {
+      return NextResponse.json({
+        success: true,
+        already_checked_in: true,
+        status: booking.status_kehadiran,
+        message: `Presensi sudah tercatat sebelumnya (${booking.status_kehadiran === 'hadir' ? 'Hadir Tepat Waktu' : 'Terlambat'}).`,
+        booking,
+      })
     }
 
     const now = new Date()
 
     // Cek batas toleransi akhir (+45 menit toleransi pasca misa: 75m untuk harian, 120m untuk mingguan)
     if (isMassToleranceExpired(booking.schedule.tanggal_misa, booking.schedule.jam_mulai, booking.schedule.kategori, now)) {
-      await (supabase.from('bookings') as any)
+      await (adminSupabase.from('bookings') as any)
         .update({ status_kehadiran: 'alpa' })
         .eq('id', bookingId)
 
@@ -74,8 +86,7 @@ export async function POST(
     const finalStatus = evaluation.status === 'terlambat' ? 'terlambat' : 'hadir'
 
     // Update booking record
-    const { data: updatedBooking, error: updateErr } = await (supabase.from('bookings') as any)
-      .from('bookings')
+    const { data: updatedBooking, error: updateErr } = await (adminSupabase.from('bookings') as any)
       .update({
         status_kehadiran: finalStatus,
         waktu_checkin: now.toISOString(),

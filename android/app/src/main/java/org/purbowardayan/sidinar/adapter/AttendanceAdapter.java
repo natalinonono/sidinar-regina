@@ -87,7 +87,7 @@ public class AttendanceAdapter extends RecyclerView.Adapter<AttendanceAdapter.Vi
 
             String checkin = booking.getWaktuCheckin();
             if (checkin != null && !checkin.isEmpty()) {
-                tvAttendanceTime.setText("Check-in: " + checkin);
+                tvAttendanceTime.setText("Check-in: " + org.purbowardayan.sidinar.util.LiturgicalUtil.formatCheckinWib(checkin));
             } else {
                 tvAttendanceTime.setText("Belum check-in sakristi");
             }

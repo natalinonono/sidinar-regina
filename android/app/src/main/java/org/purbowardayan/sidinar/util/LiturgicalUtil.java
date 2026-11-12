@@ -63,4 +63,67 @@ public class LiturgicalUtil {
         String message = generateWhatsAppReminder(schedule, profile);
         ApiClient.openWhatsApp(context, cleanPhone, message);
     }
+
+    /**
+     * Menghitung minggu ISO (minggu_ke) dan tahun minggu ISO (tahun) dari string tanggal YYYY-MM-DD (zona WIB).
+     */
+    public static int[] computeIsoWeekAndYear(String dateStr) {
+        java.util.TimeZone wibTz = java.util.TimeZone.getTimeZone("Asia/Jakarta");
+        java.util.Calendar cal = java.util.Calendar.getInstance(wibTz);
+        cal.setFirstDayOfWeek(java.util.Calendar.MONDAY);
+        cal.setMinimalDaysInFirstWeek(4);
+        if (dateStr != null && dateStr.length() >= 10) {
+            try {
+                java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US);
+                sdf.setTimeZone(wibTz);
+                java.util.Date parsed = sdf.parse(dateStr.trim().substring(0, 10));
+                if (parsed != null) {
+                    cal.setTime(parsed);
+                }
+            } catch (Exception ignored) {}
+        }
+        int week = cal.get(java.util.Calendar.WEEK_OF_YEAR);
+        int year = cal.get(java.util.Calendar.YEAR);
+        int month = cal.get(java.util.Calendar.MONTH); // 0 = Jan, 11 = Dec
+        if (month == java.util.Calendar.DECEMBER && week == 1) {
+            year += 1;
+        } else if (month == java.util.Calendar.JANUARY && week >= 52) {
+            year -= 1;
+        }
+        return new int[]{week, year};
+    }
+
+    /**
+     * Memformat timestamp ISO-8601 (UTC/offset) ke jam lokal Asia/Jakarta (HH:mm WIB).
+     */
+    public static String formatCheckinWib(String rawIso) {
+        if (rawIso == null || rawIso.trim().isEmpty()) return "";
+        String normalized = rawIso.trim().replaceFirst("\\.\\d+", "");
+        java.util.TimeZone wibTz = java.util.TimeZone.getTimeZone("Asia/Jakarta");
+        String[] patterns = new String[]{
+                "yyyy-MM-dd'T'HH:mm:ssXXX",
+                "yyyy-MM-dd'T'HH:mm:ssXX",
+                "yyyy-MM-dd'T'HH:mm:ssX",
+                "yyyy-MM-dd'T'HH:mm:ss"
+        };
+        for (String pattern : patterns) {
+            try {
+                java.text.SimpleDateFormat parser = new java.text.SimpleDateFormat(pattern, java.util.Locale.US);
+                parser.setLenient(false);
+                if (!pattern.contains("X")) {
+                    parser.setTimeZone(wibTz);
+                }
+                java.util.Date dt = parser.parse(normalized);
+                if (dt != null) {
+                    java.text.SimpleDateFormat out = new java.text.SimpleDateFormat("HH:mm", java.util.Locale.US);
+                    out.setTimeZone(wibTz);
+                    return out.format(dt) + " WIB";
+                }
+            } catch (Exception ignored) {}
+        }
+        if (normalized.contains("T") && normalized.length() >= 16) {
+            return normalized.substring(11, 16) + " WIB";
+        }
+        return rawIso.trim();
+    }
 }

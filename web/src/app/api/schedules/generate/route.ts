@@ -1,43 +1,46 @@
 import { NextResponse } from 'next/server'
-import { createClient, createAdminClient } from '@/lib/supabase/server'
-import { addDays, format, getISOWeek, getYear } from 'date-fns'
+import { requirePengurusUser } from '@/lib/supabase/authGuard'
+import { addDays } from 'date-fns'
+import { getLiturgicalWeekForDate, toWibDateString } from '@/lib/utils/time'
 
 export async function POST(request: Request) {
   try {
-    const supabase = await createClient()
-
-    const {
-      data: { user },
-    } = await supabase.auth.getUser()
-
-    if (!user) {
-      return NextResponse.json({ error: 'Autentikasi diperlukan.' }, { status: 401 })
-    }
-
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('role')
-      .eq('id', user.id)
-      .single()
-
-    if ((profile as any)?.role !== 'pengurus') {
-      return NextResponse.json({ error: 'Hanya Pengurus yang dapat membuat jadwal otomatis.' }, { status: 403 })
-    }
+    const auth = await requirePengurusUser()
+    if (auth.errorResponse) return auth.errorResponse
 
     const { daysCount = 30 } = await request.json().catch(() => ({ daysCount: 30 }))
-    const adminSupabase = createAdminClient()
-    const today = new Date()
-    const schedulesToInsert = []
+    const safeDays = Math.min(Math.max(parseInt(String(daysCount), 10) || 30, 1), 90)
+    const adminSupabase = (auth as any).adminSupabase
 
-    for (let i = 0; i < daysCount; i++) {
-      const targetDate = addDays(today, i)
+    // Gunakan basis kalender Asia/Jakarta (WIB) agar konsisten di Vercel UTC
+    const wibTodayStr = toWibDateString()
+    const [y, m, d] = wibTodayStr.split('-').map(Number)
+    const wibBaseDate = new Date(y, m - 1, d, 12, 0, 0)
+    const wibEndDateStr = toWibDateString(addDays(wibBaseDate, safeDays))
+
+    const { data: existingSchedules } = await (adminSupabase as any)
+      .from('mass_schedules')
+      .select('tanggal_misa, jam_mulai')
+      .gte('tanggal_misa', wibTodayStr)
+      .lte('tanggal_misa', wibEndDateStr)
+
+    const existingKeys = new Set(
+      (existingSchedules || []).map(
+        (s: any) => `${s.tanggal_misa}|${String(s.jam_mulai || '').substring(0, 5)}`
+      )
+    )
+
+    const schedulesToInsert: any[] = []
+
+    for (let i = 0; i < safeDays; i++) {
+      const targetDate = addDays(wibBaseDate, i)
       const dayOfWeek = targetDate.getDay() // 0 = Minggu, 6 = Sabtu
-      const dateStr = format(targetDate, 'yyyy-MM-dd')
-      const weekNumber = getISOWeek(targetDate)
-      const yearNumber = getYear(targetDate)
+      const pad = (n: number) => n.toString().padStart(2, '0')
+      const dateStr = `${targetDate.getFullYear()}-${pad(targetDate.getMonth() + 1)}-${pad(targetDate.getDate())}`
+      const { weekNumber, yearNumber } = getLiturgicalWeekForDate(dateStr)
 
       // 1. Misa Harian: Senin - Sabtu (05:30 WIB, kuota 8)
-      if (dayOfWeek >= 1 && dayOfWeek <= 6) {
+      if (dayOfWeek >= 1 && dayOfWeek <= 6 && !existingKeys.has(`${dateStr}|05:30`)) {
         const dayNames = ['', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu']
         schedulesToInsert.push({
           judul_misa: `Misa Pagi Harian ${dayNames[dayOfWeek]}`,
@@ -54,7 +57,7 @@ export async function POST(request: Request) {
       }
 
       // 2. Misa Mingguan: Sabtu Sore (17:00 WIB, kuota 12)
-      if (dayOfWeek === 6) {
+      if (dayOfWeek === 6 && !existingKeys.has(`${dateStr}|17:00`)) {
         schedulesToInsert.push({
           judul_misa: 'Misa Mingguan Sabtu Sore',
           kategori: 'mingguan' as const,
@@ -79,20 +82,30 @@ export async function POST(request: Request) {
         ]
 
         for (const s of sundaySessions) {
-          schedulesToInsert.push({
-            judul_misa: s.title,
-            kategori: 'mingguan' as const,
-            tanggal_misa: dateStr,
-            jam_mulai: s.jam,
-            kuota_maksimal: 12,
-            minggu_ke: weekNumber,
-            tahun: yearNumber,
-            tahun_liturgi: 'Tahun B / II',
-            warna_liturgi: 'Hijau' as any,
-            nama_selebran: '',
-          })
+          if (!existingKeys.has(`${dateStr}|${s.jam.substring(0, 5)}`)) {
+            schedulesToInsert.push({
+              judul_misa: s.title,
+              kategori: 'mingguan' as const,
+              tanggal_misa: dateStr,
+              jam_mulai: s.jam,
+              kuota_maksimal: 12,
+              minggu_ke: weekNumber,
+              tahun: yearNumber,
+              tahun_liturgi: 'Tahun B / II',
+              warna_liturgi: 'Hijau' as any,
+              nama_selebran: '',
+            })
+          }
         }
       }
+    }
+
+    if (schedulesToInsert.length === 0) {
+      return NextResponse.json({
+        success: true,
+        message: `Seluruh jadwal misa untuk ${safeDays} hari ke depan sudah tersedia (tidak ada jadwal baru yang perlu ditambahkan).`,
+        count: 0,
+      })
     }
 
     const { data, error } = await (adminSupabase as any)
@@ -106,7 +119,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({
       success: true,
-      message: `Berhasil membuat ${data.length} jadwal misa otomatis untuk kurun waktu ${daysCount} hari ke depan!`,
+      message: `Berhasil membuat ${data.length} jadwal misa otomatis untuk kurun waktu ${safeDays} hari ke depan!`,
       count: data.length,
     })
   } catch (err: any) {

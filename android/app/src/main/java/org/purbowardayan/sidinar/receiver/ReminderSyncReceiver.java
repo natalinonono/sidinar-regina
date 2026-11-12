@@ -213,17 +213,23 @@ public class ReminderSyncReceiver extends BroadcastReceiver {
         if (currentUpdatedAt != null && !currentUpdatedAt.isEmpty()) {
             if (!currentUpdatedAt.equals(lastProfileUpdatedAt)) {
                 profileTimestampChanged = true;
-                prefs.edit().putString("last_profile_updated_at_" + userId, currentUpdatedAt).apply();
             }
         }
 
-        SimpleDateFormat sdfDate = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
-        Calendar cal = Calendar.getInstance();
-        String todayStr = sdfDate.format(cal.getTime());
-        cal.add(Calendar.DAY_OF_YEAR, 1);
-        String tomorrowStr = sdfDate.format(cal.getTime());
+        if (bookings != null) {
+            if (profileTimestampChanged && currentUpdatedAt != null) {
+                prefs.edit().putString("last_profile_updated_at_" + userId, currentUpdatedAt).apply();
+            }
 
-        for (Booking b : bookings) {
+            java.util.TimeZone wibTz = java.util.TimeZone.getTimeZone("Asia/Jakarta");
+            SimpleDateFormat sdfDate = new SimpleDateFormat("yyyy-MM-dd", Locale.US);
+            sdfDate.setTimeZone(wibTz);
+            Calendar cal = Calendar.getInstance(wibTz);
+            String todayStr = sdfDate.format(cal.getTime());
+            cal.add(Calendar.DAY_OF_YEAR, 1);
+            String tomorrowStr = sdfDate.format(cal.getTime());
+
+            for (Booking b : bookings) {
             if (!userId.equals(b.getUserId()) || b.getSchedule() == null) continue;
 
             MassSchedule schedule = b.getSchedule();
@@ -255,11 +261,12 @@ public class ReminderSyncReceiver extends BroadcastReceiver {
             }
 
             // 3. Pengingat otomatis H-1 (Misa besok)
-            if (tomorrowStr.equals(tanggalMisa)) {
-                String keyH1 = "notified_h1_" + id + "_" + tomorrowStr;
-                if (!prefs.getBoolean(keyH1, false)) {
-                    prefs.edit().putBoolean(keyH1, true).apply();
-                    triggerAutoReminder(context, sessionManager, b, "BESOK");
+                if (tomorrowStr.equals(tanggalMisa)) {
+                    String keyH1 = "notified_h1_" + id + "_" + tomorrowStr;
+                    if (!prefs.getBoolean(keyH1, false)) {
+                        prefs.edit().putBoolean(keyH1, true).apply();
+                        triggerAutoReminder(context, sessionManager, b, "BESOK");
+                    }
                 }
             }
         }
@@ -292,7 +299,7 @@ public class ReminderSyncReceiver extends BroadcastReceiver {
     private void triggerPengurusReminder(Context context, SessionManager sessionManager, Booking booking) {
         String massTitle = booking.getSchedule().getKategori() != null ? booking.getSchedule().getKategori().toUpperCase() : "MISA";
         String massTime = (booking.getSchedule().getTanggalMisa() != null ? booking.getSchedule().getTanggalMisa() : "") +
-                " • " + (booking.getSchedule().getJamMulai() != null ? booking.getSchedule().getJamMulai() : "") + " WIB";
+                " • " + booking.getSchedule().getFormattedTime();
         Profile profile = sessionManager.getProfile();
         String nama = profile != null && profile.getNamaPanggilan() != null && !profile.getNamaPanggilan().isEmpty()
                 ? profile.getNamaPanggilan() : "Misdinar";
@@ -307,7 +314,7 @@ public class ReminderSyncReceiver extends BroadcastReceiver {
     private void triggerAutoReminder(Context context, SessionManager sessionManager, Booking booking, String labelWaktu) {
         String massTitle = booking.getSchedule().getJudulMisa() != null ? booking.getSchedule().getJudulMisa() : "Misa Kudus";
         String massTime = (booking.getSchedule().getTanggalMisa() != null ? booking.getSchedule().getTanggalMisa() : "") +
-                " • " + (booking.getSchedule().getJamMulai() != null ? booking.getSchedule().getJamMulai() : "") + " WIB";
+                " • " + booking.getSchedule().getFormattedTime();
         Profile profile = sessionManager.getProfile();
         String nama = profile != null && profile.getNamaPanggilan() != null && !profile.getNamaPanggilan().isEmpty()
                 ? profile.getNamaPanggilan() : "Misdinar";

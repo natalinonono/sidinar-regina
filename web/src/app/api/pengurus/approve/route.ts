@@ -1,28 +1,13 @@
 import { NextResponse } from 'next/server'
-import { createClient, createAdminClient } from '@/lib/supabase/server'
+import { requirePengurusUser } from '@/lib/supabase/authGuard'
+
+const ALLOWED_STATUSES = new Set(['pending', 'aktif', 'nonaktif'])
+const ALLOWED_ROLES = new Set(['anggota', 'pengurus'])
 
 export async function POST(request: Request) {
   try {
-    const supabase = await createClient()
-
-    const {
-      data: { user },
-    } = await supabase.auth.getUser()
-
-    if (!user) {
-      return NextResponse.json({ error: 'Autentikasi diperlukan.' }, { status: 401 })
-    }
-
-    // Verify current user is pengurus
-    const { data: currentProfile } = await supabase
-      .from('profiles')
-      .select('role')
-      .eq('id', user.id)
-      .single()
-
-    if ((currentProfile as any)?.role !== 'pengurus') {
-      return NextResponse.json({ error: 'Akses ditolak. Fitur ini khusus Pengurus Misdinar.' }, { status: 403 })
-    }
+    const auth = await requirePengurusUser()
+    if (auth.errorResponse) return auth.errorResponse
 
     const { member_id, status, role } = await request.json()
 
@@ -30,7 +15,15 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'member_id dan status wajib disertakan.' }, { status: 400 })
     }
 
-    const adminSupabase = createAdminClient()
+    if (!ALLOWED_STATUSES.has(status)) {
+      return NextResponse.json({ error: 'Nilai status keanggotaan tidak valid.' }, { status: 400 })
+    }
+
+    if (role && !ALLOWED_ROLES.has(role)) {
+      return NextResponse.json({ error: 'Nilai role tidak valid.' }, { status: 400 })
+    }
+
+    const adminSupabase = (auth as any).adminSupabase
     const updatePayload: any = { status, updated_at: new Date().toISOString() }
     if (role) {
       updatePayload.role = role

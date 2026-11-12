@@ -92,13 +92,7 @@ public class RiwayatAdapter extends RecyclerView.Adapter<RiwayatAdapter.ViewHold
             }
 
             if (item.getWaktuCheckin() != null && !item.getWaktuCheckin().isEmpty()) {
-                String checkinStr = item.getWaktuCheckin();
-                if (checkinStr.contains("T") && checkinStr.length() >= 16) {
-                    try {
-                        String timePart = checkinStr.substring(11, 16);
-                        checkinStr = timePart + " WIB";
-                    } catch (Exception ignored) {}
-                }
+                String checkinStr = org.purbowardayan.sidinar.util.LiturgicalUtil.formatCheckinWib(item.getWaktuCheckin());
                 tvRiwayatCheckinTime.setText("Check-in: " + checkinStr);
             } else {
                 tvRiwayatCheckinTime.setText(status.equalsIgnoreCase("hadir") ? "Hadir" : "Belum check-in");

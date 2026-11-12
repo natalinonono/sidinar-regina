@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createClient, createAdminClient } from '@/lib/supabase/server'
+import { isMassToleranceExpired } from '@/lib/utils/time'
 
 interface RouteContext {
   params: Promise<{
@@ -35,11 +36,11 @@ export async function DELETE(request: Request, context: RouteContext) {
     // 2. CEK KEPEMILIKAN: Misdinar hanya boleh membatalkan jadwal miliknya sendiri!
     const { data: profile } = await (adminSupabase as any)
       .from('profiles')
-      .select('role')
+      .select('role, status')
       .eq('id', user.id)
       .single()
 
-    const isPengurus = profile?.role === 'pengurus'
+    const isPengurus = profile?.role === 'pengurus' && profile?.status === 'aktif'
     if (existingBooking.user_id !== user.id && !isPengurus) {
       return NextResponse.json(
         { error: 'Akses ditolak: Anda hanya dapat membatalkan jadwal tugas milik Anda sendiri.' },
@@ -47,7 +48,7 @@ export async function DELETE(request: Request, context: RouteContext) {
       )
     }
 
-    if (existingBooking.status_kehadiran === 'hadir') {
+    if (['hadir', 'terlambat'].includes(existingBooking.status_kehadiran)) {
       return NextResponse.json(
         { error: 'Jadwal tugas yang sudah dipresensi / selesai tidak dapat dibatalkan.' },
         { status: 400 }
@@ -105,11 +106,11 @@ export async function PATCH(request: Request, context: RouteContext) {
     // 2. CEK KEPEMILIKAN
     const { data: profile } = await (adminSupabase as any)
       .from('profiles')
-      .select('role')
+      .select('role, status')
       .eq('id', user.id)
       .single()
 
-    const isPengurus = profile?.role === 'pengurus'
+    const isPengurus = profile?.role === 'pengurus' && profile?.status === 'aktif'
     if (existingBooking.user_id !== user.id && !isPengurus) {
       return NextResponse.json(
         { error: 'Akses ditolak: Anda hanya dapat mengedit jadwal tugas milik Anda sendiri.' },
@@ -117,7 +118,7 @@ export async function PATCH(request: Request, context: RouteContext) {
       )
     }
 
-    if (existingBooking.status_kehadiran === 'hadir') {
+    if (['hadir', 'terlambat'].includes(existingBooking.status_kehadiran)) {
       return NextResponse.json(
         { error: 'Jadwal tugas yang sudah dipresensi / selesai tidak dapat diubah.' },
         { status: 400 }
@@ -134,6 +135,16 @@ export async function PATCH(request: Request, context: RouteContext) {
 
       if (targetErr || !targetSchedule) {
         return NextResponse.json({ error: 'Jadwal misa tujuan tidak ditemukan.' }, { status: 404 })
+      }
+
+      if (
+        !isPengurus &&
+        isMassToleranceExpired(targetSchedule.tanggal_misa, targetSchedule.jam_mulai, targetSchedule.kategori)
+      ) {
+        return NextResponse.json(
+          { error: 'Jadwal misa tujuan sudah berlalu atau melewati batas pendaftaran.' },
+          { status: 400 }
+        )
       }
 
       const { count: currentTargetBooked } = await (adminSupabase as any)

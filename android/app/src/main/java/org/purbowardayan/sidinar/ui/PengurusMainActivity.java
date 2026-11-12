@@ -549,12 +549,15 @@ public class PengurusMainActivity extends AppCompatActivity implements
             btnSave.setEnabled(false);
             btnCancel.setEnabled(false);
 
+            int[] weekAndYear = LiturgicalUtil.computeIsoWeekAndYear(tanggal);
             MassSchedule newSchedule = new MassSchedule();
             newSchedule.setJudulMisa(judul);
             newSchedule.setKategori(kategori);
             newSchedule.setTanggalMisa(tanggal);
             newSchedule.setJamMulai(jam.length() == 5 ? jam + ":00" : jam);
             newSchedule.setKuotaMaksimal(kuota);
+            newSchedule.setMingguKe(weekAndYear[0]);
+            newSchedule.setTahun(weekAndYear[1]);
             newSchedule.setNamaSelebran(TextUtils.isEmpty(selebran) ? null : selebran);
             newSchedule.setWarnaLiturgi(warna);
             newSchedule.setTahunLiturgi("Tahun B / II");
@@ -768,7 +771,8 @@ public class PengurusMainActivity extends AppCompatActivity implements
                     Map<String, Object> body = new HashMap<>();
                     body.put("status_kehadiran", newStatus);
                     if ("hadir".equalsIgnoreCase(newStatus) || "terlambat".equalsIgnoreCase(newStatus)) {
-                        java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", java.util.Locale.getDefault());
+                        java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", java.util.Locale.US);
+                        sdf.setTimeZone(java.util.TimeZone.getTimeZone("UTC"));
                         body.put("waktu_checkin", sdf.format(new java.util.Date()));
                     }
 

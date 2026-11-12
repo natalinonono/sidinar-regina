@@ -96,11 +96,12 @@ export default function PengurusPresensiPage() {
   }
 
   const filteredBookings = useMemo(() => {
+    const q = searchTerm.toLowerCase()
     return bookings.filter((b) => {
       const matchesSearch =
-        b.profile?.nama_lengkap.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        b.schedule?.judul_misa.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        b.posisi_tugas.toLowerCase().includes(searchTerm.toLowerCase())
+        (b.profile?.nama_lengkap || '').toLowerCase().includes(q) ||
+        (b.schedule?.judul_misa || '').toLowerCase().includes(q) ||
+        (b.posisi_tugas || '').toLowerCase().includes(q)
       const matchesStatus = statusFilter === 'semua' || b.status_kehadiran === statusFilter
       return matchesSearch && matchesStatus
     })

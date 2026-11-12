@@ -3,6 +3,7 @@ import { createClient, createAdminClient } from '@/lib/supabase/server'
 
 export async function requireAuthenticatedUser() {
   const supabase = await createClient()
+  const adminSupabase = createAdminClient()
   const {
     data: { user },
     error,
@@ -14,6 +15,7 @@ export async function requireAuthenticatedUser() {
       profile: null,
       isPengurus: false,
       supabase,
+      adminSupabase,
       errorResponse: NextResponse.json(
         { error: 'Autentikasi diperlukan. Silakan login kembali.' },
         { status: 401 }
@@ -21,7 +23,6 @@ export async function requireAuthenticatedUser() {
     }
   }
 
-  const adminSupabase = createAdminClient()
   const { data: profile } = await (adminSupabase as any)
     .from('profiles')
     .select('id, role, status, nama_lengkap, nama_panggilan')

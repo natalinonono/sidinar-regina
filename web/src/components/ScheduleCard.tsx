@@ -27,7 +27,9 @@ export const ScheduleCard: React.FC<ScheduleCardProps> = ({
 }) => {
   const isFull = bookingsCount >= schedule.kuota_maksimal
   const remainingSlots = Math.max(0, schedule.kuota_maksimal - bookingsCount)
-  const percentFilled = Math.min(100, Math.round((bookingsCount / schedule.kuota_maksimal) * 100))
+  const percentFilled = schedule.kuota_maksimal > 0
+    ? Math.min(100, Math.round((bookingsCount / schedule.kuota_maksimal) * 100))
+    : 0
 
   return (
     <div className="relative overflow-hidden rounded-2xl bg-surface-container-lowest border border-surface-container shadow-sm hover:shadow-md transition-all flex flex-col justify-between group">

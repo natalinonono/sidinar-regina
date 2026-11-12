@@ -13,8 +13,8 @@ export async function GET() {
       return NextResponse.json({ error: 'Sesi login tidak valid' }, { status: 401 })
     }
 
-    // Ambil tanggal hari ini dalam format YYYY-MM-DD
-    const today = new Date().toISOString().split('T')[0]
+    // Ambil tanggal hari ini dalam format YYYY-MM-DD (WIB)
+    const today = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Jakarta' })
 
     // Ambil profil pengguna
     const { data: profile } = await (supabase as any)
@@ -30,7 +30,7 @@ export async function GET() {
     if (isPengurus) {
       const { data } = await (supabase as any)
         .from('bookings')
-        .select('*, schedule:mass_schedules(*), profile:profiles(*)')
+        .select('*, schedule:mass_schedules(*), profile:profiles(id, nama_lengkap, nama_panggilan)')
         .eq('wa_reminder_sent', true)
         .order('created_at', { ascending: false })
         .limit(10)

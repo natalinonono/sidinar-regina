@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useMemo } from 'react'
+import React, { useState, useEffect, useMemo } from 'react'
 import { LITURGICAL_POSITIONS } from '@/lib/utils/positions'
 import { MisaBesarPetugas, MisaBesarSession } from '@/types/misaBesar'
 
@@ -42,6 +42,14 @@ export function AssignPetugasModal({
   const [saving, setSaving] = useState(false)
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
 
+  useEffect(() => {
+    if (!isOpen) return
+    setSearch('')
+    setJenjangFilter('Semua')
+    setSelectedMap({})
+    setErrorMsg(null)
+  }, [isOpen, session?.id])
+
   const sessionExistingMap = useMemo(() => {
     const map: Record<string, MisaBesarPetugas> = {}
     if (!session) return map
@@ -59,10 +67,10 @@ export function AssignPetugasModal({
       if (jenjangFilter !== 'Semua' && m.jenjang !== jenjangFilter) return false
       if (!q) return true
       return (
-        m.nama_lengkap.toLowerCase().includes(q) ||
-        m.nama_panggilan.toLowerCase().includes(q) ||
-        m.jenjang.toLowerCase().includes(q) ||
-        m.asal_wilayah_teks.toLowerCase().includes(q)
+        (m.nama_lengkap || '').toLowerCase().includes(q) ||
+        (m.nama_panggilan || '').toLowerCase().includes(q) ||
+        (m.jenjang || '').toLowerCase().includes(q) ||
+        (m.asal_wilayah_teks || '').toLowerCase().includes(q)
       )
     })
   }, [activeMembers, search, jenjangFilter])

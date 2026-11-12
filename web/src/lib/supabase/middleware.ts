@@ -53,7 +53,7 @@ export async function updateSession(request: NextRequest) {
       .single()
 
     const url = request.nextUrl.clone()
-    if ((profile as any)?.role === 'pengurus') {
+    if ((profile as any)?.role === 'pengurus' && (profile as any)?.status === 'aktif') {
       url.pathname = '/pengurus'
     } else {
       url.pathname = '/anggota'
@@ -65,11 +65,11 @@ export async function updateSession(request: NextRequest) {
   if (user && pathname.startsWith('/pengurus')) {
     const { data: profile } = await supabase
       .from('profiles')
-      .select('role')
+      .select('role, status')
       .eq('id', user.id)
       .single()
 
-    if ((profile as any)?.role !== 'pengurus') {
+    if ((profile as any)?.role !== 'pengurus' || (profile as any)?.status !== 'aktif') {
       const url = request.nextUrl.clone()
       url.pathname = '/anggota'
       return NextResponse.redirect(url)

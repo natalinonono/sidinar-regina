@@ -16,16 +16,18 @@ export async function GET(request: Request) {
       data: { user },
     } = await supabase.auth.getUser()
 
+    if (!user) {
+      return NextResponse.json({ error: 'Autentikasi diperlukan. Silakan login kembali.' }, { status: 401 })
+    }
+
     let isPengurus = false
-    if (user) {
-      const { data: callerProfile } = await supabase
-        .from('profiles')
-        .select('role')
-        .eq('id', user.id)
-        .single()
-      if ((callerProfile as any)?.role === 'pengurus') {
-        isPengurus = true
-      }
+    const { data: callerProfile } = await supabase
+      .from('profiles')
+      .select('role, status')
+      .eq('id', user.id)
+      .single()
+    if ((callerProfile as any)?.role === 'pengurus' && (callerProfile as any)?.status === 'aktif') {
+      isPengurus = true
     }
 
     let query = supabase
@@ -66,11 +68,14 @@ export async function GET(request: Request) {
         }
 
         // PERLINDUNGAN INSPECT ELEMENT / DEVTOOLS:
-        // Jika bukan pengurus dan bukan data dirinya sendiri, sensor no_telepon & email
-        if (!isPengurus && b.profile) {
-          if (b.user_id !== user?.id) {
-            delete b.profile.no_telepon
-            delete b.profile.email
+        // Jika bukan pengurus dan bukan data dirinya sendiri, sensor seluruh kolom sensitif
+        if (!isPengurus && b.profile && b.user_id !== user.id) {
+          b.profile = {
+            id: b.profile.id,
+            nama_lengkap: b.profile.nama_lengkap,
+            nama_panggilan: b.profile.nama_panggilan,
+            jenjang: b.profile.jenjang,
+            asal_wilayah_teks: b.profile.asal_wilayah_teks,
           }
         }
       }
@@ -102,34 +107,37 @@ export async function POST(request: Request) {
     } = await supabase.auth.getUser()
 
     const body = await request.json()
-    const { schedule_id, posisi_tugas, user_id } = body
+    const { schedule_id, posisi_tugas } = body
 
-    let effectiveUserId = user?.id
-
-    if (!effectiveUserId && user_id) {
-      const adminSupabase = createAdminClient()
-      const { data: profile } = await (adminSupabase as any)
-        .from('profiles')
-        .select('id, status')
-        .eq('id', user_id)
-        .eq('status', 'aktif')
-        .maybeSingle()
-      if (profile) {
-        effectiveUserId = profile.id
-      }
-    }
-
-    if (!effectiveUserId) {
+    if (!user) {
       return NextResponse.json({ error: 'Autentikasi diperlukan. Silakan login kembali.' }, { status: 401 })
     }
+
+    const effectiveUserId = user.id
 
     if (!schedule_id) {
       return NextResponse.json({ error: 'Jadwal misa (schedule_id) wajib dipilih.' }, { status: 400 })
     }
 
+    const adminSupabase = createAdminClient()
+    const { data: targetSchedule } = await (adminSupabase as any)
+      .from('mass_schedules')
+      .select('tanggal_misa, jam_mulai, kategori')
+      .eq('id', schedule_id)
+      .maybeSingle()
+
+    if (
+      targetSchedule &&
+      isMassToleranceExpired(targetSchedule.tanggal_misa, targetSchedule.jam_mulai, targetSchedule.kategori)
+    ) {
+      return NextResponse.json(
+        { error: 'Jadwal misa ini sudah berlalu atau melewati batas waktu pendaftaran.' },
+        { status: 400 }
+      )
+    }
+
     // Insert booking using createAdminClient to ensure database trigger trg_validate_booking
     // can lock mass_schedules FOR UPDATE atomically without being blocked by RLS
-    const adminSupabase = createAdminClient()
     const { data: newBooking, error } = await (adminSupabase as any)
       .from('bookings')
       .insert({
@@ -177,29 +185,15 @@ export async function PATCH(request: Request) {
       data: { user },
     } = await supabase.auth.getUser()
 
+    if (!user) {
+      return NextResponse.json({ error: 'Autentikasi diperlukan. Silakan login kembali.' }, { status: 401 })
+    }
+
     const body = await request.json()
     const bookingId = body.booking_id || body.id
     const newScheduleId = body.new_schedule_id || body.schedule_id
     const posisiTugas = body.posisi_tugas || 'Petugas Altar'
-    const requestUserId = body.user_id
-
-    let effectiveUserId = user?.id
-    if (!effectiveUserId && requestUserId) {
-      const adminSupabase = createAdminClient()
-      const { data: profile } = await (adminSupabase as any)
-        .from('profiles')
-        .select('id, status')
-        .eq('id', requestUserId)
-        .eq('status', 'aktif')
-        .maybeSingle()
-      if (profile) {
-        effectiveUserId = profile.id
-      }
-    }
-
-    if (!effectiveUserId) {
-      return NextResponse.json({ error: 'Autentikasi diperlukan. Silakan login kembali.' }, { status: 401 })
-    }
+    const effectiveUserId = user.id
 
     if (!bookingId) {
       return NextResponse.json({ error: 'ID penugasan (booking_id) wajib disertakan.' }, { status: 400 })
@@ -221,11 +215,11 @@ export async function PATCH(request: Request) {
     // 2. CEK KEPEMILIKAN: Misdinar hanya boleh mengedit jadwal miliknya sendiri!
     const { data: profile } = await (adminSupabase as any)
       .from('profiles')
-      .select('role')
+      .select('role, status')
       .eq('id', effectiveUserId)
       .single()
 
-    const isPengurus = profile?.role === 'pengurus'
+    const isPengurus = profile?.role === 'pengurus' && profile?.status === 'aktif'
     if (existingBooking.user_id !== effectiveUserId && !isPengurus) {
       return NextResponse.json(
         { error: 'Akses ditolak: Anda hanya dapat mengedit jadwal tugas milik Anda sendiri.' },
@@ -233,7 +227,7 @@ export async function PATCH(request: Request) {
       )
     }
 
-    if (existingBooking.status_kehadiran === 'hadir') {
+    if (['hadir', 'terlambat'].includes(existingBooking.status_kehadiran)) {
       return NextResponse.json(
         { error: 'Jadwal tugas yang sudah dipresensi / selesai tidak dapat diubah.' },
         { status: 400 }
@@ -251,6 +245,16 @@ export async function PATCH(request: Request) {
 
       if (targetErr || !targetSchedule) {
         return NextResponse.json({ error: 'Jadwal misa tujuan tidak ditemukan.' }, { status: 404 })
+      }
+
+      if (
+        !isPengurus &&
+        isMassToleranceExpired(targetSchedule.tanggal_misa, targetSchedule.jam_mulai, targetSchedule.kategori)
+      ) {
+        return NextResponse.json(
+          { error: 'Jadwal misa tujuan sudah berlalu atau melewati batas pendaftaran.' },
+          { status: 400 }
+        )
       }
 
       // Hitung keterisian kuota jadwal tujuan
@@ -329,9 +333,12 @@ export async function DELETE(request: Request) {
       data: { user },
     } = await supabase.auth.getUser()
 
+    if (!user) {
+      return NextResponse.json({ error: 'Autentikasi diperlukan. Silakan login kembali.' }, { status: 401 })
+    }
+
     const { searchParams } = new URL(request.url)
     let bookingId = searchParams.get('id') || searchParams.get('booking_id')
-    const queryUserId = searchParams.get('user_id')
 
     if (!bookingId) {
       try {
@@ -340,23 +347,7 @@ export async function DELETE(request: Request) {
       } catch {}
     }
 
-    let effectiveUserId = user?.id
-    if (!effectiveUserId && queryUserId) {
-      const adminSupabase = createAdminClient()
-      const { data: profile } = await (adminSupabase as any)
-        .from('profiles')
-        .select('id, status')
-        .eq('id', queryUserId)
-        .eq('status', 'aktif')
-        .maybeSingle()
-      if (profile) {
-        effectiveUserId = profile.id
-      }
-    }
-
-    if (!effectiveUserId) {
-      return NextResponse.json({ error: 'Autentikasi diperlukan. Silakan login kembali.' }, { status: 401 })
-    }
+    const effectiveUserId = user.id
 
     if (!bookingId) {
       return NextResponse.json({ error: 'ID penugasan (id) wajib disertakan.' }, { status: 400 })
@@ -378,11 +369,11 @@ export async function DELETE(request: Request) {
     // 2. CEK KEPEMILIKAN: Misdinar hanya boleh membatalkan jadwal miliknya sendiri!
     const { data: profile } = await (adminSupabase as any)
       .from('profiles')
-      .select('role')
+      .select('role, status')
       .eq('id', effectiveUserId)
       .single()
 
-    const isPengurus = profile?.role === 'pengurus'
+    const isPengurus = profile?.role === 'pengurus' && profile?.status === 'aktif'
     if (existingBooking.user_id !== effectiveUserId && !isPengurus) {
       return NextResponse.json(
         { error: 'Akses ditolak: Anda hanya dapat membatalkan jadwal tugas milik Anda sendiri.' },
@@ -390,7 +381,7 @@ export async function DELETE(request: Request) {
       )
     }
 
-    if (existingBooking.status_kehadiran === 'hadir') {
+    if (['hadir', 'terlambat'].includes(existingBooking.status_kehadiran)) {
       return NextResponse.json(
         { error: 'Jadwal tugas yang sudah dipresensi / selesai tidak dapat dibatalkan.' },
         { status: 400 }

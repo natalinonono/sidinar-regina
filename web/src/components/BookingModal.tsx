@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { MassSchedule } from '@/types/database'
 
 interface BookingModalProps {
@@ -20,6 +20,13 @@ export const BookingModal: React.FC<BookingModalProps> = ({
   const [commitmentChecked, setCommitmentChecked] = useState(false)
   const [loading, setLoading] = useState(false)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (!isOpen) return
+    setCommitmentChecked(false)
+    setLoading(false)
+    setErrorMessage(null)
+  }, [isOpen, schedule?.id])
 
   if (!isOpen || !schedule) return null
 

@@ -6,7 +6,7 @@ import { createClient } from '@/lib/supabase/client'
 import { MassSchedule, BookingWithDetails, WarnaLiturgi } from '@/types/database'
 import { LiturgyBadge } from '@/components/LiturgyBadge'
 import { PositionBadge } from '@/components/PositionBadge'
-import { getCurrentLiturgicalWeek, isMassToleranceExpired } from '@/lib/utils/time'
+import { getCurrentLiturgicalWeek, getLiturgicalWeekForDate, isMassToleranceExpired, toWibDateString } from '@/lib/utils/time'
 import { generateWhatsAppReminderMessage } from '@/lib/utils/calendar'
 
 export default function PengurusJadwalPage() {
@@ -24,7 +24,7 @@ export default function PengurusJadwalPage() {
   const [newScheduleData, setNewScheduleData] = useState({
     judul_misa: '',
     kategori: 'mingguan' as 'harian' | 'mingguan',
-    tanggal_misa: new Date().toISOString().split('T')[0],
+    tanggal_misa: toWibDateString(),
     jam_mulai: '08:00',
     kuota_maksimal: 12,
     tahun_liturgi: 'Tahun B / II',
@@ -162,12 +162,16 @@ export default function PengurusJadwalPage() {
   const handleCreateSchedule = async (e: React.FormEvent) => {
     e.preventDefault()
     try {
+      const targetWeek = getLiturgicalWeekForDate(newScheduleData.tanggal_misa)
+      const jamFormatted = newScheduleData.jam_mulai.length === 5
+        ? `${newScheduleData.jam_mulai}:00`
+        : newScheduleData.jam_mulai
       const { data, error } = await (supabase.from('mass_schedules') as any)
         .insert({
           ...newScheduleData,
-          jam_mulai: `${newScheduleData.jam_mulai}:00`,
-          minggu_ke: weekNumber,
-          tahun: yearNumber,
+          jam_mulai: jamFormatted,
+          minggu_ke: targetWeek.weekNumber,
+          tahun: targetWeek.yearNumber,
         })
         .select()
         .single()
