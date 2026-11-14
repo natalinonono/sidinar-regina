@@ -13,6 +13,7 @@ import retrofit2.http.Body;
 import retrofit2.http.DELETE;
 import retrofit2.http.GET;
 import retrofit2.http.Header;
+import retrofit2.http.HTTP;
 import retrofit2.http.PATCH;
 import retrofit2.http.POST;
 import retrofit2.http.Query;
@@ -83,6 +84,12 @@ public interface BackendApi {
     Call<ResponseBody> deleteSchedule(
             @Header("Authorization") String auth,
             @Query("id") String scheduleId
+    );
+
+    @HTTP(method = "DELETE", path = "api/schedules", hasBody = true)
+    Call<ResponseBody> deleteBulkSchedules(
+            @Header("Authorization") String auth,
+            @Body Map<String, Object> body
     );
 
     @PATCH("api/profile")

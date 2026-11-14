@@ -16,6 +16,8 @@ export default function PengurusJadwalPage() {
 
   const [schedules, setSchedules] = useState<MassSchedule[]>([])
   const [selectedScheduleId, setSelectedScheduleId] = useState<string | null>(initialScheduleId)
+  const [selectedBulkScheduleIds, setSelectedBulkScheduleIds] = useState<string[]>([])
+  const [filterMode, setFilterMode] = useState<'pekan_ini' | 'mendatang' | 'semua'>('pekan_ini')
   const [bookings, setBookings] = useState<BookingWithDetails[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -36,25 +38,39 @@ export default function PengurusJadwalPage() {
 
   const loadSchedulesAndBookings = async () => {
     try {
-      const { data: scheduleList } = await supabase
+      let scheduleQuery = supabase
         .from('mass_schedules')
         .select('*')
-        .gte('tanggal_misa', startDateStr)
-        .lte('tanggal_misa', endDateStr)
         .order('tanggal_misa', { ascending: true })
         .order('jam_mulai', { ascending: true })
+
+      if (filterMode === 'pekan_ini') {
+        scheduleQuery = scheduleQuery
+          .gte('tanggal_misa', startDateStr)
+          .lte('tanggal_misa', endDateStr)
+      } else if (filterMode === 'mendatang') {
+        scheduleQuery = scheduleQuery.gte('tanggal_misa', startDateStr)
+      }
+
+      const { data: scheduleList } = await scheduleQuery
 
       const list = (scheduleList as MassSchedule[]) || []
       setSchedules(list)
       if (!selectedScheduleId && list.length > 0) {
         setSelectedScheduleId(list[0].id)
+      } else if (selectedScheduleId && !list.some((s) => s.id === selectedScheduleId)) {
+        setSelectedScheduleId(list[0]?.id || null)
       }
 
-      const { data: bookingList } = await supabase
-        .from('bookings')
-        .select('*, schedule:mass_schedules(*), profile:profiles(*)')
-        .eq('minggu_ke', weekNumber)
-        .eq('tahun', yearNumber)
+      let bookingList: any[] = []
+      if (list.length > 0) {
+        const scheduleIds = list.map((s) => s.id)
+        const { data: bData } = await supabase
+          .from('bookings')
+          .select('*, schedule:mass_schedules(*), profile:profiles(*)')
+          .in('schedule_id', scheduleIds)
+        bookingList = bData || []
+      }
 
       const items = (bookingList || []) as BookingWithDetails[]
       const expiredIds: string[] = []
@@ -93,12 +109,15 @@ export default function PengurusJadwalPage() {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'bookings' }, () => {
         loadSchedulesAndBookings()
       })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'mass_schedules' }, () => {
+        loadSchedulesAndBookings()
+      })
       .subscribe()
 
     return () => {
       supabase.removeChannel(channel)
     }
-  }, [weekNumber, yearNumber])
+  }, [weekNumber, yearNumber, filterMode])
 
   const selectedSchedule = useMemo(() => {
     return schedules.find((s) => s.id === selectedScheduleId) || schedules[0] || null
@@ -110,6 +129,63 @@ export default function PengurusJadwalPage() {
   }, [bookings, selectedSchedule])
 
   const [isDeleting, setIsDeleting] = useState(false)
+
+  const toggleSelectSchedule = (id: string) => {
+    setSelectedBulkScheduleIds((prev) =>
+      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
+    )
+  }
+
+  const isAllSelected = schedules.length > 0 && schedules.every((s) => selectedBulkScheduleIds.includes(s.id))
+
+  const handleToggleSelectAll = () => {
+    if (isAllSelected) {
+      setSelectedBulkScheduleIds([])
+    } else {
+      setSelectedBulkScheduleIds(schedules.map((s) => s.id))
+    }
+  }
+
+  const handleBulkDelete = async () => {
+    if (selectedBulkScheduleIds.length === 0) return
+
+    const count = selectedBulkScheduleIds.length
+    if (
+      !confirm(
+        `Apakah Anda yakin ingin menghapus ${count} jadwal misa terpilih sekaligus?\n\nSemua pendaftaran dan data penugasan altar pada jadwal-jadwal tersebut akan ikut terhapus permanen.\n\nTindakan ini tidak dapat dibatalkan.`
+      )
+    ) {
+      return
+    }
+
+    setIsDeleting(true)
+    try {
+      const res = await fetch('/api/schedules', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ids: selectedBulkScheduleIds }),
+      })
+      const data = await res.json()
+
+      if (!res.ok) {
+        alert(data.error || 'Gagal menghapus beberapa jadwal misa.')
+        setIsDeleting(false)
+        return
+      }
+
+      alert(data.message || `Berhasil menghapus ${count} jadwal misa sekaligus.`)
+
+      if (selectedScheduleId && selectedBulkScheduleIds.includes(selectedScheduleId)) {
+        setSelectedScheduleId(null)
+      }
+      setSelectedBulkScheduleIds([])
+      await loadSchedulesAndBookings()
+    } catch (err: any) {
+      alert(err.message || 'Terjadi kesalahan saat menghapus jadwal misa.')
+    } finally {
+      setIsDeleting(false)
+    }
+  }
 
   const handleDeleteSchedule = async (scheduleId: string, judulMisa: string) => {
     if (
@@ -133,9 +209,12 @@ export default function PengurusJadwalPage() {
         return
       }
 
-      alert('Jadwal misa berhasil dihapus.')
+      alert(data.message || 'Jadwal misa berhasil dihapus.')
+      setSelectedBulkScheduleIds((prev) => prev.filter((id) => id !== scheduleId))
+      if (selectedScheduleId === scheduleId) {
+        setSelectedScheduleId(null)
+      }
       await loadSchedulesAndBookings()
-      setSelectedScheduleId(null)
     } catch (err: any) {
       alert(err.message || 'Terjadi kesalahan saat menghapus jadwal.')
     } finally {
@@ -235,54 +314,167 @@ export default function PengurusJadwalPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left Column: Schedule Selector List */}
         <div className="flex flex-col gap-3">
-          <h2 className="text-xs uppercase font-bold text-on-surface-variant tracking-wider">
-            Pilih Jadwal Misa ({schedules.length})
-          </h2>
+          <div className="flex items-center justify-between gap-2">
+            <h2 className="text-xs uppercase font-bold text-on-surface-variant tracking-wider flex items-center gap-1.5">
+              <span>Jadwal Misa</span>
+              <span className="px-1.5 py-0.5 rounded-full bg-surface-container-high text-[10px] font-bold text-primary">
+                {schedules.length}
+              </span>
+            </h2>
+            {schedules.length > 0 && (
+              <button
+                type="button"
+                onClick={handleToggleSelectAll}
+                className="text-[11px] font-semibold text-primary hover:text-primary/80 transition-colors flex items-center gap-1 cursor-pointer"
+                title={isAllSelected ? 'Batalkan pilihan semua jadwal' : 'Pilih semua jadwal dalam daftar'}
+              >
+                <span className="material-symbols-outlined text-sm leading-none">
+                  {isAllSelected ? 'check_box' : 'select_all'}
+                </span>
+                <span>{isAllSelected ? 'Batal Semua' : 'Pilih Semua'}</span>
+              </button>
+            )}
+          </div>
+
+          {/* Filter Range Tabs */}
+          <div className="flex items-center gap-1 p-1 rounded-xl bg-surface-container-low border border-surface-container text-[11px]">
+            <button
+              type="button"
+              onClick={() => setFilterMode('pekan_ini')}
+              className={`flex-1 py-1 px-2 rounded-lg font-semibold transition-all cursor-pointer ${
+                filterMode === 'pekan_ini'
+                  ? 'bg-surface-container-lowest text-primary shadow-xs'
+                  : 'text-on-surface-variant hover:text-on-surface'
+              }`}
+            >
+              Pekan Ini
+            </button>
+            <button
+              type="button"
+              onClick={() => setFilterMode('mendatang')}
+              className={`flex-1 py-1 px-2 rounded-lg font-semibold transition-all cursor-pointer ${
+                filterMode === 'mendatang'
+                  ? 'bg-surface-container-lowest text-primary shadow-xs'
+                  : 'text-on-surface-variant hover:text-on-surface'
+              }`}
+            >
+              Mendatang
+            </button>
+            <button
+              type="button"
+              onClick={() => setFilterMode('semua')}
+              className={`flex-1 py-1 px-2 rounded-lg font-semibold transition-all cursor-pointer ${
+                filterMode === 'semua'
+                  ? 'bg-surface-container-lowest text-primary shadow-xs'
+                  : 'text-on-surface-variant hover:text-on-surface'
+              }`}
+            >
+              Semua
+            </button>
+          </div>
+
+          {/* Bulk Action Banner */}
+          {selectedBulkScheduleIds.length > 0 && (
+            <div className="p-3 rounded-2xl bg-rose-50 border border-rose-200 shadow-sm flex items-center justify-between gap-2 text-xs animate-fade-in">
+              <div className="flex items-center gap-2">
+                <span className="w-6 h-6 rounded-lg bg-rose-600 text-white flex items-center justify-center text-xs font-bold shrink-0">
+                  {selectedBulkScheduleIds.length}
+                </span>
+                <span className="font-bold text-rose-950 text-[11px] leading-tight">
+                  Jadwal dipilih
+                </span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => setSelectedBulkScheduleIds([])}
+                  className="px-2 py-1 rounded-lg bg-white text-on-surface-variant hover:text-on-surface text-[11px] font-medium border border-rose-200 transition-colors cursor-pointer"
+                >
+                  Batal
+                </button>
+                <button
+                  type="button"
+                  onClick={handleBulkDelete}
+                  disabled={isDeleting}
+                  className="px-2.5 py-1 rounded-lg bg-error text-white hover:bg-error/90 text-[11px] font-bold flex items-center gap-1 transition-all shadow-xs disabled:opacity-50 cursor-pointer"
+                  title="Hapus semua jadwal yang dicentang sekaligus"
+                >
+                  <span className="material-symbols-outlined text-sm leading-none">delete_sweep</span>
+                  <span>Hapus Sekaligus ({selectedBulkScheduleIds.length})</span>
+                </button>
+              </div>
+            </div>
+          )}
+
           <div className="flex flex-col gap-2 max-h-[700px] overflow-y-auto pr-1">
             {schedules.map((s) => {
               const isSelected = selectedSchedule?.id === s.id
+              const isBulkSelected = selectedBulkScheduleIds.includes(s.id)
               const sBookings = bookings.filter((b) => b.schedule_id === s.id)
               return (
                 <div
                   key={s.id}
                   onClick={() => setSelectedScheduleId(s.id)}
-                  className={`p-4 rounded-2xl border text-xs cursor-pointer transition-all ${
-                    isSelected
+                  className={`p-3.5 rounded-2xl border text-xs cursor-pointer transition-all flex items-start gap-2.5 ${
+                    isBulkSelected
+                      ? 'bg-rose-50/60 border-rose-300 ring-1 ring-rose-300'
+                      : isSelected
                       ? 'bg-surface-container-lowest border-primary shadow-md ring-1 ring-primary/30'
                       : 'bg-surface-container-low border-surface-container hover:bg-surface-container-lowest'
                   }`}
                 >
-                  <div className="flex items-center justify-between gap-2 mb-1.5">
-                    <span className="text-[11px] font-semibold text-secondary uppercase tracking-wider px-2 py-0.5 rounded-full bg-secondary-fixed/40">
-                      {s.kategori === 'harian' ? 'Harian' : 'Mingguan'}
-                    </span>
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-[11px] font-semibold text-primary">
-                        {sBookings.length} / {s.kuota_maksimal} Terisi
-                      </span>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          handleDeleteSchedule(s.id, s.judul_misa)
-                        }}
-                        disabled={isDeleting}
-                        title="Hapus jadwal misa ini"
-                        className="p-1 rounded-md text-error/70 hover:text-error hover:bg-error/10 transition-colors"
-                        type="button"
-                      >
-                        <span className="material-symbols-outlined text-base leading-none">delete</span>
-                      </button>
-                    </div>
+                  <div
+                    onClick={(e) => e.stopPropagation()}
+                    className="pt-0.5 flex items-center shrink-0"
+                    title={isBulkSelected ? 'Batalkan pilihan jadwal ini' : 'Pilih jadwal ini untuk dihapus sekaligus'}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={isBulkSelected}
+                      onChange={() => toggleSelectSchedule(s.id)}
+                      className="w-4 h-4 rounded border-gray-300 text-rose-600 focus:ring-rose-500 cursor-pointer accent-rose-600"
+                    />
                   </div>
-                  <h3 className="font-headline font-bold text-primary line-clamp-1">{s.judul_misa}</h3>
-                  <div className="flex items-center gap-1.5 text-on-surface-variant text-[11px] mt-1">
-                    <span>{s.tanggal_misa}</span>
-                    <span>•</span>
-                    <span className="font-semibold text-on-surface">{s.jam_mulai.substring(0, 5)} WIB</span>
+
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between gap-2 mb-1.5">
+                      <span className="text-[10px] font-bold text-secondary uppercase tracking-wider px-2 py-0.5 rounded-full bg-secondary-fixed/40">
+                        {s.kategori === 'harian' ? 'Harian' : 'Mingguan'}
+                      </span>
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-[11px] font-semibold text-primary">
+                          {sBookings.length} / {s.kuota_maksimal} Terisi
+                        </span>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            handleDeleteSchedule(s.id, s.judul_misa)
+                          }}
+                          disabled={isDeleting}
+                          title="Hapus jadwal misa ini"
+                          className="p-1 rounded-md text-error/70 hover:text-error hover:bg-error/10 transition-colors cursor-pointer"
+                          type="button"
+                        >
+                          <span className="material-symbols-outlined text-base leading-none">delete</span>
+                        </button>
+                      </div>
+                    </div>
+                    <h3 className="font-headline font-bold text-primary line-clamp-1">{s.judul_misa}</h3>
+                    <div className="flex items-center gap-1.5 text-on-surface-variant text-[11px] mt-1">
+                      <span>{s.tanggal_misa}</span>
+                      <span>•</span>
+                      <span className="font-semibold text-on-surface">{s.jam_mulai.substring(0, 5)} WIB</span>
+                    </div>
                   </div>
                 </div>
               )
             })}
+
+            {schedules.length === 0 && (
+              <div className="p-8 rounded-2xl bg-surface-container-low text-center text-xs text-on-surface-variant">
+                Tidak ada jadwal misa pada periode yang dipilih.
+              </div>
+            )}
           </div>
         </div>
 

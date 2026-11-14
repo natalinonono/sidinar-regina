@@ -47,6 +47,10 @@ Thumbs.db
 # Local Mirror Projects
 php_native/
 
+# TypeScript build info cache
+*.tsbuildinfo
+web/*.tsbuildinfo
+
 # Presentations & Internal Slide Decks (Do not commit)
 *.pptx
 docs/*.pptx
